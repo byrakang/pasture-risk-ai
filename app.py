@@ -23,7 +23,7 @@ FEATURES = META["features"]
 LOW_MAX = META["thresholds"]["low_max"]
 MEDIUM_MAX = META["thresholds"]["medium_max"]
  
-df = pd.read_excel(BASE / "data" / "database.xlsx", sheet_name=SHEET)
+df = pd.read_excel("database.xlsx", sheet_name=SHEET)
 scaler = regressor.named_steps["scaler"]
 knn = regressor.named_steps["knn"]
 X_scaled = scaler.transform(df[FEATURES])
