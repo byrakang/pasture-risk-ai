@@ -14,7 +14,14 @@ SHEET = "ML Model Dataset (Risk Score)"
 app = Flask(__name__, static_folder="static", static_url_path="/static")
 app.json.ensure_ascii = False  # Монгол үсэг JSON-д хэвээр гарна
 CORS(app)
- 
+ from flask import Flask, render_template, send_from_directory
+
+app = Flask(__name__, static_folder="static", static_url_path="/static")
+
+@app.route("/")
+def index():
+    return send_from_directory(".", "index.html")
+   
 # ----------------------------------------------------------------- Ачаалалт
 regressor = joblib.load(BASE / "model" / "knn_regressor.joblib")
 classifier = joblib.load(BASE / "model" / "knn_classifier.joblib")
@@ -23,7 +30,7 @@ FEATURES = META["features"]
 LOW_MAX = META["thresholds"]["low_max"]
 MEDIUM_MAX = META["thresholds"]["medium_max"]
  
-df = pd.read_excel("database.xlsx", sheet_name=SHEET)
+df = pd.read_excel("database" .xlsx, sheet_name=SHEET)
 scaler = regressor.named_steps["scaler"]
 knn = regressor.named_steps["knn"]
 X_scaled = scaler.transform(df[FEATURES])
