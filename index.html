@@ -1,0 +1,1487 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Бэлчээр AI – Монголын бэлчээрийн талхагдлын эрсдэл</title>
+<meta name="description" content="Монголын 21 аймгийн бэлчээрийн талхагдлын эрсдэлийг малын тоо, ургамлын индекс (NDVI), хур тунадас, ачаалалаас тооцож, газрын зураг дээр харьцуулан харуулдаг сайт.">
+<meta name="theme-color" content="#E5EEE3">
+<meta property="og:title" content="Бэлчээр AI – бэлчээрийн талхагдлын эрсдэл">
+<meta property="og:description" content="21 аймгийн бэлчээрийн талхагдлын эрсдэлийг 0–100 оноогоор тооцож, газрын зураг дээр харуулна.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%231F7A52'/%3E%3Cpath d='M11 29C11 19 18 13 29 11C28 22 22 29 14 29Z' fill='%23E5EEE3'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  /* цагаан биш, бага зэрэг ногоон туяатай суурь */
+  --bg:#E5EEE3;          /* хуудасны суурь */
+  --surface:#F3F8F1;     /* карт */
+  --surface-2:#EAF2E7;   /* талбар, дэд хэсэг */
+  --line:#C6D6C3;
+  --ink:#14231B; --muted:#53665A;
+  --primary:#1F5FBF; --primary-2:#0E8AA3;
+  --low:#3E9B7A; --low-bg:#D5EBDF;
+  --mid:#C98E1A; --mid-bg:#F4E6BE;
+  --high:#B3261E; --high-bg:#F4D9D3;
+  --sans:"Inter",system-ui,"Segoe UI",Arial,sans-serif;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:80px}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.55 var(--sans)}
+h1,h2,h3{margin:0;font-family:var(--serif);letter-spacing:-.01em}
+h1{font-size:clamp(26px,3.4vw,38px);line-height:1.12}
+h2{font-size:20px;line-height:1.25}
+h3{font-size:16px}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.muted{color:var(--muted)}
+
+/* ---------- толгой ---------- */
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:12px clamp(14px,3vw,40px);background:rgba(243,248,241,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font:700 19px var(--serif)}
+.brand svg{width:34px;height:34px}
+nav{display:flex;gap:4px;padding:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;flex-wrap:wrap}
+nav button{border:0;background:transparent;padding:8px 14px;border-radius:9px;cursor:pointer;font-weight:500;color:var(--muted)}
+nav button:hover{color:var(--ink)}
+nav button[aria-current="page"]{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;font-weight:600}
+.chip{margin-left:auto;font-size:13px;padding:5px 11px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+
+/* ---------- ерөнхий ---------- */
+.page{display:none;padding:26px clamp(14px,3vw,40px) 40px;max-width:1500px;margin:0 auto}
+.page.active{display:block}
+.pagehead{margin-bottom:22px}
+.pagehead p{margin:8px 0 0;max-width:78ch;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px}
+.grid2{display:grid;grid-template-columns:minmax(320px,430px) 1fr;gap:20px;align-items:start}
+@media (max-width:980px){.grid2{grid-template-columns:1fr}}
+.field{margin-top:16px}
+.field>label{display:flex;justify-content:space-between;align-items:baseline;font-weight:500;font-size:14px;margin-bottom:6px}
+.field small{color:var(--muted);font-weight:400}
+.inwrap{display:flex;align-items:center;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:0 12px}
+.inwrap:focus-within{border-color:var(--primary)}
+.inwrap input{flex:1;min-width:0;border:0;background:transparent;padding:10px 0;outline:0;font-weight:500}
+.inwrap span{color:var(--muted);font-size:13px;margin-left:8px;white-space:nowrap}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+input[type=range]{width:100%;accent-color:var(--primary-2)}
+.pill{font:600 14px var(--serif);padding:2px 10px;border-radius:7px;background:var(--surface-2);border:1px solid var(--line)}
+.ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;border:1px solid var(--line);background:var(--surface);padding:9px 15px;border-radius:9px;font-weight:600;text-decoration:none;color:var(--ink)}
+.btn:hover{border-color:var(--primary);color:var(--primary)}
+.btn.primary{background:linear-gradient(135deg,var(--primary),var(--primary-2));border-color:transparent;color:#fff}
+.btn.primary:hover{filter:brightness(1.08);color:#fff}
+.btn.block{width:100%;padding:13px;font-size:16px}
+.linkbtn{border:0;background:none;color:var(--muted);cursor:pointer;text-decoration:underline;padding:4px}
+.samples{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.errors{display:none;margin-top:12px;padding:10px 12px;background:var(--high-bg);border-left:3px solid var(--high);border-radius:4px;font-size:14px}
+.sub{font-size:13px;color:var(--muted)}
+
+/* ---------- үр дүн ---------- */
+.banner{display:flex;align-items:center;gap:16px;padding:16px 18px;border-radius:12px;border:1px solid transparent}
+.banner.low{background:var(--low-bg);border-color:#A9D3BD}
+.banner.mid{background:var(--mid-bg);border-color:#E0C77C}
+.banner.high{background:var(--high-bg);border-color:#E3A99F}
+.banner .badge{width:46px;height:46px;border-radius:11px;display:grid;place-items:center;color:#fff;font:700 22px var(--serif);flex:none}
+.banner.low .badge{background:var(--low)} .banner.mid .badge{background:var(--mid)} .banner.high .badge{background:var(--high)}
+.banner h2{font-size:22px}
+.resgrid{display:grid;grid-template-columns:190px 1fr;gap:22px;align-items:center;margin-top:18px;padding:18px;background:var(--surface-2);border-radius:12px}
+@media (max-width:640px){.resgrid{grid-template-columns:1fr;justify-items:center}}
+.ring{position:relative;width:170px;height:170px}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .c{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ring b{font:700 42px/1 var(--serif)}
+.ring span{font-size:12px;color:var(--muted)}
+.factors{width:100%}
+.factor{margin-top:10px}
+.factor .r{display:flex;justify-content:space-between;font-size:14px;font-weight:500;gap:10px}
+.bar{height:7px;border-radius:99px;background:#D3E0D0;margin-top:5px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px}
+.find{margin-top:18px;border-left:4px solid var(--primary);background:var(--surface-2);border-radius:0 12px 12px 0;padding:16px 18px}
+.find.high{border-color:var(--high)} .find.mid{border-color:var(--mid)} .find.low{border-color:var(--low)}
+.find ul{margin:10px 0 0;padding:0;list-style:none}
+.find li{display:flex;gap:10px;margin-top:10px}
+.find li i{flex:none;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font:700 13px var(--sans);font-style:normal;background:#D3E0D0}
+.find li i.w{background:var(--high-bg);color:var(--high)}
+.find li i.a{background:#CFE0F5;color:var(--primary)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:8px;text-align:left;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--muted);white-space:nowrap}
+th.sortable{cursor:pointer}
+th.sortable:hover{color:var(--ink)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.lvl{display:inline-block;padding:1px 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
+.lvl.low{background:var(--low-bg);color:#1F6B50} .lvl.mid{background:var(--mid-bg);color:#7A5200} .lvl.high{background:var(--high-bg);color:var(--high)}
+.foot{margin-top:16px;padding:11px 14px;background:var(--surface-2);border-radius:9px;font-size:13px;color:var(--muted)}
+.actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+
+/* ---------- газрын зураг ---------- */
+.kpis{display:flex;gap:12px;flex-wrap:wrap}
+.kpi{padding:10px 16px;border-radius:12px;border:1px solid var(--line);background:var(--surface);min-width:170px}
+.kpi small{display:block;color:var(--muted);font-size:12px}
+.kpi b{font:700 26px var(--serif)}
+.kpi.alert{background:var(--high-bg);border-color:#E3A99F}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin:18px 0}
+.toolbar label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+.toolbar select,.toolbar input{padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--surface)}
+.toolbar input{min-width:210px}
+.seg{display:inline-flex;padding:3px;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:7px 12px;border-radius:8px;cursor:pointer;font-weight:500;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;font-weight:600}
+.mapgrid{display:grid;grid-template-columns:1fr minmax(320px,400px);gap:20px;align-items:start}
+@media (max-width:1100px){.mapgrid{grid-template-columns:1fr}}
+.mapcard{padding:0;overflow:hidden}
+.maphead{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:16px 20px;flex-wrap:wrap}
+.zoom{display:flex;gap:6px}
+.zoom button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:18px;line-height:1}
+.zoom button:hover{border-color:var(--primary)}
+.mapbox{position:relative;background:linear-gradient(180deg,#DCE9D8,#E8F1E5);border-top:1px solid var(--line);border-bottom:1px solid var(--line);touch-action:pan-y}
+.mapbox svg{display:block;width:100%;height:auto;cursor:grab}
+.mapbox svg.drag{cursor:grabbing}
+.reg{stroke:var(--surface);stroke-width:1.4;stroke-linejoin:round;cursor:pointer;transition:opacity .15s}
+.reg:hover{stroke:var(--ink);stroke-width:2}
+.reg.sel{stroke:var(--primary);stroke-width:3.2}
+.reg.nodata{cursor:default}
+.lbl{font:600 11px var(--sans);text-anchor:middle;pointer-events:none}
+.tip{position:absolute;pointer-events:none;display:none;padding:7px 10px;background:var(--ink);color:#fff;border-radius:8px;font-size:13px;white-space:nowrap;z-index:5}
+.legend{padding:14px 20px;display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-size:13px}
+.ramp{height:10px;width:200px;border-radius:99px;border:1px solid var(--line)}
+.mapfoot{padding:10px 20px;color:var(--muted);font-size:12px}
+.toplist{display:grid;gap:10px;margin-top:14px}
+.toprow{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;text-align:left;width:100%;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:var(--surface-2);cursor:pointer}
+.toprow:hover{border-color:var(--primary)}
+.toprow.sel{border:2px solid var(--primary);padding:10px 11px;background:var(--surface)}
+.toprow .rk{font-weight:600;color:var(--muted)}
+.toprow .bar{grid-column:2/4;margin-top:0}
+.stat{padding:13px 15px;border-radius:11px;background:var(--surface-2);margin-top:10px}
+.stat .row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px}
+.stat b.big{display:block;font:700 24px var(--serif);margin-top:2px}
+.delta{font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.delta.bad{background:var(--high-bg);color:var(--high)} .delta.good{background:var(--low-bg);color:#1F6B50} .delta.flat{background:#D7E2D4;color:var(--muted)}
+.alertbox{margin-top:12px;padding:13px 15px;border-radius:11px;font-size:14px}
+.alertbox.high{background:var(--high-bg)} .alertbox.mid{background:var(--mid-bg)} .alertbox.low{background:var(--low-bg)}
+.alertbox b{display:block;margin-bottom:3px}
+.charts{display:grid;gap:20px}
+.tablewrap{overflow-x:auto}
+
+
+/* ---------- бэлчээрийн бүс ---------- */
+.zonegrid{display:grid;grid-template-columns:1.3fr 1fr;gap:20px;align-items:start}
+@media (max-width:1000px){.zonegrid{grid-template-columns:1fr}}
+.swatch{display:inline-block;width:13px;height:13px;border-radius:4px;margin-right:8px;vertical-align:-2px;border:1px solid rgba(0,0,0,.15)}
+.swatch.hatch{background:repeating-linear-gradient(45deg,#DCE5D9 0 3px,#B3C3AF 3px 5px)}
+.zlegend{display:flex;gap:16px;flex-wrap:wrap}
+tr.clickable{cursor:pointer}
+tr.clickable:hover{background:var(--surface-2)}
+tr.zsel{background:#DCE9D8}
+.zback{margin-bottom:10px}
+.arow{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;width:100%;text-align:left;padding:9px 11px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);cursor:pointer}
+.arow:hover{border-color:var(--primary)}
+.arow.sel{border:2px solid var(--primary);padding:8px 10px;background:var(--surface)}
+.arow .bar{grid-column:1/3;margin-top:0}
+
+
+/* ---------- баримтууд ---------- */
+.fsec{margin-top:30px}
+.fsec>h2{font-size:24px}
+.factgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px;margin-top:14px}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:6px}
+.fact .fbig{font:700 34px/1.1 var(--serif);color:var(--primary)}
+.fact.mn .fbig{color:#1F7A52}
+.fact.data .fbig{color:var(--ink)}
+.fact h3{font:600 15px/1.35 var(--sans)}
+.fact p{margin:0;color:var(--muted);font-size:14px}
+.fact .fsrc{margin-top:auto;padding-top:8px;font-size:12px;color:var(--muted)}
+.fact .fsrc a{color:var(--primary)}
+.srclist{margin:10px 0 12px;padding-left:20px;font-size:14px}
+.srclist li{margin:4px 0}
+.srclist a{color:var(--primary)}
+#factsToggle{margin-top:34px}
+.panel{margin-top:28px}
+.panel[hidden]{display:none}
+h2.ph{font-size:26px}
+
+
+/* ---------- ойлгомжтой байдал ---------- */
+[hidden]{display:none!important}
+.skip{position:absolute;left:-999px;top:8px}
+.skip:focus{left:12px;z-index:60;background:#fff;color:var(--ink);padding:9px 14px;border-radius:8px;border:2px solid var(--primary)}
+button.chip{cursor:pointer;font:inherit;font-size:13px}
+button.chip:hover{border-color:var(--primary);color:var(--primary)}
+@media (max-width:760px){.chip{margin-left:0}}
+.fatal{background:var(--high-bg);border-bottom:1px solid #E3A99F;padding:12px clamp(14px,3vw,40px);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.intro{position:relative;margin-bottom:22px;background:linear-gradient(135deg,#DCEBDC,var(--surface));padding-right:48px}
+.intro h2{font-size:22px}
+.intro p{margin:8px 0 0;max-width:80ch}
+.introx{position:absolute;top:10px;right:12px;width:34px;height:34px;border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--muted);border-radius:8px}
+.introx:hover{background:var(--surface-2);color:var(--ink)}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:14px 0 4px;padding:0;list-style:none}
+.steps li{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px}
+.hint{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.45}
+.howto{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 0 16px;font-size:14px}
+.gauge{position:relative;height:14px;display:flex;border-radius:3px;margin:16px 0 4px}
+.gauge i{display:block;height:100%}
+.gauge i:first-child{border-radius:3px 0 0 3px}.gauge i:nth-child(3){border-radius:0 3px 3px 0}
+.marker{position:absolute;top:-5px;width:4px;height:24px;background:var(--ink);border-radius:2px;transform:translateX(-2px);border:1px solid var(--surface)}
+.scale3{display:flex;font-size:12px;color:var(--muted)}
+.scale3 span{text-align:center}
+.scale3 small{display:block}
+.sitefoot{margin-top:20px;padding:22px clamp(14px,3vw,40px) 34px;border-top:1px solid var(--line);background:var(--surface);font-size:14px}
+.sitefoot .sub{max-width:90ch;margin-top:4px}
+.sitefoot a{color:var(--primary)}
+.helpnav{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.helpnav a{padding:7px 13px;border-radius:99px;background:var(--surface);border:1px solid var(--line);text-decoration:none;color:var(--ink);font-weight:500;font-size:14px}
+.helpnav a:hover{border-color:var(--primary);color:var(--primary)}
+.hsec{margin-top:34px;max-width:960px}
+.hsec>h2{font-size:24px;margin-bottom:8px}
+.hsec p{margin:8px 0}
+.note{background:var(--mid-bg);border-left:3px solid var(--mid);padding:10px 14px;border-radius:4px}
+.terms{margin:8px 0 0}
+.terms dt{font-weight:600;margin-top:14px}
+.terms dd{margin:2px 0 0;color:var(--muted)}
+details.faq{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-top:10px}
+details.faq summary{cursor:pointer;font-weight:600}
+details.faq p{margin:8px 0 0}
+.hsec ul{padding-left:20px}
+
+@media print{
+  .top,.toolbar,.actions,.zoom,.btn,.linkbtn{display:none!important}
+  body{background:#fff}
+  .page{display:none!important}
+  .page.printing{display:block!important}
+  .noprint,.sitefoot,.fatal,.intro{display:none!important}
+  body.only-reports #page-facts>:not(#panel-reports){display:none!important}
+  body.only-reports #panel-reports[hidden]{display:block!important}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Үндсэн агуулга руу шилжих</a>
+<noscript><div class="fatal"><b>Энэ сайт ажиллахад JavaScript шаардлагатай.</b> Хөтчийнхөө тохиргоонд JavaScript-ийг идэвхжүүлнэ үү.</div></noscript>
+
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#1F7A52"/><path d="M11 29C11 19 18 13 29 11C28 22 22 29 14 29Z" fill="#E5EEE3"/><path d="M12 28C16 22 20 18 25 15" stroke="#1F7A52" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+    Бэлчээр AI
+  </div>
+  <nav aria-label="Үндсэн цэс">
+    <button data-page="predict">Эрсдэл тооцох</button>
+    <button data-page="map">21 аймгийн зураг</button>
+    <button data-page="zones">Бэлчээрийн бүс</button>
+    <button data-page="facts">Баримтууд</button>
+    <button data-page="help">Тусламж</button>
+  </nav>
+  <button type="button" class="chip" id="modelChip" data-goto="help:accuracy" title="Оноо хэр нарийвчлалтай вэ? Дэлгэрэнгүй тайлбар">Ачаалж байна…</button>
+</header>
+<div class="fatal" id="fatal" role="alert" hidden>
+  <b>Сайтын өгөгдлийг ачаалж чадсангүй.</b>
+  <span>Интернэт холболтоо шалгаад хуудсыг дахин ачаална уу.</span>
+  <button class="btn" type="button" onclick="location.reload()">Дахин ачаалах</button>
+</div>
+<main id="main" tabindex="-1">
+
+<!-- ============ 1. ЭРСДЭЛ ТООЦОХ ============ -->
+<div class="page" id="page-predict">
+  <div class="pagehead">
+    <h1>Бэлчээрийн талхагдлын эрсдэлийн таамаглал</h1>
+    <p>Малын тоо, ургамлын индекс, цаг уурын үзүүлэлтээс аймгийн бэлчээрийн талхагдлын эрсдэлийг 0–100 оноогоор тооцно.</p>
+  </div>
+  <section class="card intro" id="introCard" aria-labelledby="introH">
+    <button class="introx" id="introClose" type="button" aria-label="Танилцуулгыг хаах">×</button>
+    <h2 id="introH">Энэ сайт юу хийдэг вэ?</h2>
+    <p>Монголын бэлчээр малын хэт ачаалал, ган гачиг, ургамлын хомсдолоос болж талхагдаж байна. Энэ сайт аймаг бүрийн <b>бэлчээрийн талхагдлын эрсдэлийг 0–100 оноогоор</b> тооцож, газрын зураг дээр харьцуулан харуулна.</p>
+    <ol class="steps">
+      <li><b>1. Утгаа оруулна.</b> Өөрийн аймгаа сонгож бөглөх, эсвэл тоогоо гараар бичнэ.</li>
+      <li><b>2. Оноогоо авна.</b> Бага, дунд, өндөр гэсэн түвшин болон шалтгааныг нь харна.</li>
+      <li><b>3. Харьцуулна.</b> «21 аймгийн зураг» хэсэгт бусад аймагтай жишиж үзнэ.</li>
+    </ol>
+    <p class="sub">Ойлгомжгүй үг (NDVI, ачааллын коэффициент г.м.) байвал <a href="#help" data-goto="help:terms">Тусламж</a> хэсгээс уншина уу.</p>
+  </section>
+  <div class="grid2">
+    <div class="card">
+      <h2>Орчин ба малын өгөгдөл</h2>
+      <p class="sub" style="margin:4px 0 0">Утгаа гараар оруулах эсвэл бүртгэлтэй аймгаар бөглөнө.</p>
+      <div class="field" style="margin-top:14px">
+        <label for="fillAimag">Аймгаараа бөглөх <small>сүүлийн жилийн бодит өгөгдлөөр</small></label>
+        <select id="fillAimag" style="width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2)"></select>
+      </div>
+      <form id="form" novalidate>
+        <div class="field">
+          <label for="Total_Livestock">Нийт мал <small>хонин толгойд шилжүүлснээр</small></label>
+          <div class="inwrap"><input id="Total_Livestock" type="number" step="1" min="0" inputmode="numeric"><span>хонин толгой</span></div>
+        </div>
+        <div class="field">
+          <label for="NDVI">Ургамлын индекс (NDVI) <span class="pill" id="ndviPill">–</span></label>
+          <input type="range" id="NDVI_range" min="0" max="1" step="0.005" aria-label="NDVI гулсуур">
+          <div class="ends"><span>0.0 (нүцгэн хөрс)</span><span>1.0 (өтгөн ургамал)</span></div>
+          <div class="inwrap" style="margin-top:8px"><input id="NDVI" type="number" step="0.001" min="-1" max="1" inputmode="decimal"><span>NDVI</span></div>
+        </div>
+        <div class="two">
+          <div class="field">
+            <label for="Temperature_C">Жилийн дундаж хэм</label>
+            <div class="inwrap"><input id="Temperature_C" type="number" step="0.01" inputmode="decimal"><span>°C</span></div>
+          </div>
+          <div class="field">
+            <label for="Precipitation_mm">Жилийн хур тунадас</label>
+            <div class="inwrap"><input id="Precipitation_mm" type="number" step="0.1" min="0" inputmode="decimal"><span>мм</span></div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="Stocking_Rate">Бэлчээрийн ачааллын коэффициент <small id="stockHint"></small></label>
+          <div class="inwrap"><input id="Stocking_Rate" type="number" step="0.01" min="0" inputmode="decimal"><span>коэф.</span></div>
+        </div>
+        <button class="btn primary block" type="submit" style="margin-top:22px">Эрсдэл тооцох</button>
+        <div style="display:flex;justify-content:space-between;margin-top:8px">
+          <span class="sub" id="latency"></span>
+          <button type="button" class="linkbtn" id="clearBtn">Цэвэрлэх</button>
+        </div>
+      </form>
+      <div class="errors" id="errors" role="alert"></div>
+    </div>
+
+    <div class="card" id="resultCard" aria-live="polite">
+      <div class="sub" id="emptyMsg">Утгаа оруулаад «Эрсдэл тооцох» товчийг дарна уу.</div>
+      <div id="result" style="display:none">
+        <div class="banner" id="banner">
+          <div class="badge" id="bannerBadge">3</div>
+          <div><h2 id="bannerTitle"></h2><div id="bannerSub"></div></div>
+        </div>
+
+        <div class="scalebox">
+          <div class="gauge" id="gauge"><i style="background:var(--low)"></i><i style="background:var(--mid)"></i><i style="background:var(--high)"></i><div class="marker" id="marker"></div></div>
+          <div class="scale3"><span id="s1"><b>Бага</b><small></small></span><span id="s2"><b>Дунд</b><small></small></span><span id="s3"><b>Өндөр</b><small></small></span></div>
+          <p class="sub" id="scoreNote" style="margin:8px 0 0"></p>
+        </div>
+
+        <div class="resgrid">
+          <div class="ring">
+            <svg viewBox="0 0 140 140" aria-hidden="true"><circle cx="70" cy="70" r="58" fill="none" stroke="#D3E0D0" stroke-width="13"/><circle id="ringArc" cx="70" cy="70" r="58" fill="none" stroke-width="13" stroke-linecap="round" stroke-dasharray="0 400"/></svg>
+            <div class="c"><b id="ringNum">0</b><span>эрсдлийн оноо</span></div>
+          </div>
+          <div class="factors">
+            <h3>Хүчин зүйлийн нөлөө</h3>
+            <div class="sub">Утгыг сургалтын өгөгдлийн медианаар сольсон үеийн оноон дахь өөрчлөлт</div>
+            <div id="factorList"></div>
+          </div>
+        </div>
+
+        <div class="find" id="find">
+          <h3>Дүгнэлт ба зөвлөмж</h3>
+          <ul id="findList"></ul>
+        </div>
+
+        <div id="warnBox" class="errors" style="margin-top:14px"></div>
+
+        <h3 style="margin-top:22px">Оноог юунд тулгуурлан тооцсон бэ?</h3>
+        <p class="sub" style="margin:2px 0 6px">Таны оруулсантай хамгийн төстэй өмнөх аймаг-жилүүд. Загвар эдгээрийн оноог харж таны оноог тооцдог (ойр байх тусам жин их).</p>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Аймаг, жил</th><th class="n">Оноо</th><th class="n">Жин</th></tr></thead>
+          <tbody id="neighbors"></tbody>
+        </table></div>
+        <p class="sub" id="selfNote" style="margin-top:8px"></p>
+
+        <div class="actions">
+          <button class="btn" type="button" id="printBtn">Тайлан хэвлэх (PDF)</button>
+        </div>
+        <div class="foot" id="modelFoot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 2. ГАЗРЫН ЗУРАГ ============ -->
+<div class="page" id="page-map">
+  <div class="pagehead" style="display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:end">
+    <div>
+      <h1>Монгол улсын 21 аймгийн эрсдэлийн зураг</h1>
+      <p>Аймаг бүрийн бэлчээрийн талхагдлын оноо, малын ачаалал, ургамлын индекс, хур тунадасны жилээр харьцуулсан зураглал.</p>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><small>Улсын дундаж эрсдэл</small><b id="kpiMean">–</b> <span class="delta flat" id="kpiDelta"></span></div>
+      <div class="kpi alert"><small>Өндөр эрсдэлтэй аймаг</small><b id="kpiHigh">–</b></div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div><label for="mapYear">Жил</label><select id="mapYear"></select></div>
+    <div><label for="mapFilter">Эрсдэлийн түвшин</label>
+      <select id="mapFilter"><option value="all">Бүгд</option><option value="high">Өндөр</option><option value="mid">Дунд</option><option value="low">Бага</option></select></div>
+    <div><label id="layerLabel">Үзүүлэлт</label>
+      <div class="seg" id="layerSeg" role="group" aria-labelledby="layerLabel"></div></div>
+    <div><label for="mapSearch">Аймаг хайх</label><input id="mapSearch" type="search" placeholder="жишээ нь: Архангай"></div>
+    <div style="margin-left:auto"><a class="btn" href="/api/dataset.csv" download>Өгөгдөл татах (CSV)</a></div>
+  </div>
+
+  <p class="howto"><b>Хэрхэн унших вэ?</b> Өнгө улаан байх тусам эрсдэл өндөр. Аймаг дээр дарвал баруун талд дэлгэрэнгүй гарна. «Үзүүлэлт» товчоор мал, NDVI, хур тунадасны зургийг сольж харна. Хулганаар чирж, «+» товчоор томруулна.</p>
+  <div class="mapgrid">
+    <div class="card mapcard">
+      <div class="maphead">
+        <div><h2 id="mapTitle">Эрсдэлийн оноо</h2><div class="sub" id="mapSub"></div></div>
+        <div class="zoom"><button id="zIn" aria-label="Томруулах">+</button><button id="zOut" aria-label="Жижигрүүлэх">−</button><button id="zFit" aria-label="Анхны хэмжээ" title="Анхны хэмжээ">⤢</button></div>
+      </div>
+      <div class="mapbox" id="mapBox">
+        <svg id="mapSvg" role="group" aria-label="Монгол улсын аймгуудын зураг"></svg>
+        <div class="tip" id="tip"></div>
+        <div class="errors" id="mapError" role="alert" style="margin:16px"></div>
+      </div>
+      <div class="legend" id="legend"></div>
+      <div class="mapfoot">Хил: Natural Earth (1:10m). Улаанбаатар нь 21 аймгийн өгөгдөлд ороогүй тул хөндлөн зураасаар тэмдэглэв.</div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h2 id="topTitle">Эрсдэл өндөр аймгууд</h2><span class="sub">21 аймаг</span></div>
+        <div class="toplist" id="topList"></div>
+      </div>
+      <div class="card" style="margin-top:20px">
+        <h2 id="drillTitle">Аймгийн дэлгэрэнгүй</h2>
+        <div id="drill"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 3б. БЭЛЧЭЭРИЙН БҮС ============ -->
+<div class="page" id="page-zones">
+  <div class="pagehead">
+    <h1>Монголын бэлчээрийн бүсүүд</h1>
+    <p>Газар зүй, өндөр, уур амьсгалаас хамааран 5 үндсэн бүсэд хуваана. Аймаг бүрийг давамгай бүсээр нь ангилж, бүс бүрийн дундаж талхагдлын оноог загварын өгөгдлөөс тооцов.</p>
+  </div>
+  <div class="toolbar" style="margin-top:0">
+    <div><label for="zoneYear">Жил</label><select id="zoneYear"></select></div>
+    <div><label id="zoneSegLabel">Бүс</label><div class="seg" id="zoneSeg" role="group" aria-labelledby="zoneSegLabel"></div></div>
+  </div>
+  <p class="howto"><b>Хэрхэн унших вэ?</b> Өнгө бүр нэг бэлчээрийн бүсийг заана. Дээрх товч эсвэл зураг дээрх аймгийг дарвал тэр бүс тодорч, дундаж эрсдэл болон аймгууд нь баруун талд гарна.</p>
+  <div class="zonegrid">
+    <div class="card mapcard">
+      <div class="mapbox">
+        <svg id="zoneSvg" role="group" aria-label="Бэлчээрийн бүсийн зураг" style="cursor:default"></svg>
+        <div class="tip" id="zoneTip"></div>
+      </div>
+      <div class="legend"><div class="zlegend" id="zoneLegend"></div></div>
+      <div class="mapfoot">Аймгийг давамгай байгалийн бүсээр нь ойролцоогоор ангилсан. Нэг аймгийн нутаг хэд хэдэн бүсийг дамждаг. Хил: Natural Earth (1:10m).</div>
+    </div>
+    <div class="card" id="zoneInfo" aria-live="polite"></div>
+  </div>
+  <div class="card" style="margin-top:20px">
+    <h2>Бүсүүдийн харьцуулалт</h2>
+    <div class="tablewrap" style="margin-top:8px"><table id="zoneTable"></table></div>
+    <p class="sub" style="margin-top:10px">Эзлэх хувь нь нутаг дэвсгэрийн ойролцоо хувь (НҮБ-ын Монгол улсын тойм, 2006): өндөр уул ~5%, тайга ~5%, уул-ойт хээр ~25%, говийн хээр 20 гаруй хувь. «—» нь эх сурвалжид тодорхой хувь олдоогүйг заана. Ургамал, малын тодорхойлолт нь ерөнхий мэдээлэл.</p>
+  </div>
+</div>
+
+<!-- ============ 4. БАРИМТУУД ============ -->
+<div class="page" id="page-facts">
+  <div class="pagehead">
+    <h1>Бэлчээрийн тухай баримтууд</h1>
+    <p>2026 он бол НҮБ-ын «Бэлчээр ба малчдын олон улсын жил». Доор бэлчээртэй холбоотой дэлхийн болон Монголын онцлох баримт, мөн манай загварын өгөгдлөөс гарсан үзүүлэлтүүдийг нэгтгэв.</p>
+  </div>
+
+  <section class="fsec" aria-labelledby="f-data">
+    <h2 id="f-data">Манай загварын өгөгдлөөс</h2>
+    <p class="sub">database.xlsx дахь 21 аймгийн бүртгэлээс автоматаар тооцсон.</p>
+    <div class="factgrid" id="factsData"></div>
+  </section>
+
+  <section class="fsec" aria-labelledby="f-world">
+    <h2 id="f-world">Дэлхийн баримтууд</h2>
+    <div class="factgrid" id="factsWorld"></div>
+  </section>
+
+  <section class="fsec" aria-labelledby="f-mn">
+    <h2 id="f-mn">Монголын баримтууд</h2>
+    <div class="factgrid" id="factsMongolia"></div>
+  </section>
+
+  <section class="fsec" aria-labelledby="f-src">
+    <h2 id="f-src">Эх сурвалж</h2>
+    <ul class="srclist" id="factsSources"></ul>
+    <p class="sub">Баримтуудыг 2026 оны 10-р сарын байдлаар нийтэд нээлттэй эх сурвалжаас сонгон, өөрийн үгээр товчилж бичсэн. Тоо баримт шинэчлэгдэж болох тул албан ёсны эх сурвалжтай тулгаж ашиглана уу.</p>
+  </section>
+
+  <div class="card noprint" id="factsToggle">
+    <h2>Тайлан ба түүхэн өгөгдөл</h2>
+    <p class="sub" style="margin:4px 0 12px">Доорх товчийг дарж нээнэ үү. Дахин дарвал хаагдана.</p>
+    <div class="seg" role="group" aria-label="Тайлан, түүхэн өгөгдөл">
+      <button type="button" data-panel="reports" aria-pressed="false" aria-controls="panel-reports">Тайлан</button>
+      <button type="button" data-panel="history" aria-pressed="false" aria-controls="panel-history">Түүхэн өгөгдөл</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-reports" hidden>
+  <div class="pagehead"><h2 class="ph">Жилийн тайлан</h2><p>Сонгосон жилийн бүх аймгийн үзүүлэлт. Баганы нэр дээр дарж эрэмбэлнэ.</p></div>
+  <div class="toolbar" style="margin-top:0">
+    <div><label for="repYear">Жил</label><select id="repYear"></select></div>
+    <div style="margin-left:auto;display:flex;gap:10px">
+      <a class="btn" href="/api/dataset.csv" download>CSV татах</a>
+      <button class="btn" id="repPrint" type="button">Хэвлэх (PDF)</button>
+    </div>
+  </div>
+  <div class="charts">
+    <div class="card"><h2>Улсын дундаж эрсдэл, жилээр</h2><div class="sub" style="margin-bottom:10px">21 аймгийн оноон дундаж ба өндөр эрсдэлтэй аймгийн тоо</div><div style="position:relative;height:280px"><canvas id="trendChart"></canvas></div></div>
+    <div class="card"><h2 id="repTitle">Аймгуудын үзүүлэлт</h2><div class="tablewrap" style="margin-top:8px"><table id="repTable"></table></div></div>
+  </div>
+</div>
+
+<!-- ============ 4. ТҮҮХЭН ӨГӨГДӨЛ ============ -->
+
+  <div class="panel" id="panel-history" hidden>
+  <div class="pagehead"><h2 class="ph">Аймгийн түүхэн өөрчлөлт</h2><p>Бодит оноо ба KNN загварын таамаглал. Таамаглалыг тухайн жилийн бүртгэлийг хасаж тооцсон тул загвар шинэ жилд хэр ажиллахыг харуулна.</p></div>
+  <div class="toolbar" style="margin-top:0"><div><label for="histAimag">Аймаг</label><select id="histAimag"></select></div></div>
+  <div class="charts">
+    <div class="card"><div style="position:relative;height:340px"><canvas id="histChart"></canvas></div></div>
+    <div class="card"><div class="tablewrap"><table id="histTable"></table></div></div>
+  </div>
+</div>
+</div>
+
+<!-- ============ 5. ТУСЛАМЖ ============ -->
+<div class="page" id="page-help">
+  <div class="pagehead">
+    <h1>Тусламж ба тайлбар</h1>
+    <p>Сайтыг анх удаа үзэж буй хүнд зориулав: гол ойлголт, оноог хэрхэн унших, өгөгдлийн эх сурвалжийг энд тайлбарлав.</p>
+    <div class="helpnav" role="navigation" aria-label="Тусламжийн агуулга">
+      <a href="#help" data-goto="help:about">Сайтын тухай</a><a href="#help" data-goto="help:howto">Хэрхэн ашиглах</a><a href="#help" data-goto="help:score">Оноог унших</a><a href="#help" data-goto="help:terms">Нэр томьёо</a><a href="#help" data-goto="help:faq">Түгээмэл асуулт</a><a href="#help" data-goto="help:sources">Эх сурвалж</a>
+    </div>
+  </div>
+
+  <section class="hsec" id="help-about">
+    <h2>Сайтын тухай</h2>
+    <p>«Бэлчээр AI» нь Монголын 21 аймгийн <b>бэлчээрийн талхагдлын эрсдэлийг</b> тооцож, газрын зураг дээр харуулдаг судалгааны хэрэгсэл юм. Малын тоо, ургамлын ногоон байдал (NDVI), хур тунадас, хэм, бэлчээрийн ачааллыг ашиглан <span data-fill="years0">2010</span>–<span data-fill="years1">2025</span> оны <span data-fill="nsamples">336</span> аймаг-жилийн бүртгэл дээр загварыг сургасан.</p>
+    <p>Судлаач, оюутан, бодлого боловсруулагч, малчин зэрэг бэлчээрийн төлөвийг хурдан харьцуулж үзэхийг хүссэн хэн бүхэнд зориулагдсан.</p>
+    <p class="note"><b>Анхаарах:</b> оноо нь бэлчээрийн бодит хэмжилт биш, өгөгдлөөс загварчилсан <b>индекс</b>. Албан ёсны шийдвэр гаргах цорын ганц үндэслэл болгож болохгүй.</p>
+  </section>
+
+  <section class="hsec" id="help-howto">
+    <h2>Хэрхэн ашиглах вэ</h2>
+    <div class="factgrid">
+      <article class="fact"><h3>Эрсдэл тооцох</h3><p>Аймгаа сонгож эсвэл өөрийн тоог оруулаад оноо, түвшин, шалтгааныг харна.</p><a class="btn" href="#predict" data-goto="predict">Нээх</a></article>
+      <article class="fact"><h3>21 аймгийн зураг</h3><p>Бүх аймгийг өнгөөр харьцуулна. Жил, үзүүлэлт сонгож, аймаг дээр дарж дэлгэрэнгүйг үзнэ.</p><a class="btn" href="#map" data-goto="map">Нээх</a></article>
+      <article class="fact"><h3>Бэлчээрийн бүс</h3><p>Уул, ойт хээр, хээр, говь, цөлийн бүс тус бүрийн дундаж эрсдэлийг харна.</p><a class="btn" href="#zones" data-goto="zones">Нээх</a></article>
+      <article class="fact"><h3>Баримтууд</h3><p>Дэлхий ба Монголын бэлчээрийн онцлох баримт. Доорх товчоор Тайлан, Түүхэн өгөгдлийг нээнэ.</p><a class="btn" href="#facts" data-goto="facts">Нээх</a></article>
+    </div>
+  </section>
+
+  <section class="hsec" id="help-score">
+    <h2>Эрсдэлийн оноог хэрхэн унших вэ</h2>
+    <p>Оноо 0-ээс 100 хүртэл байна. <b>0 бол эрсдэл маш бага, 100 бол маш өндөр.</b> Оноог гурван түвшинд хуваана:</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Түвшин</th><th>Оноо</th><th>Утга</th></tr></thead>
+      <tbody>
+        <tr><td><span class="lvl low">Бага</span></td><td>0 – <span data-fill="low_max">35</span></td><td>Бэлчээрийн төлөв харьцангуй тогтвортой.</td></tr>
+        <tr><td><span class="lvl mid">Дунд</span></td><td><span data-fill="low_max">35</span> – <span data-fill="medium_max">65</span></td><td>Талхагдлын эрсдэл дунд зэрэг. Малын ачаалал, ургамлын төлвийг хянах нь зүйтэй.</td></tr>
+        <tr><td><span class="lvl high">Өндөр</span></td><td><span data-fill="medium_max">65</span> – 100</td><td>Бэлчээр хүчтэй талхагдах эрсдэлтэй. Ачааллыг бууруулах арга хэмжээ шаардлагатай.</td></tr>
+      </tbody>
+    </table></div>
+    <p>Загварын дундаж алдаа ойролцоогоор <b>±<span data-fill="mae">10</span> оноо</b>. Тиймээс 60 ба 64 оноог ялгаж үзэхгүй, харин түвшин, чиг хандлагыг харахад ашиглана.</p>
+  </section>
+
+  <section class="hsec" id="help-terms">
+    <h2>Нэр томьёоны тайлбар</h2>
+    <dl class="terms">
+      <dt>Бэлчээрийн талхагдал</dt><dd>Хэт ачаалал, ган гачиг зэргээс бэлчээрийн ургамал, хөрс муудаж ургац буурах үйл явц.</dd>
+      <dt>Эрсдэлийн оноо</dt><dd>Бэлчээр талхагдах эрсдэлийг 0–100-аар илэрхийлсэн индекс. Манай загвар өгөгдлөөс тооцдог.</dd>
+      <dt>NDVI (ургамлын индекс)</dt><dd>Хиймэл дагуулын зургаас (MODIS) тодорхойлсон ургамлын ногоон байдлын үзүүлэлт. 0 орчим бол нүцгэн хөрс, 1-д ойртох тусам өтгөн ургамал. Монголын бэлчээрт ихэвчлэн 0.1–0.5 орчим байдаг.</dd>
+      <dt>Хонин толгойд шилжүүлсэн мал</dt><dd>Тэмээ, адуу, үхэр, хонь, ямааг хонины тоонд тэнцүүлж нэгтгэсэн нэгж. Өөр өөр малын тоог нэг тоогоор харьцуулах боломж олгоно.</dd>
+      <dt>Ачааллын коэффициент</dt><dd>Бэлчээрт ногдох малын ачааллыг илэрхийлэх коэффициент (FAO, Дэлхийн банкны өгөгдөл). Утга их байх тусам бэлчээрт ногдох ачаалал их гэж ойлгоно.</dd>
+      <dt>Бэлчээрийн даац</dt><dd>Бэлчээр доройтохгүйгээр тогтвортой тэжээж чадах малын тоо. Мал даацаас давбал бэлчээр талхагдана.</dd>
+      <dt>Зуд</dt><dd>Хүнд өвөл, хаврын нөхцөлөөс болж олноор мал хорогдох байгалийн гамшиг.</dd>
+      <dt>KNN (ойрын хөрш)</dt><dd>Загварын арга. Таны оруулсантай хамгийн төстэй өмнөх аймаг-жилүүдийг олоод, тэдгээрийн оноог ойр байх тусам илүү жинтэйгээр дунджилж таамаглана.</dd>
+    </dl>
+  </section>
+
+  <section class="hsec" id="help-faq">
+    <h2>Түгээмэл асуулт</h2>
+    <details class="faq" id="help-accuracy"><summary>Оноо хэр найдвартай вэ?</summary>
+      <p>Загварыг огт үзээгүй аймагт шалгахад дундаж алдаа ойролцоогоор <b>±<span data-fill="mae">10</span> оноо</b>, түвшин (бага, дунд, өндөр) зөв таарах нь <b><span data-fill="classacc">76</span>%</b> байв. Иймд оноог яг тоо биш, ерөнхий чиглэл гэж ойлгоорой. Мөн оноо нь бодит хэмжилт биш, өгөгдлөөс загварчилсан индекс гэдгийг санаарай.</p></details>
+    <details class="faq"><summary>Оноог хэрхэн тооцдог вэ?</summary>
+      <p>Таны оруулсан 5 утгыг (мал, NDVI, хэм, хур тунадас, ачаалал) өмнөх бүртгэлтэй ижил масштабт оруулж, хамгийн төстэй <span data-fill="k">3</span> аймаг-жилийг олно. Тэдгээрийн оноог төстэй байх тусам илүү жинтэйгээр дунджилна. «Эрсдэл тооцох» хуудасны «Оноог юунд тулгуурлан тооцсон бэ?» хүснэгтээс яг аль бүртгэл ашиглагдсаныг харж болно.</p></details>
+    <details class="faq"><summary>Яагаад «хүрээнээс гадуур» гэсэн анхааруулга гарав?</summary>
+      <p>Загвар зөвхөн өмнө нь үзсэн утгын хүрээнд найдвартай ажилладаг. Оруулсан утга (жишээ нь хур тунадас эсвэл малын тоо) бүртгэлд байгаагаас хэт их, эсвэл бага бол үр дүн найдвар муутай. Утгаа шалгаад дахин оролдоно уу.</p></details>
+    <details class="faq"><summary>Сум, багийн түвшний мэдээлэл байдаг уу?</summary>
+      <p>Одоогоор зөвхөн аймгийн түвшин. 21 аймгийг хамруулсан бөгөөд Улаанбаатар өгөгдөлд ороогүй тул зураг дээр хөндлөн зураастай харагдана.</p></details>
+    <details class="faq"><summary>Өгөгдлийг татаж авч болох уу?</summary>
+      <p>Болно. «21 аймгийн зураг» болон «Баримтууд → Тайлан» хэсэгт CSV татах товч байна. <a href="/api/dataset.csv" download>Одоо татах</a></p></details>
+    <details class="faq"><summary>Бодит шийдвэр гаргахад ашиглаж болох уу?</summary>
+      <p>Судалгаа, сургалт, ерөнхий харьцуулалтад тохиромжтой. Бэлчээрийн албан ёсны мониторинг, малчдын эрсдэлийн шийдвэрийг зөвхөн энэ оноонд тулгуурлан гаргахгүй байхыг зөвлөе.</p></details>
+  </section>
+
+  <section class="hsec" id="help-sources">
+    <h2>Өгөгдлийн эх сурвалж</h2>
+    <ul>
+      <li>Малын тоо: Үндэсний статистикийн хорооны мэдээллийн сан (<a href="https://www.1212.mn" target="_blank" rel="noopener noreferrer">1212.mn</a>)</li>
+      <li>Хур тунадас: <a href="https://www.chc.ucsb.edu/data/chirps" target="_blank" rel="noopener noreferrer">CHIRPS</a></li>
+      <li>Агаарын хэм: <a href="https://cds.climate.copernicus.eu" target="_blank" rel="noopener noreferrer">ERA5 (ECMWF)</a></li>
+      <li>Ургамлын индекс: <a href="https://modis.gsfc.nasa.gov" target="_blank" rel="noopener noreferrer">MODIS NDVI</a></li>
+      <li>Газар ашиглалт, ачаалал: FAO, Дэлхийн банк</li>
+      <li>Газрын зургийн хил: <a href="https://www.naturalearthdata.com" target="_blank" rel="noopener noreferrer">Natural Earth</a> (нийтийн өмч)</li>
+    </ul>
+    <p><button class="btn" type="button" id="introReopen">Танилцуулгыг дахин харуулах</button></p>
+  </section>
+</div>
+
+</main>
+
+<footer class="sitefoot">
+  <div><b>Бэлчээр AI</b> – Монголын бэлчээрийн талхагдлын эрсдэлийн судалгааны хэрэгсэл</div>
+  <div class="sub">Оноо нь загварчилсан индекс бөгөөд албан ёсны шийдвэр гаргах цорын ганц үндэслэл биш. Өгөгдөл: 1212.mn, CHIRPS, ERA5, MODIS, FAO, Дэлхийн банк. Хил: Natural Earth.</div>
+  <div style="margin-top:8px"><a href="#help" data-goto="help">Тусламж</a> · <a href="#help" data-goto="help:accuracy">Нарийвчлал</a> · <a href="#help" data-goto="help:sources">Эх сурвалж</a> · <a href="/api/dataset.csv" download>Өгөгдөл татах (CSV)</a></div>
+</footer>
+
+<script id="mapdata" type="application/json">{"viewBox":[0,0,1020,499],"regions":[{"mn":"Дорнод","en":"Dornod","d":"M909.8,114.8L903.3,128.8L902.8,129.9L896.3,144.0L889.7,158.2L889.6,159.0L890.0,160.5L890.0,161.4L889.4,162.8L882.4,173.6L882.1,174.4L881.9,175.3L881.9,176.2L882.6,185.3L882.3,186.7L881.4,187.5L874.1,190.9L873.5,191.7L873.5,192.2L874.4,198.0L874.9,200.8L875.4,201.8L876.1,202.8L884.0,211.1L885.9,212.1L887.7,210.9L891.2,206.5L894.2,204.6L896.1,203.9L901.9,205.2L904.1,205.2L911.9,203.4L914.1,203.3L915.1,203.5L918.8,205.1L921.1,205.9L921.8,206.3L929.5,213.4L930.9,213.6L932.1,212.0L933.2,210.0L934.3,208.8L936.0,207.4L942.7,198.7L943.5,198.0L945.0,197.5L949.9,197.8L950.6,197.7L952.7,196.8L954.5,196.5L956.4,196.4L957.1,196.7L958.6,197.6L959.4,197.8L965.4,198.2L967.6,199.3L969.5,201.6L972.9,207.1L974.6,208.8L981.0,211.6L983.7,212.6L984.4,213.1L984.8,213.8L985.0,214.6L985.4,217.9L985.6,218.7L986.0,219.2L986.7,219.6L989.6,220.8L990.9,221.2L991.4,221.5L991.7,222.2L991.5,222.6L990.8,223.7L990.6,224.3L991.8,224.7L996.6,229.1L997.1,229.7L997.5,230.5L997.8,231.2L998.1,231.8L1000.1,232.3L1001.4,233.4L1003.6,235.9L1004.5,237.3L1005.2,238.9L1005.4,239.8L1005.5,242.5L1005.6,243.0L1005.7,243.3L1005.7,243.5L1006.2,244.2L1007.2,245.2L1007.7,245.8L1007.8,246.2L1007.9,246.6L1008.0,246.9L1008.3,247.2L1008.6,247.3L1009.1,247.3L1009.6,247.5L1009.7,247.8L1009.5,248.3L1009.3,248.6L1009.2,249.0L1009.2,249.5L1009.3,249.7L1009.4,249.9L1009.5,250.1L1009.7,250.2L1009.9,250.3L1009.8,250.6L1009.7,250.8L1009.7,251.2L1009.7,252.2L1009.3,253.6L1009.3,254.4L1009.4,254.8L1009.9,255.6L1010.0,256.0L1009.9,256.4L1009.7,256.7L1009.5,257.0L1008.9,258.0L1008.4,258.6L1007.7,259.0L1007.2,259.0L1006.6,258.7L1006.1,258.8L1005.7,259.4L1005.3,260.2L1004.8,260.8L1004.2,261.2L1003.5,261.6L1002.9,261.7L1002.3,261.5L1001.2,260.6L1000.5,260.5L999.7,260.5L997.4,260.1L995.9,260.1L993.1,260.8L991.7,260.8L983.7,258.6L983.0,258.2L982.2,257.6L981.3,255.7L980.8,255.0L980.2,255.1L979.4,256.1L978.9,256.4L978.4,256.2L978.1,255.6L977.9,254.8L977.7,254.2L977.0,253.8L976.1,254.2L975.3,255.1L974.2,257.2L973.1,257.9L972.0,257.6L970.8,256.9L969.7,256.5L969.2,256.7L968.4,257.3L967.9,257.5L965.4,257.5L964.2,257.2L962.3,256.2L961.2,255.8L960.1,255.7L959.1,255.8L958.1,256.1L957.1,256.8L956.0,257.8L955.6,258.0L953.9,258.0L953.3,258.3L950.9,260.1L949.9,260.3L948.4,260.7L947.6,261.0L946.9,261.5L946.3,262.3L945.5,264.0L945.0,264.7L944.4,265.0L941.3,265.3L940.6,265.2L939.1,264.3L938.5,263.6L937.7,261.7L937.3,261.2L936.9,261.3L935.5,262.3L935.2,262.4L934.9,262.3L934.3,262.1L931.9,262.7L932.4,264.1L932.5,264.8L932.2,265.4L931.1,267.0L930.8,268.2L930.6,271.4L930.1,272.4L929.0,272.7L918.3,272.0L914.4,271.1L913.9,271.0L913.6,271.2L913.0,272.0L911.0,273.7L910.5,273.9L908.6,274.2L907.3,274.6L906.6,275.1L906.6,275.1L904.1,272.0L897.7,261.5L897.2,261.0L896.7,260.6L896.2,260.4L883.0,261.0L877.1,262.3L862.8,262.7L860.0,263.6L854.7,266.3L851.0,259.3L849.2,256.5L848.3,255.5L847.3,254.6L846.4,254.0L845.5,253.4L842.0,252.0L841.4,251.7L840.9,251.2L840.6,250.5L840.3,249.6L840.1,248.5L840.2,244.8L841.3,236.5L841.0,235.3L840.6,234.8L839.9,234.2L834.5,231.3L820.3,219.9L801.4,215.8L795.4,213.0L793.7,212.7L792.8,212.7L791.9,212.8L790.9,213.1L785.6,216.0L785.9,210.5L785.6,206.3L784.3,200.6L783.0,198.0L782.6,197.3L781.0,194.2L780.2,186.5L780.6,183.4L781.4,181.5L781.4,178.8L781.0,176.3L780.5,174.4L778.6,169.8L772.6,158.9L771.4,156.2L770.9,154.6L771.2,153.6L771.9,151.3L771.9,150.4L771.8,149.2L770.7,145.9L769.6,139.7L769.5,137.7L769.6,137.5L769.8,137.3L770.3,136.8L770.5,136.4L770.7,136.1L770.7,135.9L770.5,135.6L768.3,132.4L768.2,132.3L777.7,128.2L778.9,128.0L782.4,128.3L785.1,129.7L786.0,129.9L787.0,129.9L788.4,129.5L791.2,128.1L793.0,126.5L793.7,126.1L794.4,125.8L795.1,125.6L796.7,125.5L797.2,125.2L797.5,124.2L797.6,122.6L797.7,121.8L798.0,121.0L800.2,116.9L801.0,115.8L801.9,114.9L808.2,110.3L809.1,109.3L809.6,108.7L811.2,107.7L811.7,107.1L813.3,105.9L818.7,103.2L819.3,103.1L820.7,103.3L821.3,103.3L821.7,103.1L825.6,99.5L826.2,99.1L827.5,98.8L828.1,98.4L830.1,96.6L832.6,95.2L835.3,94.2L836.7,94.4L839.6,95.8L841.1,96.2L846.9,95.4L849.8,96.1L857.4,100.2L857.9,100.8L858.3,101.4L859.0,102.7L859.4,103.3L864.0,108.1L868.9,111.6L869.5,111.8L871.5,111.7L872.2,111.9L873.3,112.0L875.4,111.6L878.7,112.4L879.7,112.4L880.8,112.0L890.2,106.9L892.8,106.1L895.3,106.2L897.9,107.1L906.4,110.4L907.7,111.5L908.9,113.0L909.8,114.8Z","cx":871.6,"cy":190.7,"area":20951},{"mn":"Баян-Өлгий","en":"Bayan-Ölgiy","d":"M15.3,163.2L13.3,162.3L12.7,161.9L12.2,161.3L12.1,160.9L12.0,160.0L11.9,159.5L11.6,159.2L11.3,159.0L10.6,158.7L10.1,158.2L10.0,157.4L10.2,156.6L10.7,155.9L13.1,154.7L14.3,153.7L14.2,152.1L13.8,151.5L13.2,151.3L12.7,151.0L12.5,150.0L12.7,149.0L12.9,148.4L13.1,147.7L13.0,146.6L12.6,145.3L12.5,144.7L13.1,145.0L13.7,145.0L16.9,144.6L17.5,144.3L18.0,143.5L19.1,142.5L21.6,141.0L22.7,140.0L22.8,138.8L22.2,137.4L21.8,136.1L22.4,134.7L22.7,134.2L23.2,132.7L23.6,132.1L24.4,131.6L30.0,130.6L30.7,130.6L32.2,131.1L33.0,131.2L35.0,131.1L35.6,130.8L36.9,130.0L37.3,129.9L37.4,129.9L37.9,129.9L38.4,130.3L39.2,131.4L39.8,131.9L40.6,132.1L45.3,132.4L45.4,132.2L44.8,130.7L44.8,129.0L44.9,128.3L45.2,127.8L45.8,127.6L46.4,127.9L46.8,128.5L47.0,129.2L47.4,129.9L47.7,130.3L47.9,130.8L48.1,131.3L48.5,131.5L49.7,131.3L54.3,129.4L55.4,128.6L56.0,127.5L55.6,126.3L54.8,125.1L55.1,124.0L56.0,123.4L57.1,123.6L59.0,125.3L59.8,125.9L60.9,125.8L61.7,125.0L62.3,123.9L63.0,123.0L64.1,123.0L65.5,122.1L68.5,121.1L70.5,120.1L71.1,119.5L71.5,118.8L71.1,118.0L70.6,117.7L69.2,117.0L68.8,116.4L68.8,116.0L69.3,115.5L69.3,115.0L69.2,114.8L68.6,114.3L68.4,114.0L68.4,113.4L68.6,111.7L68.7,111.2L69.0,111.0L70.1,110.1L71.7,109.5L76.2,109.4L77.9,109.0L79.4,108.3L80.3,107.1L80.3,106.6L81.0,107.0L82.7,107.9L83.0,108.2L83.2,108.5L83.4,108.8L84.2,110.7L85.1,113.6L85.4,115.0L85.4,115.3L85.5,116.4L85.5,116.7L85.6,117.2L85.8,117.6L87.8,120.7L88.3,121.7L88.8,124.0L88.9,124.2L89.2,124.6L89.4,125.1L89.5,125.6L89.7,126.1L89.9,126.4L90.2,126.7L91.1,127.4L96.8,130.2L100.1,132.8L100.5,133.6L100.8,134.3L100.6,134.8L100.6,135.1L100.6,135.4L100.7,135.6L100.8,136.1L101.3,137.2L101.5,137.4L101.6,137.5L102.4,138.0L104.3,138.0L107.3,138.4L108.1,138.5L108.3,138.7L108.5,138.9L108.6,139.4L108.8,140.7L108.8,141.0L108.7,141.2L108.6,141.7L108.6,142.0L108.6,142.2L108.7,142.5L108.8,142.8L109.0,143.2L110.9,146.2L111.1,146.4L111.4,146.6L111.5,146.8L112.3,148.8L114.1,152.8L114.6,153.3L115.4,153.8L117.6,154.5L118.0,154.7L118.3,154.9L118.5,155.2L119.2,156.4L120.2,157.3L120.5,157.7L120.7,158.0L121.1,159.0L122.1,162.8L122.3,163.1L122.4,163.5L122.4,163.8L122.2,165.0L122.3,165.9L120.7,165.9L117.6,165.2L114.5,165.8L105.1,170.0L101.8,170.7L101.7,171.2L101.8,171.6L102.0,172.0L102.4,172.4L104.5,173.3L105.1,173.8L105.5,174.6L106.6,178.1L106.8,179.0L106.6,179.6L105.4,181.4L105.0,182.5L105.0,183.6L105.1,184.9L105.4,186.2L106.1,190.1L106.2,191.2L106.3,191.8L106.5,192.6L107.1,193.1L108.6,194.3L109.1,194.7L110.0,195.8L110.3,196.3L110.7,197.1L111.9,201.4L114.5,208.9L115.4,210.5L116.0,211.2L116.7,212.2L117.2,213.3L119.3,219.7L119.5,220.6L119.6,221.7L119.5,222.6L119.2,223.4L119.0,224.0L118.9,224.6L119.0,225.5L119.8,226.8L124.0,232.0L126.0,235.1L125.9,236.6L124.5,240.3L124.2,241.3L124.1,242.3L124.1,243.3L124.5,244.3L125.1,245.5L126.5,246.7L127.5,247.3L128.7,247.8L131.2,249.6L134.4,252.5L136.6,255.7L139.1,257.4L139.1,258.5L138.9,259.3L138.2,260.0L137.6,260.3L133.0,259.7L129.2,260.2L128.6,259.9L127.7,259.3L127.2,259.4L126.7,259.8L126.4,260.5L125.8,262.2L125.2,262.9L124.4,263.2L123.5,263.0L122.4,262.2L121.7,261.3L120.5,259.3L119.8,258.6L118.9,258.6L118.0,258.8L117.0,258.7L115.0,257.8L112.6,257.3L111.9,257.3L111.9,256.7L111.6,255.0L110.7,253.4L109.6,252.3L109.1,251.7L109.0,250.7L109.1,250.4L109.4,249.7L109.5,249.3L109.4,248.9L109.2,248.6L108.9,248.4L108.7,248.1L108.4,247.2L108.2,246.4L107.9,245.7L107.4,245.0L106.8,244.4L106.1,244.0L105.4,243.8L104.7,243.8L103.5,243.5L102.5,242.5L95.0,229.1L94.9,228.8L94.9,228.5L95.2,228.2L95.5,227.5L95.6,226.7L95.5,226.0L95.2,225.4L94.3,224.8L94.1,223.6L94.2,222.1L94.1,220.8L93.7,220.1L92.6,219.3L92.2,218.7L91.3,216.4L90.9,215.8L90.6,214.9L90.9,214.2L91.2,213.7L91.1,213.2L90.4,212.7L89.8,212.3L86.9,211.5L85.5,210.9L84.1,210.0L83.0,208.8L82.6,208.2L82.2,207.3L82.0,206.3L82.1,205.5L82.4,204.5L82.2,203.7L81.8,203.2L80.5,203.2L79.2,202.8L78.7,203.0L78.5,203.6L78.4,204.2L78.3,204.8L77.9,205.3L76.9,205.7L73.7,206.0L72.7,205.7L72.3,205.2L72.0,203.9L71.8,203.3L71.3,202.8L70.2,202.5L69.7,202.3L69.3,201.7L69.1,200.9L68.8,200.3L68.4,200.0L67.8,199.9L67.4,199.4L67.2,198.8L67.2,198.0L67.1,196.8L66.1,196.3L65.0,196.4L64.1,196.7L62.5,196.7L62.0,196.7L60.8,196.0L60.3,196.0L59.7,196.2L58.2,197.5L57.6,198.0L56.9,198.6L56.1,198.8L54.5,198.4L51.6,198.4L50.7,198.0L50.7,198.0L50.7,198.0L47.2,193.3L46.7,192.9L45.9,192.7L44.1,192.9L43.3,192.9L42.3,192.2L40.3,190.2L39.4,189.9L38.6,189.9L38.0,189.7L36.7,188.7L36.3,188.1L36.0,187.3L35.9,186.4L35.7,185.5L35.6,184.6L36.0,182.9L35.8,182.1L33.8,179.9L33.1,179.5L32.5,179.6L31.9,179.8L31.2,179.8L30.1,179.1L28.5,177.1L27.7,176.4L25.5,175.3L25.0,175.2L23.9,175.3L23.4,175.3L22.8,175.0L21.8,174.2L21.0,173.8L20.4,173.2L20.2,173.0L19.8,173.0L19.1,173.2L18.7,173.2L17.7,172.6L16.7,171.6L16.4,170.5L17.5,169.7L17.9,169.3L18.1,168.8L18.3,168.4L18.5,168.0L19.9,167.1L20.2,166.7L20.1,165.5L19.3,164.6L17.5,163.4L16.7,163.1L15.3,163.2Z","cx":75.7,"cy":173.4,"area":7916},{"mn":"Ховд","en":"Hovd","d":"M108.5,325.6L107.5,325.6L107.0,324.3L107.1,323.6L107.3,323.1L107.3,322.6L106.9,321.8L106.4,321.4L105.1,320.8L105.0,320.3L105.0,318.7L104.6,317.5L104.1,316.3L103.8,315.0L103.3,314.0L101.3,312.5L100.6,311.7L102.0,300.9L102.5,299.9L109.0,290.9L110.7,289.2L111.0,288.9L111.5,287.6L111.6,285.5L111.3,283.5L110.7,282.2L109.9,281.0L108.3,275.8L108.2,274.9L108.5,274.2L109.5,273.0L110.7,269.7L111.0,268.8L111.5,267.0L111.9,266.2L112.6,264.6L112.9,263.6L112.9,262.9L112.5,262.3L111.8,262.0L111.3,261.6L111.4,260.4L111.8,258.5L111.9,257.3L112.6,257.3L115.0,257.8L117.0,258.7L118.0,258.8L118.9,258.6L119.8,258.6L120.5,259.3L121.7,261.3L122.4,262.2L123.5,263.0L124.4,263.2L125.2,262.9L125.8,262.2L126.4,260.5L126.7,259.8L127.2,259.4L127.7,259.3L128.6,259.9L129.2,260.2L133.0,259.7L137.6,260.3L138.2,260.0L138.9,259.3L139.1,258.5L139.1,257.4L136.6,255.7L134.4,252.5L131.2,249.6L128.7,247.8L127.5,247.3L126.5,246.7L125.1,245.5L124.5,244.3L124.1,243.3L124.1,242.3L124.2,241.3L124.5,240.3L125.9,236.6L126.0,235.1L124.0,232.0L119.8,226.8L119.0,225.5L118.9,224.6L119.0,224.0L119.2,223.4L119.5,222.6L119.6,221.7L119.5,220.6L119.3,219.7L117.2,213.3L116.7,212.2L116.0,211.2L115.4,210.5L114.5,208.9L111.9,201.4L110.7,197.1L110.3,196.3L110.0,195.8L109.1,194.7L108.6,194.3L107.1,193.1L106.5,192.6L106.3,191.8L106.2,191.2L106.1,190.1L105.4,186.2L105.1,184.9L105.0,183.6L105.0,182.5L105.4,181.4L106.6,179.6L106.8,179.0L106.6,178.1L105.5,174.6L105.1,173.8L104.5,173.3L102.4,172.4L102.0,172.0L101.8,171.6L101.7,171.2L101.8,170.7L105.1,170.0L114.5,165.8L117.6,165.2L120.7,165.9L122.3,165.9L123.7,165.3L125.4,163.8L128.5,159.9L130.4,156.7L131.4,155.8L134.5,154.0L135.9,153.4L137.0,153.2L138.1,153.4L138.9,153.9L139.4,154.4L139.8,155.2L141.9,163.1L142.5,163.4L143.0,163.5L143.8,163.1L144.4,163.0L145.1,163.2L146.0,164.1L146.7,165.4L147.8,168.5L148.4,169.7L149.0,170.2L149.8,170.1L151.2,169.0L151.7,168.8L163.0,171.5L166.4,172.3L167.9,171.7L169.4,170.4L170.6,169.0L172.2,167.8L173.4,167.4L174.4,167.3L176.0,167.6L176.3,167.7L176.5,167.9L176.6,168.0L177.1,168.3L179.6,169.7L180.2,170.3L180.3,170.6L180.5,170.9L180.5,171.1L180.6,171.4L180.7,172.5L180.9,173.7L181.1,174.2L181.2,174.4L181.4,174.8L181.6,175.0L181.6,175.0L182.3,175.5L184.3,177.6L185.0,178.2L187.8,179.6L188.8,180.4L189.1,180.7L189.2,180.9L189.3,181.2L189.2,181.4L189.2,181.6L189.1,181.7L189.0,181.9L188.8,182.3L188.8,182.7L188.8,183.1L188.8,183.9L188.7,184.3L188.6,184.6L188.1,185.6L187.1,187.0L183.4,190.9L181.8,192.3L179.6,193.7L180.8,197.9L181.5,199.6L181.9,201.2L182.0,202.5L182.0,203.7L182.3,204.6L186.0,209.7L188.8,214.5L188.9,216.9L189.0,217.6L189.2,218.5L190.4,220.2L192.8,222.4L199.3,228.3L203.6,231.1L205.8,232.1L206.2,232.9L206.4,233.8L206.3,235.0L206.3,236.3L206.7,237.9L207.3,239.6L209.1,242.9L211.9,247.0L213.0,249.3L212.9,251.0L212.6,251.8L211.8,253.0L210.5,254.1L204.2,257.0L201.4,258.7L198.0,262.0L196.2,262.6L195.3,262.8L192.1,262.4L191.3,262.2L190.7,262.3L190.2,262.7L190.3,263.6L190.6,264.4L192.6,268.4L193.1,269.8L193.3,271.3L193.2,272.7L192.7,274.0L189.2,280.5L186.2,288.1L186.1,288.9L186.4,291.2L186.4,292.1L185.9,292.9L185.1,293.4L184.8,294.0L183.6,296.5L183.0,297.4L182.2,298.1L178.7,300.3L177.9,301.1L177.3,302.2L177.1,303.7L177.8,313.7L177.7,319.2L176.0,333.6L176.0,333.8L176.0,333.8L175.3,333.9L174.7,333.7L174.1,333.7L173.5,333.7L172.9,333.9L171.9,333.8L171.0,333.4L169.3,332.4L168.9,332.3L167.9,332.5L167.4,332.6L165.9,332.4L162.4,333.4L160.3,333.5L157.3,334.2L156.8,334.2L155.4,333.6L154.9,333.5L153.3,333.7L152.8,333.7L151.4,333.2L150.9,333.2L149.4,333.6L148.6,333.4L145.9,331.4L144.9,331.0L143.9,330.7L142.8,330.6L141.8,330.8L140.0,331.1L134.7,330.8L134.0,330.9L132.7,331.3L132.1,331.4L129.0,330.6L128.6,330.7L128.4,330.8L128.1,330.9L127.7,330.6L125.6,327.8L125.1,327.4L124.4,327.5L123.9,327.9L123.4,328.4L122.9,328.9L122.2,328.9L119.2,328.2L117.2,327.1L116.7,326.7L116.1,325.6L115.7,325.1L114.6,324.5L113.2,324.2L111.8,324.1L110.7,324.3L108.5,325.6Z","cx":151.1,"cy":247.9,"area":12632},{"mn":"Сүхбаатар","en":"Sühbaatar","d":"M906.6,275.1L906.2,275.4L905.6,276.8L905.3,277.7L904.9,278.3L899.7,283.8L895.2,292.8L895.0,294.0L895.4,295.5L896.1,296.5L896.4,297.6L895.7,299.1L893.8,301.9L893.0,302.5L891.5,303.3L891.0,303.5L890.5,303.5L888.9,303.2L888.6,303.4L888.0,304.1L881.3,310.0L879.0,312.8L878.2,313.4L877.3,313.9L872.2,315.3L868.0,316.1L861.4,316.2L855.6,317.1L854.5,316.9L849.3,314.8L848.2,314.7L847.2,314.9L843.0,316.6L842.7,316.8L842.5,317.2L842.3,319.3L842.0,320.3L841.1,322.3L839.4,324.9L833.0,331.3L831.5,332.3L831.0,332.7L830.7,333.2L830.1,334.4L829.2,335.8L828.1,336.8L826.9,337.4L825.6,337.8L823.7,337.9L822.9,338.3L821.3,340.1L818.2,342.5L816.2,344.6L815.0,345.6L814.1,345.9L811.9,345.7L811.4,345.5L810.5,344.7L810.0,344.5L798.6,343.4L795.8,342.2L794.5,342.2L787.5,340.2L783.3,338.2L782.4,337.5L781.8,336.6L780.5,334.4L777.9,331.7L777.1,331.1L776.0,330.9L767.6,331.0L764.6,330.1L763.7,330.1L763.7,330.1L763.7,329.9L763.6,327.3L763.6,325.2L763.7,323.0L763.6,322.0L763.3,321.1L762.5,320.1L761.9,319.5L761.1,318.9L760.4,318.2L759.8,317.3L759.5,314.5L759.1,313.3L758.1,312.4L757.2,311.9L756.8,311.3L756.6,311.0L756.6,309.6L757.1,297.5L756.7,295.2L756.0,293.1L753.2,286.9L752.7,285.1L752.4,284.2L751.8,283.5L740.3,278.2L740.1,276.8L740.3,276.2L740.6,275.4L742.5,272.5L742.8,271.8L743.0,270.9L742.9,270.0L742.7,269.0L741.7,265.6L741.4,264.1L741.3,263.1L741.4,259.5L741.9,257.8L742.7,256.2L745.6,251.1L747.7,246.8L748.6,243.7L749.6,235.2L749.9,233.8L750.4,232.7L751.5,230.9L754.6,227.2L755.6,226.4L756.9,225.5L758.3,224.9L758.8,224.8L759.4,224.8L763.3,225.6L767.0,225.8L766.4,223.1L766.2,221.0L766.3,219.6L766.5,217.3L766.6,216.4L766.8,215.7L767.0,215.0L767.3,214.4L767.8,213.7L768.3,213.1L769.0,212.5L770.8,211.2L780.3,207.6L781.9,207.5L782.4,207.3L783.1,206.8L783.3,206.8L785.6,206.3L785.9,210.5L785.6,216.0L790.9,213.1L791.9,212.8L792.8,212.7L793.7,212.7L795.4,213.0L801.4,215.8L820.3,219.9L834.5,231.3L839.9,234.2L840.6,234.8L841.0,235.3L841.3,236.5L840.2,244.8L840.1,248.5L840.3,249.6L840.6,250.5L840.9,251.2L841.4,251.7L842.0,252.0L845.5,253.4L846.4,254.0L847.3,254.6L848.3,255.5L849.2,256.5L851.0,259.3L854.7,266.3L860.0,263.6L862.8,262.7L877.1,262.3L883.0,261.0L896.2,260.4L896.7,260.6L897.2,261.0L897.7,261.5L904.1,272.0L906.6,275.1L906.6,275.1Z","cx":811.8,"cy":278.4,"area":13531},{"mn":"Дорноговь","en":"Dornogovi","d":"M763.7,330.1L763.4,330.1L762.9,330.2L762.6,330.6L762.3,330.9L761.9,331.3L761.3,331.6L760.0,332.0L759.4,332.3L757.6,333.7L756.8,334.6L756.1,335.6L750.3,348.0L750.0,349.2L749.9,349.9L750.1,351.4L750.0,352.2L749.9,353.0L749.6,353.6L749.0,354.7L748.2,356.5L747.8,357.0L747.8,357.1L747.0,357.9L746.3,359.2L745.8,360.6L745.5,361.9L745.5,363.8L745.9,364.7L747.8,366.0L748.4,366.7L748.6,367.5L748.8,369.3L749.3,371.0L750.0,372.4L752.9,376.5L753.9,377.7L757.4,380.2L758.4,381.2L759.2,382.3L762.1,387.7L762.5,389.3L762.6,390.6L762.5,392.1L762.1,393.3L761.4,393.9L760.9,394.0L759.4,394.7L757.2,394.6L756.6,394.9L751.7,401.2L750.8,402.2L749.8,402.7L746.5,403.0L745.6,403.4L743.7,405.1L736.1,408.3L732.3,410.7L731.1,411.9L726.8,418.2L723.2,422.4L722.7,423.3L722.0,425.6L721.0,427.5L719.7,429.1L716.8,431.6L716.0,432.4L715.3,434.8L714.7,435.5L706.4,439.4L705.3,440.2L704.9,440.6L704.7,440.9L704.4,441.2L703.9,441.4L703.4,441.5L701.7,441.5L699.3,441.9L691.7,445.5L687.1,449.2L686.8,449.3L686.7,449.3L686.5,449.4L686.3,449.8L686.2,449.9L686.1,450.0L681.2,450.4L679.7,451.0L678.8,451.1L670.8,450.0L669.8,450.1L666.7,451.9L665.6,452.3L664.7,452.3L656.6,450.7L649.8,450.8L647.2,450.0L645.4,449.8L641.4,450.5L641.4,450.5L640.5,428.7L640.5,427.6L641.0,425.7L641.3,423.6L641.5,421.5L641.5,419.8L641.4,418.0L639.8,409.3L639.5,405.1L639.4,399.7L639.2,392.8L632.7,371.9L629.9,366.0L629.6,365.0L629.5,364.2L629.6,362.8L630.8,356.3L632.4,355.1L632.9,354.2L633.4,352.9L634.3,345.5L634.7,343.7L635.3,342.9L636.1,342.5L638.4,342.3L649.4,340.8L652.5,338.9L653.9,336.0L654.9,334.4L656.0,333.5L656.6,333.3L657.1,333.3L658.3,333.3L659.0,333.1L659.2,332.6L659.2,331.6L658.5,329.1L656.3,314.4L655.7,305.1L655.8,301.7L656.5,297.1L658.3,291.7L657.1,291.6L652.9,293.2L652.0,292.7L651.2,291.8L650.0,289.7L649.6,289.2L649.3,288.5L649.0,286.9L649.1,285.6L650.0,278.8L650.1,275.7L650.0,274.8L649.7,273.5L648.9,271.3L647.7,269.4L642.8,264.0L642.2,263.2L642.2,262.6L642.5,261.9L643.2,261.1L646.2,258.5L646.5,258.1L644.9,257.9L642.8,257.8L641.5,257.5L640.5,257.1L639.7,256.3L639.0,255.4L638.5,253.4L640.0,252.6L641.5,252.2L643.5,251.8L646.2,251.7L651.0,252.7L654.8,253.2L659.7,250.8L662.0,249.5L663.1,248.4L663.5,247.9L665.6,242.6L669.4,244.3L670.0,246.1L670.1,246.8L670.2,247.8L670.0,251.0L670.1,251.3L670.5,251.7L670.7,251.6L671.0,251.4L672.0,249.8L672.6,249.2L673.1,249.0L673.7,249.1L674.1,249.7L674.4,251.0L674.6,252.3L674.7,253.5L674.6,254.4L674.4,255.6L673.8,257.1L671.5,261.5L671.2,262.4L671.0,263.3L671.0,263.9L671.0,264.8L671.0,265.2L671.2,266.0L671.4,266.4L672.4,268.5L675.2,271.4L676.0,272.8L677.1,275.4L677.7,276.4L678.6,277.3L683.2,280.5L686.3,280.9L694.0,280.0L695.4,279.6L696.9,278.6L701.7,274.5L702.0,274.1L702.9,271.8L704.1,267.7L704.3,266.8L704.2,266.0L703.4,261.8L703.4,260.4L703.8,259.9L705.0,259.7L706.9,259.8L707.6,260.3L708.5,261.2L709.4,262.9L711.1,265.6L716.2,271.0L716.8,271.9L717.4,273.3L718.2,276.0L719.2,277.7L721.9,280.4L728.4,284.4L730.5,285.2L732.3,285.3L734.4,283.7L740.3,278.2L751.8,283.5L752.4,284.2L752.7,285.1L753.2,286.9L756.0,293.1L756.7,295.2L757.1,297.5L756.6,309.6L756.6,311.0L756.8,311.3L757.2,311.9L758.1,312.4L759.1,313.3L759.5,314.5L759.8,317.3L760.4,318.2L761.1,318.9L761.9,319.5L762.5,320.1L763.3,321.1L763.6,322.0L763.7,323.0L763.6,325.2L763.6,327.3L763.7,329.9L763.7,330.1L763.7,330.1Z","cx":694.0,"cy":355.4,"area":18331},{"mn":"Говь-Алтай","en":"Govi-Altay","d":"M182.0,335.0L181.2,334.9L178.8,333.7L178.0,333.6L176.0,333.8L176.0,333.8L176.0,333.6L177.7,319.2L177.8,313.7L177.1,303.7L177.3,302.2L177.9,301.1L178.7,300.3L182.2,298.1L183.0,297.4L183.6,296.5L184.8,294.0L185.1,293.4L185.9,292.9L186.4,292.1L186.4,291.2L186.1,288.9L186.2,288.1L189.2,280.5L192.7,274.0L193.2,272.7L193.3,271.3L193.1,269.8L192.6,268.4L190.6,264.4L190.3,263.6L190.2,262.7L190.7,262.3L191.3,262.2L192.1,262.4L195.3,262.8L196.2,262.6L198.0,262.0L201.4,258.7L204.2,257.0L210.5,254.1L211.8,253.0L212.6,251.8L212.9,251.0L213.0,249.3L211.9,247.0L209.1,242.9L207.3,239.6L206.7,237.9L206.3,236.3L206.3,235.0L206.4,233.8L206.2,232.9L205.8,232.1L203.6,231.1L199.3,228.3L192.8,222.4L190.4,220.2L189.2,218.5L189.0,217.6L188.9,216.9L188.8,214.5L196.4,213.6L200.3,212.1L204.4,210.0L207.3,208.0L208.2,207.8L209.3,207.8L210.9,208.1L212.2,208.7L213.0,209.2L214.0,210.0L214.4,210.3L214.7,210.4L216.9,210.7L220.6,211.9L224.7,212.3L228.3,212.2L228.8,212.1L230.0,211.7L230.2,211.6L231.2,211.7L232.1,211.6L234.8,212.4L235.7,212.9L236.3,213.5L237.0,214.5L237.5,215.3L238.0,216.2L238.3,216.8L238.7,217.2L239.2,217.6L240.3,217.8L241.6,217.0L242.5,216.6L250.4,217.1L251.7,218.1L252.8,218.6L253.8,218.9L254.1,219.1L256.1,221.0L258.1,222.5L269.5,229.7L270.3,230.1L270.8,230.2L271.8,230.8L272.5,231.5L272.9,232.1L273.6,234.4L274.3,236.1L276.2,238.4L276.8,239.5L277.5,242.7L278.1,244.6L278.6,245.6L278.9,248.3L279.9,248.4L288.0,245.9L289.1,246.0L290.2,246.7L292.8,248.0L293.1,250.9L293.4,252.1L294.0,253.6L294.9,255.0L297.1,257.5L297.3,258.2L297.2,259.8L297.4,260.5L297.5,260.9L299.1,261.1L302.5,261.2L302.7,261.3L303.1,261.5L303.9,261.9L304.2,262.0L304.6,262.0L305.4,261.9L305.9,261.8L307.0,261.1L308.6,259.6L308.9,259.3L309.3,258.5L309.4,258.3L309.7,258.2L310.2,258.0L311.6,258.0L313.1,259.0L315.3,260.5L317.8,261.1L318.2,264.3L317.9,268.0L318.0,269.1L318.2,270.1L318.5,271.2L319.2,273.2L319.5,273.8L319.9,274.3L321.3,275.1L322.0,275.6L322.5,276.5L323.1,278.6L323.7,279.4L326.4,281.4L327.3,282.4L328.5,284.0L329.1,284.6L329.8,285.0L331.4,285.5L332.3,285.6L333.2,285.9L333.7,286.2L334.8,287.6L340.8,296.1L341.6,298.0L342.2,300.8L343.9,313.6L343.8,315.4L343.4,317.7L339.9,330.5L338.9,332.5L338.4,333.0L337.2,334.1L336.8,334.6L336.3,335.5L336.1,336.5L335.9,338.1L336.0,339.6L336.6,345.5L336.5,350.3L336.3,351.6L335.8,353.7L335.3,355.1L334.6,356.3L334.1,356.9L333.4,357.6L331.9,358.8L327.9,361.0L327.5,361.7L327.3,362.6L327.3,366.7L328.4,378.3L328.4,379.7L326.9,392.2L327.3,396.3L327.2,397.7L326.9,399.1L324.6,407.6L323.0,411.1L322.8,412.3L322.8,413.7L324.4,437.6L324.4,437.6L314.2,436.1L304.0,434.7L303.9,434.7L292.8,435.9L281.6,437.2L278.7,437.7L278.3,437.6L278.0,437.5L277.8,436.8L277.4,431.1L277.2,430.0L276.8,429.1L276.0,428.0L264.0,415.2L263.0,413.8L262.4,412.1L262.1,410.2L262.0,408.1L261.7,406.4L257.3,396.3L254.1,385.5L252.4,381.5L251.7,380.5L250.6,380.2L248.9,380.1L246.0,379.2L245.7,378.8L245.7,377.7L246.0,375.1L245.8,372.8L245.8,372.3L246.0,371.9L246.4,371.0L246.6,369.8L247.0,369.0L247.9,367.7L248.2,366.8L247.6,366.5L236.9,368.0L235.6,367.7L232.9,366.2L227.1,364.3L226.4,363.9L226.0,363.3L225.6,362.6L225.1,361.9L223.0,359.7L219.0,357.1L218.1,356.6L216.1,356.6L215.2,356.3L214.7,355.5L213.9,353.6L213.3,352.7L210.8,349.8L210.4,349.5L209.9,349.3L209.3,349.2L207.9,349.9L206.5,349.9L203.9,349.5L202.5,349.0L200.8,347.1L195.8,339.8L195.0,339.0L190.0,336.3L186.7,336.1L186.1,335.9L184.9,335.1L184.2,334.8L183.5,334.7L182.0,335.0Z","cx":264.7,"cy":318.4,"area":23175},{"mn":"Баянхонгор","en":"Bayanhongor","d":"M374.9,444.8L362.3,443.0L349.6,441.2L337.0,439.4L324.4,437.6L324.4,437.6L322.8,413.7L322.8,412.3L323.0,411.1L324.6,407.6L326.9,399.1L327.2,397.7L327.3,396.3L326.9,392.2L328.4,379.7L328.4,378.3L327.3,366.7L327.3,362.6L327.5,361.7L327.9,361.0L331.9,358.8L333.4,357.6L334.1,356.9L334.6,356.3L335.3,355.1L335.8,353.7L336.3,351.6L336.5,350.3L336.6,345.5L336.0,339.6L335.9,338.1L336.1,336.5L336.3,335.5L336.8,334.6L337.2,334.1L338.4,333.0L338.9,332.5L339.9,330.5L343.4,317.7L343.8,315.4L343.9,313.6L342.2,300.8L341.6,298.0L340.8,296.1L334.8,287.6L333.7,286.2L333.2,285.9L332.3,285.6L331.4,285.5L329.8,285.0L329.1,284.6L328.5,284.0L327.3,282.4L326.4,281.4L323.7,279.4L323.1,278.6L322.5,276.5L322.0,275.6L321.3,275.1L319.9,274.3L319.5,273.8L319.2,273.2L318.5,271.2L318.2,270.1L318.0,269.1L317.9,268.0L318.2,264.3L317.8,261.1L317.7,258.6L317.9,257.6L319.3,254.3L324.0,239.3L324.3,237.9L324.5,236.5L324.7,235.2L325.2,234.3L326.1,233.8L327.2,233.6L330.1,233.6L332.0,233.2L333.8,232.3L336.4,228.5L337.3,226.7L337.7,225.4L337.5,224.5L337.3,223.6L337.3,222.6L337.7,221.8L339.1,220.3L340.0,218.9L340.6,217.8L340.9,216.9L341.1,216.1L341.3,214.8L341.3,214.3L341.3,214.0L341.2,213.6L343.2,211.8L344.4,211.0L347.6,210.1L350.1,209.8L350.6,209.9L351.2,210.0L351.7,210.3L352.1,210.7L352.5,211.2L353.2,213.1L353.3,216.1L353.6,216.9L354.3,217.6L359.7,221.1L360.5,221.4L361.5,221.4L365.3,221.4L367.8,221.0L368.8,220.6L369.3,220.3L369.9,219.8L371.5,217.8L372.1,217.3L372.9,217.1L374.9,216.7L375.5,216.4L376.1,215.9L376.7,215.2L377.5,214.4L379.7,213.1L380.4,213.0L380.4,216.6L380.6,218.0L381.0,219.1L381.6,219.8L382.5,220.7L384.8,222.6L385.6,223.6L386.0,224.8L386.1,226.0L386.0,227.1L385.8,229.4L385.7,230.5L385.9,231.8L386.2,232.6L386.5,233.4L386.7,234.1L386.7,234.8L386.7,235.6L386.7,236.5L386.8,237.6L387.2,238.4L387.8,238.8L388.4,238.8L391.2,238.1L402.1,234.9L403.0,234.7L403.7,234.8L404.0,235.2L404.4,238.0L404.9,239.1L405.6,240.4L406.0,241.5L406.4,243.1L406.7,243.6L407.0,243.7L408.7,244.1L409.6,244.5L410.7,245.3L411.2,246.2L411.9,248.3L412.3,249.4L412.7,250.0L413.4,250.4L415.7,250.4L418.0,249.5L419.1,249.5L422.5,250.1L424.0,250.0L427.9,249.2L428.6,249.5L430.5,251.4L431.6,253.8L432.0,254.3L435.5,257.8L438.4,261.5L438.7,265.2L438.9,266.0L439.1,266.7L439.5,267.4L439.7,268.0L439.6,268.8L436.9,272.4L436.3,273.7L436.6,274.5L437.1,274.9L437.5,275.7L437.8,276.7L438.0,279.1L438.0,280.9L437.8,281.8L437.6,282.3L437.0,283.1L436.2,283.8L435.3,284.3L433.6,284.9L433.0,285.5L432.4,286.3L432.0,287.2L431.6,288.3L431.3,289.4L431.4,293.3L431.8,295.6L432.0,297.2L431.9,299.0L430.6,303.8L430.6,306.2L430.6,307.3L429.4,310.2L428.0,312.3L426.2,314.0L425.9,314.6L425.7,315.4L425.7,316.2L426.1,318.6L426.2,319.6L426.1,321.0L426.2,321.6L426.3,322.4L426.7,327.2L426.9,328.9L427.4,331.0L427.7,332.0L428.1,332.8L428.7,333.6L429.5,334.1L433.3,335.4L435.3,336.6L436.5,337.7L439.3,339.6L440.0,340.8L439.2,343.4L438.0,346.5L437.8,347.0L437.8,347.7L437.9,348.5L438.3,349.6L439.8,352.9L440.7,355.6L445.8,377.0L430.3,387.0L428.8,387.6L428.1,387.7L404.2,387.3L401.4,387.9L399.2,387.1L394.7,382.2L391.2,377.2L385.9,372.1L385.5,371.8L385.1,371.7L384.6,371.8L375.3,374.4L375.0,374.7L374.9,375.3L374.8,378.1L376.2,415.9L379.5,443.3L379.5,443.3L374.9,444.8Z","cx":376.3,"cy":322.6,"area":18863},{"mn":"Өмнөговь","en":"Ömnögovi","d":"M429.1,446.4L416.6,444.1L404.2,441.9L391.7,439.7L390.3,439.7L379.5,443.3L379.5,443.3L376.2,415.9L374.8,378.1L374.9,375.3L375.0,374.7L375.3,374.4L384.6,371.8L385.1,371.7L385.5,371.8L385.9,372.1L391.2,377.2L394.7,382.2L399.2,387.1L401.4,387.9L404.2,387.3L428.1,387.7L428.8,387.6L430.3,387.0L445.8,377.0L448.2,375.8L457.2,372.8L472.9,371.5L484.5,372.5L484.5,371.8L484.3,370.6L482.3,365.0L482.3,363.5L482.7,362.3L484.2,360.8L484.7,360.1L485.3,358.8L485.8,356.6L486.3,355.1L491.6,343.0L492.5,341.3L498.9,337.7L504.2,333.4L505.1,332.4L505.8,331.4L508.0,327.1L508.3,326.2L508.5,325.5L518.7,325.7L519.3,326.7L519.5,327.0L519.5,327.2L519.5,327.5L519.4,328.3L519.4,328.9L519.5,330.7L519.5,331.0L519.5,331.2L519.4,331.5L519.1,332.1L519.1,332.4L519.0,332.6L519.0,332.9L519.1,333.2L519.2,333.7L519.3,334.1L519.4,334.5L519.4,335.0L519.2,336.1L519.1,336.6L519.0,336.9L519.0,337.4L520.3,340.1L521.1,341.1L521.8,341.8L524.1,342.6L538.0,344.9L550.8,346.3L559.6,347.2L561.5,347.7L562.1,348.1L566.0,355.7L568.1,358.7L569.0,360.6L569.3,361.7L569.3,362.5L569.4,363.5L569.8,364.7L570.4,365.6L572.8,367.7L575.2,369.2L577.6,370.3L578.6,370.6L588.3,369.0L591.0,368.5L592.5,368.0L594.8,367.0L597.5,364.6L599.7,363.4L617.5,357.0L618.4,357.0L619.8,357.2L622.1,358.4L622.7,358.4L625.8,358.0L630.8,356.3L629.6,362.8L629.5,364.2L629.6,365.0L629.9,366.0L632.7,371.9L639.2,392.8L639.4,399.7L639.5,405.1L639.8,409.3L641.4,418.0L641.5,419.8L641.5,421.5L641.3,423.6L641.0,425.7L640.5,427.6L640.5,428.7L641.4,450.5L641.4,450.5L628.1,452.8L614.9,455.1L601.6,457.4L587.6,464.1L573.6,470.8L561.4,477.7L559.2,479.0L557.8,480.2L557.3,480.4L556.8,480.6L555.2,481.6L553.4,481.9L552.9,482.1L547.1,488.8L545.8,489.3L544.6,487.6L544.0,486.9L543.3,486.6L534.2,486.6L531.2,486.1L531.0,485.6L531.1,476.3L519.0,479.0L506.9,481.6L506.0,481.4L496.8,476.1L487.7,470.7L487.7,470.7L486.8,470.2L476.0,467.5L465.2,464.8L454.4,462.1L452.6,461.0L449.9,457.8L445.2,449.5L442.1,447.0L438.6,446.0L435.1,445.7L429.1,446.4Z","cx":519.1,"cy":412.5,"area":26067},{"mn":"Хөвсгөл","en":"Hövsgöl","d":"M358.2,10.2L359.0,10.8L359.3,12.2L360.0,13.2L360.9,13.8L366.3,15.6L367.4,16.2L368.1,16.9L368.7,17.7L369.3,18.5L370.2,18.9L377.4,20.8L381.3,21.0L382.2,21.3L384.5,23.3L386.5,25.5L388.7,27.3L391.4,28.1L394.3,27.8L397.8,28.3L407.1,28.3L409.0,29.3L411.1,29.9L424.5,36.2L425.9,37.4L427.2,37.7L428.5,37.7L429.8,37.9L431.0,39.0L432.1,40.3L433.2,40.9L434.4,40.9L437.3,39.9L438.7,39.7L440.0,40.0L442.3,40.9L444.0,40.8L444.8,40.9L445.4,41.1L447.0,42.3L447.8,42.5L450.3,42.4L450.9,42.6L452.0,43.4L452.6,43.7L455.0,43.9L455.7,44.3L456.2,44.8L459.1,46.6L459.4,47.4L459.0,48.3L457.6,50.4L457.5,50.9L457.7,51.3L458.0,52.1L458.0,52.9L458.0,53.7L457.8,55.2L457.9,56.9L458.5,58.7L459.4,60.4L460.2,61.7L460.5,62.3L460.6,62.9L460.4,63.6L460.1,64.2L460.8,65.3L460.6,66.6L460.0,67.9L459.7,69.1L460.1,70.5L461.0,71.4L462.9,72.8L463.6,74.1L463.3,75.2L462.6,76.1L462.0,77.2L461.8,78.6L462.2,80.0L462.8,81.2L463.6,82.0L465.0,82.5L468.1,82.9L469.3,83.9L471.6,87.9L472.6,88.7L472.6,88.7L472.6,88.7L470.9,89.7L468.9,90.7L467.6,91.8L466.4,93.1L466.1,93.6L465.7,94.5L465.6,95.1L465.2,97.0L464.6,98.4L464.3,98.8L463.2,99.9L462.5,100.4L461.9,101.1L461.1,101.8L460.3,102.9L460.1,103.5L458.8,105.3L457.5,106.6L456.9,107.7L456.6,108.5L456.6,109.3L456.7,110.0L456.9,110.3L457.2,110.7L457.7,111.1L459.4,112.1L461.9,113.2L464.5,113.9L468.5,115.7L470.7,116.4L473.3,117.5L475.8,118.9L476.7,119.6L477.8,120.8L475.2,122.7L474.2,123.3L473.8,123.4L473.1,123.4L471.4,123.1L470.8,123.0L470.2,123.1L469.5,123.5L469.3,123.8L468.9,124.3L468.0,126.9L467.1,128.6L466.7,129.2L465.5,130.5L464.1,131.7L463.5,132.0L462.1,132.6L459.6,133.4L458.3,133.6L456.8,134.1L454.5,134.6L452.7,135.3L452.0,135.8L451.4,136.3L450.2,137.6L448.8,138.7L448.5,139.3L448.2,140.0L447.3,140.9L446.6,141.3L446.1,141.4L444.9,141.6L443.8,142.8L443.4,143.5L442.3,146.3L442.0,147.1L442.0,147.8L442.0,149.0L442.6,151.9L442.6,152.3L436.3,153.6L432.9,153.3L431.8,152.8L424.6,147.7L415.0,142.8L414.2,142.3L413.4,142.5L413.0,142.9L412.9,143.1L412.7,143.4L412.6,143.5L412.6,143.8L412.5,144.6L412.4,145.0L412.0,145.6L411.5,146.3L410.3,147.1L409.8,147.7L409.8,148.0L409.7,148.4L409.6,148.7L405.9,149.6L405.3,149.5L404.7,148.9L404.3,149.3L404.1,149.8L404.1,150.5L404.0,150.7L404.1,151.2L404.3,151.5L404.6,151.7L408.3,153.7L408.9,154.6L409.0,154.8L408.9,155.0L408.7,155.5L408.5,155.7L407.8,156.3L407.6,156.4L407.4,156.5L407.2,156.5L406.8,156.6L406.4,156.8L405.2,157.6L404.7,157.8L404.1,158.2L404.0,158.4L404.0,158.6L404.2,158.8L404.2,159.1L404.0,159.4L403.6,159.9L403.0,160.4L402.5,161.2L402.3,161.6L402.4,161.8L402.9,162.0L403.0,162.1L403.0,162.3L402.9,162.5L402.2,163.0L402.1,163.2L402.1,163.5L402.2,163.7L402.3,163.9L402.2,164.3L402.0,164.8L401.7,165.6L401.6,166.1L401.5,166.7L401.5,167.0L401.9,167.7L401.9,168.2L402.0,168.9L402.2,169.4L402.5,170.0L402.7,170.3L402.8,170.5L403.0,170.6L403.4,170.7L404.0,170.8L404.2,170.9L404.4,171.1L404.7,171.4L405.4,172.3L404.0,173.4L401.3,174.2L398.4,174.7L397.6,175.3L397.3,176.1L397.4,177.1L397.5,177.9L397.1,179.0L396.2,179.5L395.0,179.6L394.1,179.4L393.2,179.1L388.6,176.4L387.4,176.0L384.5,175.8L383.8,176.0L383.2,176.5L382.8,177.2L382.5,178.1L382.1,181.9L381.8,182.9L381.3,183.4L380.7,183.5L373.7,184.1L373.0,184.0L372.3,183.7L371.7,183.3L371.1,183.1L370.7,183.2L370.3,183.6L369.9,184.3L369.3,185.0L368.4,185.7L367.5,185.9L366.8,185.8L365.8,185.2L363.1,182.4L362.9,179.4L361.0,172.8L360.7,171.2L360.6,169.8L360.7,168.8L360.8,168.1L361.0,167.5L363.3,164.0L363.8,162.8L364.3,161.5L364.9,159.4L364.9,158.8L364.6,158.0L363.9,155.6L363.4,152.9L362.8,147.4L362.6,146.3L362.4,145.7L361.8,145.2L352.1,146.1L350.6,149.3L349.0,151.6L347.2,152.7L346.4,152.9L345.2,153.0L344.6,152.8L343.8,152.5L342.5,151.5L341.4,150.8L339.1,150.1L334.8,149.5L331.8,149.7L330.9,150.0L329.9,150.4L327.9,151.0L326.5,150.8L325.8,150.5L316.3,143.9L314.5,143.1L311.3,143.0L305.4,142.6L302.9,141.9L301.3,141.0L294.8,135.2L294.0,134.1L293.5,132.4L293.5,131.7L293.5,130.6L293.8,129.2L294.1,128.4L294.5,127.4L294.9,126.8L296.4,125.0L298.9,122.8L301.6,121.0L302.3,120.3L302.6,119.8L302.5,119.3L301.3,117.7L301.0,117.2L300.9,116.7L300.7,116.2L300.6,115.8L300.6,115.6L301.1,115.8L301.7,116.2L302.0,117.0L302.7,118.2L304.3,118.9L306.1,119.3L307.3,119.3L308.6,118.9L310.1,118.2L312.7,116.4L314.8,114.9L315.8,113.7L316.0,112.4L315.7,111.5L315.5,110.9L315.6,110.6L317.9,110.0L320.8,108.7L321.5,108.6L322.1,108.8L323.2,109.9L323.8,110.3L324.3,110.0L325.2,108.9L326.1,108.0L330.5,105.8L332.3,103.9L337.2,93.9L337.4,93.2L337.5,92.3L337.4,91.5L337.2,90.1L337.3,88.6L338.3,85.9L338.4,84.4L338.4,84.4L338.4,84.4L338.2,83.2L337.6,82.4L336.9,81.8L336.1,81.5L334.1,81.1L333.3,80.8L330.9,79.1L330.2,78.5L329.8,77.6L328.3,73.9L327.3,71.6L327.4,70.6L328.7,68.8L328.6,68.3L327.6,67.6L327.1,67.1L326.9,66.5L326.5,66.0L325.1,65.1L323.9,64.0L323.1,62.7L323.0,61.3L325.0,57.4L325.5,55.9L325.8,54.4L326.0,53.7L326.8,51.6L326.9,50.9L326.8,49.9L326.5,48.4L326.4,47.7L326.7,46.9L327.0,46.3L327.9,45.2L328.3,44.6L329.7,41.6L330.3,40.6L330.6,40.1L331.1,40.0L332.5,39.3L333.3,39.3L335.9,39.7L336.2,38.9L336.3,37.9L336.0,35.9L336.1,34.8L336.5,34.0L337.2,32.5L337.6,31.6L339.4,28.7L342.3,27.4L348.3,25.9L349.3,25.1L350.3,24.1L351.2,22.9L353.2,19.1L353.7,16.9L353.9,16.2L355.1,14.7L355.4,14.1L355.4,13.3L355.5,11.8L355.6,11.0L356.6,10.0L357.9,10.0L358.2,10.2Z","cx":388.5,"cy":96.4,"area":17874},{"mn":"Булган","en":"Bulgan","d":"M472.6,88.7L477.1,89.8L481.0,92.5L482.2,93.0L483.7,93.4L488.5,92.8L490.7,93.3L491.9,95.7L492.3,97.0L493.1,97.8L494.0,98.1L497.1,97.8L498.1,98.0L499.2,98.5L501.1,99.8L503.2,100.7L505.2,100.8L508.9,98.3L510.7,98.4L514.7,100.0L516.8,100.4L519.3,100.1L521.7,99.1L523.2,97.4L523.9,96.4L525.5,95.2L526.4,94.4L526.4,94.5L529.5,97.0L531.8,100.0L532.1,100.7L532.6,102.2L532.8,103.0L532.9,104.5L534.7,106.4L534.5,106.8L534.2,107.1L533.7,107.4L533.0,107.5L531.6,107.6L531.5,110.1L531.6,111.5L531.8,112.5L532.2,113.4L533.4,114.9L536.9,118.6L537.6,119.6L538.4,121.1L536.5,122.9L536.4,127.6L536.3,129.2L536.2,130.2L535.5,132.6L534.7,134.0L534.0,135.7L533.5,138.7L532.7,141.8L532.3,145.2L531.7,147.5L530.2,146.7L529.4,146.4L528.1,146.3L527.3,146.4L526.5,146.6L526.2,146.8L524.4,148.6L519.9,147.2L518.8,146.7L517.5,147.9L515.6,150.4L515.6,152.9L521.3,154.4L523.1,154.7L524.9,155.5L525.9,156.2L527.3,156.8L528.7,158.2L530.2,159.4L531.2,160.6L532.4,161.8L532.2,162.1L532.0,162.7L531.6,163.2L531.9,163.5L531.4,164.3L531.7,167.5L532.0,169.3L532.3,173.3L532.3,176.7L532.1,178.7L531.6,180.7L531.3,181.4L531.0,181.7L529.3,182.9L528.0,184.2L526.9,186.1L526.2,188.2L525.8,189.1L524.5,191.2L525.8,192.6L527.3,194.9L527.6,195.9L527.8,198.2L529.1,199.0L530.9,199.7L532.7,200.0L536.0,200.2L536.2,200.0L536.6,199.8L537.0,199.9L537.3,200.0L537.4,200.2L537.6,200.7L537.7,201.9L537.0,202.5L537.1,204.7L537.3,206.0L538.5,211.0L539.2,213.1L536.0,213.4L531.9,213.5L531.5,214.5L530.7,215.9L528.2,215.9L526.6,216.0L525.8,216.1L524.4,216.7L520.4,219.3L519.1,220.6L517.7,221.9L518.3,223.6L518.5,224.2L519.0,224.7L519.7,225.4L520.6,226.4L520.9,226.9L521.0,227.6L520.9,228.2L520.1,229.6L517.9,230.3L514.0,231.1L511.4,231.5L510.7,231.4L509.6,231.2L508.9,231.2L507.8,231.3L505.5,231.8L505.4,229.9L505.0,227.8L502.9,225.7L501.6,224.7L499.6,222.9L498.2,221.9L496.9,220.7L495.9,219.3L495.1,218.3L494.2,216.6L493.4,215.1L492.5,213.4L490.9,211.4L490.2,210.8L489.5,210.6L488.8,210.4L487.3,210.3L486.6,209.0L485.5,206.8L485.3,206.2L484.9,204.8L483.1,204.0L481.0,203.1L480.4,202.7L479.9,202.1L479.8,201.7L479.6,200.9L479.3,197.6L478.9,195.3L478.5,194.2L477.6,192.6L476.8,191.3L476.1,189.9L474.5,187.7L473.0,186.3L471.2,186.1L469.7,186.0L469.0,185.9L468.3,185.6L466.3,184.1L465.8,183.7L464.9,182.6L464.5,180.1L464.0,178.9L463.3,178.0L461.8,176.9L461.2,176.4L460.8,175.8L460.5,175.2L460.3,174.2L460.4,172.9L460.3,172.2L459.6,167.0L458.4,162.9L457.5,160.9L456.1,161.5L454.9,162.4L454.0,162.7L453.3,162.6L452.7,162.4L452.2,162.0L451.8,161.5L451.5,160.6L451.2,160.0L450.4,159.1L449.7,158.7L449.3,158.5L448.6,158.4L447.4,158.3L445.9,157.3L445.2,156.7L444.5,156.1L443.4,154.8L443.0,154.0L442.6,152.3L442.6,151.9L442.0,149.0L442.0,147.8L442.0,147.1L442.3,146.3L443.4,143.5L443.8,142.8L444.9,141.6L446.1,141.4L446.6,141.3L447.3,140.9L448.2,140.0L448.5,139.3L448.8,138.7L450.2,137.6L451.4,136.3L452.0,135.8L452.7,135.3L454.5,134.6L456.8,134.1L458.3,133.6L459.6,133.4L462.1,132.6L463.5,132.0L464.1,131.7L465.5,130.5L466.7,129.2L467.1,128.6L468.0,126.9L468.9,124.3L469.3,123.8L469.5,123.5L470.2,123.1L470.8,123.0L471.4,123.1L473.1,123.4L473.8,123.4L474.2,123.3L475.2,122.7L477.8,120.8L476.7,119.6L475.8,118.9L473.3,117.5L470.7,116.4L468.5,115.7L464.5,113.9L461.9,113.2L459.4,112.1L457.7,111.1L457.2,110.7L456.9,110.3L456.7,110.0L456.6,109.3L456.6,108.5L456.9,107.7L457.5,106.6L458.8,105.3L460.1,103.5L460.3,102.9L461.1,101.8L461.9,101.1L462.5,100.4L463.2,99.9L464.3,98.8L464.6,98.4L465.2,97.0L465.6,95.1L465.7,94.5L466.1,93.6L466.4,93.1L467.6,91.8L468.9,90.7L470.9,89.7L472.6,88.7L472.6,88.7Z","cx":496.8,"cy":154.6,"area":8388},{"mn":"Увс","en":"Uvs","d":"M153.8,67.3L154.5,67.5L155.0,68.1L155.6,69.9L156.3,71.1L157.3,71.8L158.6,72.2L159.8,73.0L161.6,75.5L162.7,76.2L163.4,76.1L164.2,75.8L164.8,75.3L165.4,74.7L165.8,74.0L166.0,72.5L166.2,71.8L167.3,71.0L169.2,70.6L171.2,70.8L172.4,71.4L172.8,73.1L172.8,75.2L173.4,77.0L173.7,77.9L174.0,78.5L174.3,78.8L175.0,79.1L176.9,79.6L178.0,79.6L179.5,79.5L186.7,79.1L190.3,80.2L201.2,80.7L212.1,81.1L212.8,81.5L213.2,82.0L213.4,82.7L213.4,84.4L214.7,87.3L214.9,88.4L215.0,93.1L215.4,95.5L215.7,96.6L216.2,97.6L216.9,98.4L219.5,99.4L220.0,99.9L220.2,100.5L220.3,101.1L220.5,101.8L220.9,102.4L222.2,103.6L222.6,104.1L223.1,105.4L223.5,105.9L224.1,106.1L225.0,106.0L227.9,105.0L233.4,104.7L234.4,105.0L235.2,105.7L235.9,107.1L236.5,108.2L236.7,108.5L238.2,109.3L246.8,109.2L248.2,109.6L249.6,110.7L250.2,111.2L250.6,111.6L250.1,112.4L250.2,113.9L250.6,115.8L250.8,118.3L250.8,119.0L250.8,119.2L250.7,119.6L250.1,121.1L249.8,122.1L249.8,123.3L250.2,124.7L250.9,126.4L251.3,127.4L251.7,129.2L251.9,129.8L252.4,130.6L253.3,131.2L255.3,132.2L256.1,132.8L256.6,133.7L257.0,134.5L257.2,135.8L257.1,138.3L254.4,143.4L254.1,144.8L254.2,146.3L254.4,147.5L254.5,148.7L254.4,149.8L253.9,150.9L253.6,151.9L253.5,152.9L253.6,154.4L253.6,154.8L253.2,156.6L252.0,158.7L251.0,159.2L248.5,159.2L247.1,159.5L244.7,161.6L242.5,162.8L238.8,164.8L234.7,165.9L229.4,166.5L226.5,166.1L226.3,166.0L224.9,165.1L224.0,164.9L220.3,165.0L218.9,164.7L210.1,161.2L208.8,161.2L195.9,167.8L195.0,168.8L193.6,171.1L192.6,172.1L191.3,172.9L189.7,174.8L187.8,179.6L185.0,178.2L184.3,177.6L182.3,175.5L181.6,175.0L181.6,175.0L181.4,174.8L181.2,174.4L181.1,174.2L180.9,173.7L180.7,172.5L180.6,171.4L180.5,171.1L180.5,170.9L180.3,170.6L180.2,170.3L179.6,169.7L177.1,168.3L176.6,168.0L176.5,167.9L176.3,167.7L176.0,167.6L174.4,167.3L173.4,167.4L172.2,167.8L170.6,169.0L169.4,170.4L167.9,171.7L166.4,172.3L163.0,171.5L151.7,168.8L151.2,169.0L149.8,170.1L149.0,170.2L148.4,169.7L147.8,168.5L146.7,165.4L146.0,164.1L145.1,163.2L144.4,163.0L143.8,163.1L143.0,163.5L142.5,163.4L141.9,163.1L139.8,155.2L139.4,154.4L138.9,153.9L138.1,153.4L137.0,153.2L135.9,153.4L134.5,154.0L131.4,155.8L130.4,156.7L128.5,159.9L125.4,163.8L123.7,165.3L122.3,165.9L122.2,165.0L122.4,163.8L122.4,163.5L122.3,163.1L122.1,162.8L121.1,159.0L120.7,158.0L120.5,157.7L120.2,157.3L119.2,156.4L118.5,155.2L118.3,154.9L118.0,154.7L117.6,154.5L115.4,153.8L114.6,153.3L114.1,152.8L112.3,148.8L111.5,146.8L111.4,146.6L111.1,146.4L110.9,146.2L109.0,143.2L108.8,142.8L108.7,142.5L108.6,142.2L108.6,142.0L108.6,141.7L108.7,141.2L108.8,141.0L108.8,140.7L108.6,139.4L108.5,138.9L108.3,138.7L108.1,138.5L107.3,138.4L104.3,138.0L102.4,138.0L101.6,137.5L101.5,137.4L101.3,137.2L100.8,136.1L100.7,135.6L100.6,135.4L100.6,135.1L100.6,134.8L100.8,134.3L100.5,133.6L100.1,132.8L96.8,130.2L91.1,127.4L90.2,126.7L89.9,126.4L89.7,126.1L89.5,125.6L89.4,125.1L89.2,124.6L88.9,124.2L88.8,124.0L88.3,121.7L87.8,120.7L85.8,117.6L85.6,117.2L85.5,116.7L85.5,116.4L85.4,115.3L85.4,115.0L85.1,113.6L84.2,110.7L83.4,108.8L83.2,108.5L83.0,108.2L82.7,107.9L81.0,107.0L80.3,106.6L80.3,105.7L80.5,104.5L81.0,103.6L82.0,103.0L86.1,102.1L87.3,101.6L91.1,98.9L91.7,98.6L93.0,98.5L93.6,98.3L95.2,97.0L96.5,96.9L99.2,97.4L100.5,97.4L101.1,97.2L101.6,97.0L102.1,96.6L102.5,96.0L102.7,95.3L102.7,94.0L103.0,93.5L104.1,92.9L106.5,92.2L107.6,91.4L109.9,88.7L110.7,88.0L111.8,87.5L115.5,87.4L116.5,87.1L119.6,85.6L120.7,85.6L123.3,86.1L124.4,85.8L124.9,85.1L125.1,84.1L125.5,83.2L126.2,82.4L129.4,81.3L130.2,80.5L131.8,77.7L132.6,77.0L134.8,75.7L137.1,74.9L139.4,74.7L144.5,75.6L147.5,75.5L150.1,74.1L151.7,70.8L151.8,70.0L151.8,69.2L151.9,68.5L152.3,67.9L153.0,67.5L153.8,67.3Z","cx":171.8,"cy":123.8,"area":12162},{"mn":"Сэлэнгэ","en":"Selenge","d":"M556.9,85.1L566.5,87.6L570.9,87.3L571.7,87.5L573.2,88.1L574.7,88.4L576.4,88.5L577.2,88.6L578.9,89.9L579.1,90.2L579.1,90.6L579.1,91.1L579.2,91.4L579.5,91.6L581.9,91.9L582.7,92.3L584.0,93.2L584.6,93.5L585.3,93.6L591.4,91.9L594.8,91.5L598.1,91.9L600.9,92.8L602.2,93.6L606.8,97.3L608.0,97.9L608.3,98.3L608.7,100.0L609.0,100.4L609.6,101.1L609.8,101.4L610.0,101.9L610.3,103.0L610.6,103.4L611.0,103.8L611.9,104.2L612.4,104.5L613.9,105.9L614.8,106.5L615.8,106.9L616.7,106.9L617.5,106.5L618.3,106.3L620.1,107.9L631.5,108.1L631.9,108.3L632.1,108.4L633.3,109.2L633.9,109.4L634.9,109.2L635.3,109.3L636.7,109.7L638.2,109.8L638.5,110.3L638.4,111.5L638.2,112.2L637.9,112.9L637.7,113.6L637.8,114.5L638.3,116.7L638.5,118.4L638.5,119.0L638.3,119.5L637.6,121.2L637.6,121.8L638.0,122.1L638.7,122.2L640.0,122.1L640.4,122.5L640.1,123.5L640.1,124.2L640.4,124.9L640.9,125.5L643.2,127.1L643.8,127.4L646.4,127.7L647.2,128.1L647.7,128.5L648.0,129.1L648.2,129.7L648.5,130.3L650.3,132.4L654.6,136.1L656.6,137.4L657.6,137.5L656.5,142.0L656.1,146.6L654.9,146.6L653.9,146.6L650.3,147.1L649.2,147.4L647.0,148.4L645.0,149.5L644.5,150.0L643.8,150.8L642.6,151.9L639.7,149.8L639.0,149.5L637.8,149.1L637.0,148.9L635.8,148.7L633.5,148.8L632.6,148.9L630.8,149.4L629.8,149.7L627.5,151.3L625.3,153.4L627.0,156.2L627.4,156.8L628.3,157.6L630.3,158.5L630.9,158.9L631.2,159.1L631.5,159.8L631.7,160.5L631.6,161.6L630.9,163.4L630.3,165.2L629.7,166.7L629.2,168.0L628.9,168.6L628.6,168.9L628.0,169.2L627.3,169.3L625.7,169.1L625.1,169.1L624.5,169.3L623.6,170.0L622.3,170.6L620.4,171.2L616.7,172.3L615.4,170.8L614.8,170.3L614.2,170.0L613.5,169.8L612.3,169.6L611.2,169.7L608.8,170.3L608.1,170.4L605.9,170.3L604.9,170.4L604.3,170.7L603.5,171.5L602.7,172.3L601.4,173.5L600.5,173.9L599.4,174.2L598.4,174.2L595.5,173.6L594.3,173.1L592.6,172.2L592.3,171.5L591.7,170.9L586.9,168.6L583.0,166.5L582.1,167.2L581.3,167.7L579.9,168.3L578.3,167.3L577.7,166.8L577.4,166.4L578.0,164.8L578.5,163.0L578.5,161.8L578.3,161.1L578.2,160.7L577.6,160.1L576.6,159.4L575.6,159.0L572.6,158.4L566.9,159.8L564.8,160.4L564.0,160.8L562.5,161.8L560.5,163.3L560.9,164.6L561.4,167.0L562.0,168.4L559.9,169.5L557.8,170.5L556.1,171.4L555.0,172.1L554.4,172.3L552.6,172.7L551.8,172.9L549.8,173.9L549.1,174.4L548.5,174.7L547.8,174.8L547.1,174.8L545.4,174.3L543.4,173.5L541.2,172.8L539.7,172.3L537.5,171.4L532.0,169.3L531.7,167.5L531.4,164.3L531.9,163.5L531.6,163.2L532.0,162.7L532.2,162.1L532.4,161.8L531.2,160.6L530.2,159.4L528.7,158.2L527.3,156.8L530.2,155.0L531.6,153.9L532.6,152.9L533.1,152.4L533.3,151.7L533.3,151.1L533.0,150.4L532.0,148.6L531.7,147.5L532.3,145.2L532.7,141.8L533.5,138.7L534.0,135.7L534.7,134.0L535.5,132.6L536.2,130.2L536.3,129.2L536.4,127.6L536.5,122.9L538.4,121.1L537.6,119.6L536.9,118.6L533.4,114.9L532.2,113.4L531.8,112.5L531.6,111.5L531.5,110.1L531.6,107.6L533.0,107.5L533.7,107.4L534.2,107.1L534.5,106.8L534.7,106.4L532.9,104.5L532.8,103.0L532.6,102.2L532.1,100.7L531.8,100.0L529.5,97.0L526.4,94.5L526.4,94.4L527.3,93.7L528.2,93.1L530.3,92.6L533.5,92.7L534.5,92.5L535.2,92.1L536.4,91.0L537.2,90.7L540.1,90.8L541.0,90.5L542.9,89.4L543.6,89.1L544.6,88.9L548.2,89.4L549.1,89.3L549.9,89.1L550.7,88.7L554.1,86.0L555.3,85.3L556.9,85.1ZM589.1,128.4L588.1,128.3L586.5,127.8L585.2,127.2L583.9,126.3L582.5,125.7L581.5,125.0L580.1,124.5L579.0,124.2L579.2,123.1L579.8,121.7L581.6,119.7L581.9,119.3L582.0,119.0L582.1,118.4L582.1,117.4L581.9,114.8L579.4,115.6L579.1,115.8L578.9,116.0L578.1,117.7L577.4,118.6L576.9,119.1L576.5,119.2L574.7,120.5L574.4,120.8L573.7,122.2L573.3,122.7L572.5,123.4L572.7,124.8L573.3,126.0L573.4,127.0L573.6,127.8L574.2,128.8L574.4,129.3L574.5,129.8L574.5,129.9L574.5,130.9L574.4,132.9L574.2,133.7L573.4,138.3L573.0,141.9L572.3,145.1L571.8,146.3L573.7,147.0L574.9,147.4L578.2,147.9L579.0,147.9L579.7,147.9L580.5,147.7L580.8,147.5L581.4,147.0L582.6,145.8L584.5,144.7L586.4,144.1L587.2,143.9L588.8,143.8L589.8,145.2L591.3,146.3L592.4,146.8L596.4,148.3L599.9,147.3L602.6,146.3L602.4,142.8L602.0,140.2L602.2,137.8L602.6,135.5L602.7,132.6L602.6,130.9L602.3,130.0L601.9,129.1L601.5,128.6L600.7,127.8L600.2,127.5L599.0,127.0L598.0,126.4L597.1,125.9L593.5,124.7L592.4,126.4L591.7,127.2L590.5,128.2L589.8,128.4L589.1,128.4Z","cx":584.3,"cy":131.5,"area":7970},{"mn":"Завхан","en":"Dzavhan","d":"M261.5,105.9L262.8,106.1L263.5,107.1L263.5,107.1L263.9,108.4L264.5,109.3L265.2,109.6L266.1,109.0L266.4,108.4L266.8,107.9L267.3,107.5L267.7,107.1L268.2,106.9L268.6,106.9L269.1,107.0L269.6,107.1L269.6,107.1L269.6,107.1L269.6,107.1L274.2,109.1L275.6,110.2L276.9,111.4L277.6,111.9L278.5,112.0L279.3,111.7L280.8,110.7L281.6,110.4L282.5,110.3L283.2,110.6L283.6,111.3L284.1,112.3L284.5,113.1L285.1,113.3L285.7,113.0L286.3,112.6L288.0,110.9L288.7,110.7L297.0,112.0L298.2,112.9L299.3,114.8L299.7,115.3L300.6,115.6L300.6,115.8L300.7,116.2L300.9,116.7L301.0,117.2L301.3,117.7L302.5,119.3L302.6,119.8L302.3,120.3L301.6,121.0L298.9,122.8L296.4,125.0L294.9,126.8L294.5,127.4L294.1,128.4L293.8,129.2L293.5,130.6L293.5,131.7L293.5,132.4L294.0,134.1L294.8,135.2L301.3,141.0L302.9,141.9L305.4,142.6L311.3,143.0L314.5,143.1L316.3,143.9L325.8,150.5L326.5,150.8L327.9,151.0L329.9,150.4L330.9,150.0L331.8,149.7L334.8,149.5L339.1,150.1L341.4,150.8L342.5,151.5L343.8,152.5L344.6,152.8L345.2,153.0L346.4,152.9L347.2,152.7L349.0,151.6L350.6,149.3L352.1,146.1L361.8,145.2L362.4,145.7L362.6,146.3L362.8,147.4L363.4,152.9L363.9,155.6L364.6,158.0L364.9,158.8L364.9,159.4L364.3,161.5L363.8,162.8L363.3,164.0L361.0,167.5L360.8,168.1L360.7,168.8L360.6,169.8L360.7,171.2L361.0,172.8L362.9,179.4L363.1,182.4L353.5,186.7L351.7,186.9L350.7,187.4L349.8,188.3L348.8,190.5L347.8,191.5L346.5,192.3L344.1,193.1L337.5,193.3L336.6,193.6L335.9,194.0L335.3,194.6L334.9,195.2L334.1,197.6L334.3,198.7L335.4,201.4L335.8,203.0L335.9,204.2L335.7,205.3L334.4,209.6L334.3,210.6L334.4,211.5L334.8,212.2L335.8,212.8L336.7,213.1L341.2,213.6L341.3,214.0L341.3,214.3L341.3,214.8L341.1,216.1L340.9,216.9L340.6,217.8L340.0,218.9L339.1,220.3L337.7,221.8L337.3,222.6L337.3,223.6L337.5,224.5L337.7,225.4L337.3,226.7L336.4,228.5L333.8,232.3L332.0,233.2L330.1,233.6L327.2,233.6L326.1,233.8L325.2,234.3L324.7,235.2L324.5,236.5L324.3,237.9L324.0,239.3L319.3,254.3L317.9,257.6L317.7,258.6L317.8,261.1L315.3,260.5L313.1,259.0L311.6,258.0L310.2,258.0L309.7,258.2L309.4,258.3L309.3,258.5L308.9,259.3L308.6,259.6L307.0,261.1L305.9,261.8L305.4,261.9L304.6,262.0L304.2,262.0L303.9,261.9L303.1,261.5L302.7,261.3L302.5,261.2L299.1,261.1L297.5,260.9L297.4,260.5L297.2,259.8L297.3,258.2L297.1,257.5L294.9,255.0L294.0,253.6L293.4,252.1L293.1,250.9L292.8,248.0L290.2,246.7L289.1,246.0L288.0,245.9L279.9,248.4L278.9,248.3L278.6,245.6L278.1,244.6L277.5,242.7L276.8,239.5L276.2,238.4L274.3,236.1L273.6,234.4L272.9,232.1L272.5,231.5L271.8,230.8L270.8,230.2L270.3,230.1L269.5,229.7L258.1,222.5L256.1,221.0L254.1,219.1L253.8,218.9L252.8,218.6L251.7,218.1L250.4,217.1L242.5,216.6L241.6,217.0L240.3,217.8L239.2,217.6L238.7,217.2L238.3,216.8L238.0,216.2L237.5,215.3L237.0,214.5L236.3,213.5L235.7,212.9L234.8,212.4L232.1,211.6L231.2,211.7L230.2,211.6L230.0,211.7L228.8,212.1L228.3,212.2L224.7,212.3L220.6,211.9L216.9,210.7L214.7,210.4L214.4,210.3L214.0,210.0L213.0,209.2L212.2,208.7L210.9,208.1L209.3,207.8L208.2,207.8L207.3,208.0L204.4,210.0L200.3,212.1L196.4,213.6L188.8,214.5L186.0,209.7L182.3,204.6L182.0,203.7L182.0,202.5L181.9,201.2L181.5,199.6L180.8,197.9L179.6,193.7L181.8,192.3L183.4,190.9L187.1,187.0L188.1,185.6L188.6,184.6L188.7,184.3L188.8,183.9L188.8,183.1L188.8,182.7L188.8,182.3L189.0,181.9L189.1,181.7L189.2,181.6L189.2,181.4L189.3,181.2L189.2,180.9L189.1,180.7L188.8,180.4L187.8,179.6L189.7,174.8L191.3,172.9L192.6,172.1L193.6,171.1L195.0,168.8L195.9,167.8L208.8,161.2L210.1,161.2L218.9,164.7L220.3,165.0L224.0,164.9L224.9,165.1L226.3,166.0L226.5,166.1L229.4,166.5L234.7,165.9L238.8,164.8L242.5,162.8L244.7,161.6L247.1,159.5L248.5,159.2L251.0,159.2L252.0,158.7L253.2,156.6L253.6,154.8L253.6,154.4L253.5,152.9L253.6,151.9L253.9,150.9L254.4,149.8L254.5,148.7L254.4,147.5L254.2,146.3L254.1,144.8L254.4,143.4L257.1,138.3L257.2,135.8L257.0,134.5L256.6,133.7L256.1,132.8L255.3,132.2L253.3,131.2L252.4,130.6L251.9,129.8L251.7,129.2L251.3,127.4L250.9,126.4L250.2,124.7L249.8,123.3L249.8,122.1L250.1,121.1L250.7,119.6L250.8,119.2L250.8,119.0L250.8,118.3L250.6,115.8L250.2,113.9L250.1,112.4L250.6,111.6L250.7,111.7L251.4,112.0L252.0,111.8L252.5,111.3L253.3,110.1L254.0,109.7L257.0,109.3L258.2,108.7L259.4,107.1L260.3,106.3L261.5,105.9Z","cx":280.3,"cy":184.2,"area":14040},{"mn":"Хэнтий","en":"Hentiy","d":"M657.6,137.5L658.8,137.5L663.2,136.8L666.6,136.8L668.8,136.4L672.0,137.4L672.8,137.3L676.0,136.5L679.9,136.9L680.7,137.1L681.4,137.6L683.1,138.2L683.8,138.5L685.0,138.4L685.3,138.6L685.4,138.9L685.6,139.7L685.7,140.0L686.3,140.3L687.0,140.6L693.6,140.1L695.4,140.8L696.4,141.9L696.8,141.9L699.4,142.5L707.7,144.9L709.0,144.7L710.4,144.2L711.7,143.4L712.8,142.2L713.3,141.6L713.6,141.3L713.9,141.3L715.5,143.0L716.1,143.4L717.9,143.9L720.8,145.7L722.1,146.0L723.4,146.1L724.8,146.0L728.2,144.9L732.1,142.8L737.4,139.0L741.6,137.6L742.2,137.2L743.1,136.1L743.7,135.7L744.4,135.5L745.1,135.8L746.5,136.5L747.3,136.7L748.0,136.7L748.8,136.5L752.3,134.7L753.7,134.2L765.2,133.5L768.2,132.3L768.3,132.4L770.5,135.6L770.7,135.9L770.7,136.1L770.5,136.4L770.3,136.8L769.8,137.3L769.6,137.5L769.5,137.7L769.6,139.7L770.7,145.9L771.8,149.2L771.9,150.4L771.9,151.3L771.2,153.6L770.9,154.6L771.4,156.2L772.6,158.9L778.6,169.8L780.5,174.4L781.0,176.3L781.4,178.8L781.4,181.5L780.6,183.4L780.2,186.5L781.0,194.2L782.6,197.3L783.0,198.0L784.3,200.6L785.6,206.3L783.3,206.8L783.1,206.8L782.4,207.3L781.9,207.5L780.3,207.6L770.8,211.2L769.0,212.5L768.3,213.1L767.8,213.7L767.3,214.4L767.0,215.0L766.8,215.7L766.6,216.4L766.5,217.3L766.3,219.6L766.2,221.0L766.4,223.1L767.0,225.8L763.3,225.6L759.4,224.8L758.8,224.8L758.3,224.9L756.9,225.5L755.6,226.4L754.6,227.2L751.5,230.9L750.4,232.7L749.9,233.8L749.6,235.2L748.6,243.7L747.7,246.8L745.6,251.1L742.7,256.2L741.9,257.8L741.4,259.5L741.3,263.1L741.4,264.1L741.7,265.6L742.7,269.0L742.9,270.0L743.0,270.9L742.8,271.8L742.5,272.5L740.6,275.4L740.3,276.2L740.1,276.8L740.3,278.2L734.4,283.7L732.3,285.3L730.5,285.2L728.4,284.4L721.9,280.4L719.2,277.7L718.2,276.0L717.4,273.3L716.8,271.9L716.2,271.0L711.1,265.6L709.4,262.9L708.5,261.2L707.6,260.3L706.9,259.8L705.0,259.7L703.8,259.9L703.4,260.4L703.4,261.8L704.2,266.0L704.3,266.8L704.1,267.7L702.9,271.8L702.0,274.1L701.7,274.5L696.9,278.6L695.4,279.6L694.0,280.0L686.3,280.9L683.2,280.5L678.6,277.3L677.7,276.4L677.1,275.4L676.0,272.8L675.2,271.4L672.4,268.5L671.4,266.4L671.2,266.0L671.0,265.2L671.0,264.8L671.0,263.9L671.0,263.3L671.2,262.4L671.5,261.5L673.8,257.1L674.4,255.6L674.6,254.4L674.7,253.5L674.6,252.3L674.4,251.0L674.1,249.7L673.7,249.1L673.1,249.0L672.6,249.2L672.0,249.8L671.0,251.4L670.7,251.6L670.5,251.7L670.1,251.3L670.0,251.0L670.2,247.8L670.1,246.8L670.0,246.1L669.4,244.3L665.6,242.6L663.5,241.0L662.5,240.0L661.5,238.7L661.0,237.9L660.6,236.1L659.3,232.5L658.9,231.9L657.9,230.8L657.6,230.3L656.9,227.7L656.9,227.2L656.7,226.9L654.8,224.9L654.5,224.5L654.2,223.6L653.6,221.6L653.4,221.3L653.1,221.0L652.7,220.8L652.3,220.6L652.2,220.0L652.4,219.2L652.8,218.6L653.2,217.9L653.3,216.8L653.1,216.2L652.7,215.6L652.6,215.0L652.7,214.6L653.0,214.3L653.3,214.1L653.6,213.8L654.7,211.6L655.0,210.9L655.0,210.4L655.0,209.3L655.1,209.1L655.2,208.7L655.0,208.3L654.7,208.0L654.5,207.6L654.6,206.1L654.5,205.5L654.1,203.7L654.3,203.2L654.8,202.3L655.0,201.6L657.0,201.2L658.6,200.7L659.3,200.4L660.6,199.7L661.2,199.3L662.5,198.1L664.3,196.3L665.5,195.3L666.0,195.0L667.1,194.5L667.3,194.3L667.7,193.7L668.2,192.8L668.7,190.6L669.3,188.8L670.0,187.6L670.6,187.1L671.0,186.8L671.5,185.7L672.0,184.2L672.2,183.1L672.1,182.0L671.5,179.3L670.7,177.1L670.2,175.2L669.5,172.6L668.4,167.3L667.9,165.8L667.3,164.3L667.1,163.6L666.7,161.3L666.5,160.6L665.3,158.5L664.0,155.4L662.8,153.5L661.6,152.1L659.7,150.4L659.1,149.7L658.5,149.2L657.9,148.5L657.1,147.8L656.1,146.6L656.5,142.0L657.6,137.5Z","cx":715.9,"cy":202.2,"area":13769},{"mn":"Дархан-Уул","en":"Darhan-Uul","d":"M581.9,114.8L582.1,117.4L582.1,118.4L582.0,119.0L581.9,119.3L581.6,119.7L579.8,121.7L579.2,123.1L579.0,124.2L580.1,124.5L581.5,125.0L582.5,125.7L583.9,126.3L585.2,127.2L586.5,127.8L588.1,128.3L589.1,128.4L589.8,128.4L590.5,128.2L591.7,127.2L592.4,126.4L593.5,124.7L597.1,125.9L598.0,126.4L599.0,127.0L600.2,127.5L600.7,127.8L601.5,128.6L601.9,129.1L602.3,130.0L602.6,130.9L602.7,132.6L602.6,135.5L602.2,137.8L602.0,140.2L602.4,142.8L602.6,146.3L599.9,147.3L596.4,148.3L592.4,146.8L591.3,146.3L589.8,145.2L588.8,143.8L587.2,143.9L586.4,144.1L584.5,144.7L582.6,145.8L581.4,147.0L580.8,147.5L580.5,147.7L579.7,147.9L579.0,147.9L578.2,147.9L574.9,147.4L573.7,147.0L571.8,146.3L572.3,145.1L573.0,141.9L573.4,138.3L574.2,133.7L574.4,132.9L574.5,130.9L574.5,129.9L574.5,129.8L574.4,129.3L574.2,128.8L573.6,127.8L573.4,127.0L573.3,126.0L572.7,124.8L572.5,123.4L573.3,122.7L573.7,122.2L574.4,120.8L574.7,120.5L576.5,119.2L576.9,119.1L577.4,118.6L578.1,117.7L578.9,116.0L579.1,115.8L579.4,115.6L581.9,114.8Z","cx":586.9,"cy":135.3,"area":637},{"mn":"Төв","en":"Töv","d":"M653.2,217.9L652.8,218.6L652.4,219.2L652.2,220.0L652.3,220.6L652.7,220.8L653.1,221.0L653.4,221.3L653.6,221.6L654.2,223.6L654.5,224.5L654.8,224.9L656.7,226.9L656.9,227.2L656.9,227.7L657.6,230.3L657.9,230.8L658.9,231.9L659.3,232.5L660.6,236.1L661.0,237.9L661.5,238.7L662.5,240.0L663.5,241.0L665.6,242.6L663.5,247.9L663.1,248.4L662.0,249.5L659.7,250.8L654.8,253.2L651.0,252.7L646.2,251.7L643.5,251.8L641.5,252.2L640.0,252.6L638.5,253.4L635.4,254.0L635.3,255.8L635.0,257.6L634.8,260.3L634.7,261.1L634.4,261.8L634.2,262.1L633.6,262.7L633.2,262.9L632.5,263.1L629.8,263.5L628.4,264.0L627.8,264.4L627.5,264.7L625.9,267.1L625.5,267.6L624.9,268.0L621.7,269.2L620.2,269.7L619.4,269.8L614.4,270.0L612.0,270.3L610.0,269.0L608.7,267.8L606.9,265.9L605.6,264.7L603.6,263.6L602.6,263.2L599.5,262.6L597.4,262.5L594.7,262.6L588.7,262.5L582.8,262.5L582.4,261.5L582.2,261.2L581.7,260.7L581.0,260.3L577.7,259.3L576.6,258.8L575.1,257.9L573.2,256.0L572.6,255.6L572.3,255.4L571.6,255.3L570.4,255.3L568.4,255.9L567.2,256.4L564.4,260.3L563.7,261.0L561.4,264.1L559.0,268.7L557.5,267.3L556.3,266.4L555.5,265.8L553.7,264.7L551.5,263.8L548.5,262.9L545.6,261.8L542.9,265.3L541.8,266.4L540.0,267.7L535.9,271.3L535.2,270.6L534.3,269.5L533.0,268.2L529.0,265.4L528.5,265.0L528.2,264.6L527.9,263.9L527.8,263.2L527.7,258.8L527.7,258.0L527.4,257.2L527.1,256.3L526.3,255.0L525.6,253.6L525.1,252.9L524.1,251.4L522.8,249.9L524.2,248.5L524.9,247.9L525.5,247.6L526.3,247.4L526.6,245.5L526.6,244.3L526.6,243.3L526.4,242.6L526.1,241.9L525.8,241.3L524.6,240.0L522.7,238.3L521.5,237.0L521.1,236.4L520.6,235.0L520.1,232.4L520.1,231.1L520.1,229.6L520.9,228.2L521.0,227.6L520.9,226.9L520.6,226.4L519.7,225.4L519.0,224.7L518.5,224.2L518.3,223.6L517.7,221.9L519.1,220.6L520.4,219.3L524.4,216.7L525.8,216.1L526.6,216.0L528.2,215.9L530.7,215.9L531.5,214.5L531.9,213.5L536.0,213.4L539.2,213.1L538.5,211.0L537.3,206.0L537.1,204.7L537.0,202.5L537.7,201.9L537.6,200.7L537.4,200.2L537.3,200.0L537.0,199.9L536.6,199.8L536.2,200.0L536.0,200.2L532.7,200.0L530.9,199.7L529.1,199.0L527.8,198.2L527.6,195.9L527.3,194.9L525.8,192.6L524.5,191.2L525.8,189.1L526.2,188.2L526.9,186.1L528.0,184.2L529.3,182.9L531.0,181.7L531.3,181.4L531.6,180.7L532.1,178.7L532.3,176.7L532.3,173.3L532.0,169.3L537.5,171.4L539.7,172.3L541.2,172.8L543.4,173.5L545.4,174.3L547.1,174.8L547.8,174.8L548.5,174.7L549.1,174.4L549.8,173.9L551.8,172.9L552.6,172.7L554.4,172.3L555.0,172.1L556.1,171.4L557.8,170.5L559.9,169.5L562.0,168.4L561.4,167.0L560.9,164.6L560.5,163.3L562.5,161.8L564.0,160.8L564.8,160.4L566.9,159.8L572.6,158.4L575.6,159.0L576.6,159.4L577.6,160.1L578.2,160.7L578.3,161.1L578.5,161.8L578.5,163.0L578.0,164.8L577.4,166.4L577.7,166.8L578.3,167.3L579.9,168.3L581.3,167.7L582.1,167.2L583.0,166.5L586.9,168.6L591.7,170.9L592.3,171.5L592.6,172.2L594.3,173.1L595.5,173.6L598.4,174.2L599.4,174.2L600.5,173.9L601.4,173.5L602.7,172.3L603.5,171.5L604.3,170.7L604.9,170.4L605.9,170.3L608.1,170.4L608.8,170.3L611.2,169.7L612.3,169.6L613.5,169.8L614.2,170.0L614.8,170.3L615.4,170.8L616.7,172.3L620.4,171.2L622.3,170.6L623.6,170.0L624.5,169.3L625.1,169.1L625.7,169.1L627.3,169.3L628.0,169.2L628.6,168.9L628.9,168.6L629.2,168.0L629.7,166.7L630.3,165.2L630.9,163.4L631.6,161.6L631.7,160.5L631.5,159.8L631.2,159.1L630.9,158.9L630.3,158.5L628.3,157.6L627.4,156.8L627.0,156.2L625.3,153.4L627.5,151.3L629.8,149.7L630.8,149.4L632.6,148.9L633.5,148.8L635.8,148.7L637.0,148.9L637.8,149.1L639.0,149.5L639.7,149.8L642.6,151.9L643.8,150.8L644.5,150.0L645.0,149.5L647.0,148.4L649.2,147.4L650.3,147.1L653.9,146.6L654.9,146.6L656.1,146.6L657.1,147.8L657.9,148.5L658.5,149.2L659.1,149.7L659.7,150.4L661.6,152.1L662.8,153.5L664.0,155.4L665.3,158.5L666.5,160.6L666.7,161.3L667.1,163.6L667.3,164.3L667.9,165.8L668.4,167.3L669.5,172.6L670.2,175.2L670.7,177.1L671.5,179.3L672.1,182.0L672.2,183.1L672.0,184.2L671.5,185.7L671.0,186.8L670.6,187.1L670.0,187.6L669.3,188.8L668.7,190.6L668.2,192.8L667.7,193.7L667.3,194.3L667.1,194.5L666.0,195.0L665.5,195.3L664.3,196.3L662.5,198.1L661.2,199.3L660.6,199.7L659.3,200.4L658.6,200.7L657.0,201.2L655.0,201.6L650.9,201.4L648.6,203.6L647.7,204.8L647.2,205.6L646.5,207.6L646.2,209.1L646.1,210.3L646.2,211.1L646.7,213.1L647.0,214.9L648.0,216.4L648.6,216.9L649.3,217.2L653.2,217.9ZM605.1,189.9L604.4,189.7L602.6,188.9L601.8,188.7L599.2,188.2L595.9,187.4L596.1,187.4L588.8,186.1L589.4,188.1L589.9,190.2L590.8,193.3L591.1,199.2L591.9,200.2L592.3,200.9L592.8,202.3L593.2,203.9L593.2,207.4L593.4,208.2L593.7,209.0L593.9,209.3L594.7,209.8L597.3,210.4L598.4,210.9L603.0,210.4L606.6,209.8L607.4,209.7L609.8,209.9L611.1,210.1L612.3,210.5L613.3,211.3L615.7,213.4L616.5,213.8L617.4,214.1L619.3,214.3L621.6,214.2L623.1,214.0L624.7,213.5L624.8,212.5L625.7,208.2L626.0,206.0L626.7,203.0L626.8,202.3L626.6,201.6L626.1,201.0L625.2,200.5L623.3,199.8L621.2,199.4L620.4,199.1L619.7,198.7L619.1,198.2L618.6,197.6L617.8,196.5L616.9,195.5L614.9,192.5L613.4,190.6L612.7,189.4L611.9,187.8L608.8,189.0L606.3,189.8L605.1,189.9Z","cx":596.0,"cy":212.4,"area":13081},{"mn":"Архангай","en":"Arhangay","d":"M442.6,152.3L443.0,154.0L443.4,154.8L444.5,156.1L445.2,156.7L445.9,157.3L447.4,158.3L448.6,158.4L449.3,158.5L449.7,158.7L450.4,159.1L451.2,160.0L451.5,160.6L451.8,161.5L452.2,162.0L452.7,162.4L453.3,162.6L454.0,162.7L454.9,162.4L456.1,161.5L457.5,160.9L458.4,162.9L459.6,167.0L460.3,172.2L460.4,172.9L460.3,174.2L460.5,175.2L460.8,175.8L461.2,176.4L461.8,176.9L463.3,178.0L464.0,178.9L464.5,180.1L464.9,182.6L465.8,183.7L466.3,184.1L468.3,185.6L469.0,185.9L469.7,186.0L471.2,186.1L473.0,186.3L474.5,187.7L476.1,189.9L476.8,191.3L477.6,192.6L478.5,194.2L478.9,195.3L479.3,197.6L479.6,200.9L479.8,201.7L479.9,202.1L480.4,202.7L481.0,203.1L483.1,204.0L484.9,204.8L485.3,206.2L485.5,206.8L486.6,209.0L487.3,210.3L488.8,210.4L489.5,210.6L490.2,210.8L490.9,211.4L492.5,213.4L493.4,215.1L494.2,216.6L495.1,218.3L495.9,219.3L496.9,220.7L498.2,221.9L499.6,222.9L501.6,224.7L502.9,225.7L505.0,227.8L505.4,229.9L505.5,231.8L502.3,233.8L500.8,234.3L496.0,234.4L490.5,233.8L489.3,233.4L488.6,232.8L486.9,229.1L486.3,228.1L485.4,227.2L480.1,225.2L479.3,225.1L477.6,225.2L475.0,223.7L474.6,223.6L473.8,223.5L473.3,223.9L473.0,224.6L473.2,225.5L473.5,226.4L473.9,227.2L474.4,227.8L475.0,228.1L475.7,228.4L476.2,228.8L476.1,230.1L474.3,234.3L473.0,236.4L470.6,238.0L470.3,238.7L469.9,239.6L469.8,241.8L469.3,244.4L467.6,245.1L466.8,244.9L466.0,244.3L465.4,243.6L464.2,241.7L463.4,240.9L462.6,240.6L461.8,240.7L458.1,242.2L451.6,244.1L449.5,245.7L448.6,246.7L447.2,247.7L430.5,251.4L428.6,249.5L427.9,249.2L424.0,250.0L422.5,250.1L419.1,249.5L418.0,249.5L415.7,250.4L413.4,250.4L412.7,250.0L412.3,249.4L411.9,248.3L411.2,246.2L410.7,245.3L409.6,244.5L408.7,244.1L407.0,243.7L406.7,243.6L406.4,243.1L406.0,241.5L405.6,240.4L404.9,239.1L404.4,238.0L404.0,235.2L403.7,234.8L403.0,234.7L402.1,234.9L391.2,238.1L388.4,238.8L387.8,238.8L387.2,238.4L386.8,237.6L386.7,236.5L386.7,235.6L386.7,234.8L386.7,234.1L386.5,233.4L386.2,232.6L385.9,231.8L385.7,230.5L385.8,229.4L386.0,227.1L386.1,226.0L386.0,224.8L385.6,223.6L384.8,222.6L382.5,220.7L381.6,219.8L381.0,219.1L380.6,218.0L380.4,216.6L380.4,213.0L379.7,213.1L377.5,214.4L376.7,215.2L376.1,215.9L375.5,216.4L374.9,216.7L372.9,217.1L372.1,217.3L371.5,217.8L369.9,219.8L369.3,220.3L368.8,220.6L367.8,221.0L365.3,221.4L361.5,221.4L360.5,221.4L359.7,221.1L354.3,217.6L353.6,216.9L353.3,216.1L353.2,213.1L352.5,211.2L352.1,210.7L351.7,210.3L351.2,210.0L350.6,209.9L350.1,209.8L347.6,210.1L344.4,211.0L343.2,211.8L341.2,213.6L336.7,213.1L335.8,212.8L334.8,212.2L334.4,211.5L334.3,210.6L334.4,209.6L335.7,205.3L335.9,204.2L335.8,203.0L335.4,201.4L334.3,198.7L334.1,197.6L334.9,195.2L335.3,194.6L335.9,194.0L336.6,193.6L337.5,193.3L344.1,193.1L346.5,192.3L347.8,191.5L348.8,190.5L349.8,188.3L350.7,187.4L351.7,186.9L353.5,186.7L363.1,182.4L365.8,185.2L366.8,185.8L367.5,185.9L368.4,185.7L369.3,185.0L369.9,184.3L370.3,183.6L370.7,183.2L371.1,183.1L371.7,183.3L372.3,183.7L373.0,184.0L373.7,184.1L380.7,183.5L381.3,183.4L381.8,182.9L382.1,181.9L382.5,178.1L382.8,177.2L383.2,176.5L383.8,176.0L384.5,175.8L387.4,176.0L388.6,176.4L393.2,179.1L394.1,179.4L395.0,179.6L396.2,179.5L397.1,179.0L397.5,177.9L397.4,177.1L397.3,176.1L397.6,175.3L398.4,174.7L401.3,174.2L404.0,173.4L405.4,172.3L404.7,171.4L404.4,171.1L404.2,170.9L404.0,170.8L403.4,170.7L403.0,170.6L402.8,170.5L402.7,170.3L402.5,170.0L402.2,169.4L402.0,168.9L401.9,168.2L401.9,167.7L401.5,167.0L401.5,166.7L401.6,166.1L401.7,165.6L402.0,164.8L402.2,164.3L402.3,163.9L402.2,163.7L402.1,163.5L402.1,163.2L402.2,163.0L402.9,162.5L403.0,162.3L403.0,162.1L402.9,162.0L402.4,161.8L402.3,161.6L402.5,161.2L403.0,160.4L403.6,159.9L404.0,159.4L404.2,159.1L404.2,158.8L404.0,158.6L404.0,158.4L404.1,158.2L404.7,157.8L405.2,157.6L406.4,156.8L406.8,156.6L407.2,156.5L407.4,156.5L407.6,156.4L407.8,156.3L408.5,155.7L408.7,155.5L408.9,155.0L409.0,154.8L408.9,154.6L408.3,153.7L404.6,151.7L404.3,151.5L404.1,151.2L404.0,150.7L404.1,150.5L404.1,149.8L404.3,149.3L404.7,148.9L405.3,149.5L405.9,149.6L409.6,148.7L409.7,148.4L409.8,148.0L409.8,147.7L410.3,147.1L411.5,146.3L412.0,145.6L412.4,145.0L412.5,144.6L412.6,143.8L412.6,143.5L412.7,143.4L412.9,143.1L413.0,142.9L413.4,142.5L414.2,142.3L415.0,142.8L424.6,147.7L431.8,152.8L432.9,153.3L436.3,153.6L442.6,152.3Z","cx":422.6,"cy":203.1,"area":9389},{"mn":"Орхон","en":"Orhon","d":"M531.7,147.5L532.0,148.6L533.0,150.4L533.3,151.1L533.3,151.7L533.1,152.4L532.6,152.9L531.6,153.9L530.2,155.0L527.3,156.8L525.9,156.2L524.9,155.5L523.1,154.7L521.3,154.4L515.6,152.9L515.6,150.4L517.5,147.9L518.8,146.7L519.9,147.2L524.4,148.6L526.2,146.8L526.5,146.6L527.3,146.4L528.1,146.3L529.4,146.4L530.2,146.7L531.7,147.5Z","cx":524.9,"cy":151.2,"area":123},{"mn":"Дундговь","en":"Dundgovi","d":"M612.0,270.3L614.4,270.0L619.4,269.8L620.2,269.7L621.7,269.2L624.9,268.0L625.5,267.6L625.9,267.1L627.5,264.7L627.8,264.4L628.4,264.0L629.8,263.5L632.5,263.1L633.2,262.9L633.6,262.7L634.2,262.1L634.4,261.8L634.7,261.1L634.8,260.3L635.0,257.6L635.3,255.8L635.4,254.0L638.5,253.4L639.0,255.4L639.7,256.3L640.5,257.1L641.5,257.5L642.8,257.8L644.9,257.9L646.5,258.1L646.2,258.5L643.2,261.1L642.5,261.9L642.2,262.6L642.2,263.2L642.8,264.0L647.7,269.4L648.9,271.3L649.7,273.5L650.0,274.8L650.1,275.7L650.0,278.8L649.1,285.6L649.0,286.9L649.3,288.5L649.6,289.2L650.0,289.7L651.2,291.8L652.0,292.7L652.9,293.2L657.1,291.6L658.3,291.7L656.5,297.1L655.8,301.7L655.7,305.1L656.3,314.4L658.5,329.1L659.2,331.6L659.2,332.6L659.0,333.1L658.3,333.3L657.1,333.3L656.6,333.3L656.0,333.5L654.9,334.4L653.9,336.0L652.5,338.9L649.4,340.8L638.4,342.3L636.1,342.5L635.3,342.9L634.7,343.7L634.3,345.5L633.4,352.9L632.9,354.2L632.4,355.1L630.8,356.3L625.8,358.0L622.7,358.4L622.1,358.4L619.8,357.2L618.4,357.0L617.5,357.0L599.7,363.4L597.5,364.6L594.8,367.0L592.5,368.0L591.0,368.5L588.3,369.0L578.6,370.6L577.6,370.3L575.2,369.2L572.8,367.7L570.4,365.6L569.8,364.7L569.4,363.5L569.3,362.5L569.3,361.7L569.0,360.6L568.1,358.7L566.0,355.7L562.1,348.1L561.5,347.7L559.6,347.2L550.8,346.3L538.0,344.9L524.1,342.6L521.8,341.8L521.1,341.1L520.3,340.1L519.0,337.4L519.0,336.9L519.1,336.6L519.2,336.1L519.4,335.0L519.4,334.5L519.3,334.1L519.2,333.7L519.1,333.2L519.0,332.9L519.0,332.6L519.1,332.4L519.1,332.1L519.4,331.5L519.5,331.2L519.5,331.0L519.5,330.7L519.4,328.9L519.4,328.3L519.5,327.5L519.5,327.2L519.5,327.0L519.3,326.7L518.7,325.7L508.5,325.5L508.4,322.6L508.6,321.6L508.9,320.7L509.7,319.0L509.3,317.7L506.0,314.4L504.7,312.7L504.1,311.5L503.7,310.5L503.5,309.4L503.4,308.4L503.4,307.5L503.6,306.6L503.9,305.8L505.1,304.1L506.8,302.3L507.6,301.8L508.4,301.4L510.4,301.1L517.4,300.3L518.9,297.7L519.1,294.5L520.4,287.8L520.5,287.2L520.7,284.0L520.9,283.6L521.2,283.0L521.7,282.7L522.6,282.4L526.6,282.2L528.6,281.3L529.3,280.5L529.7,279.7L530.1,278.7L532.0,276.3L532.2,275.2L532.3,273.0L532.5,272.0L532.7,271.3L534.3,269.5L535.2,270.6L535.9,271.3L540.0,267.7L541.8,266.4L542.9,265.3L545.6,261.8L548.5,262.9L551.5,263.8L553.7,264.7L555.5,265.8L556.3,266.4L557.5,267.3L559.0,268.7L561.4,264.1L563.7,261.0L564.4,260.3L567.2,256.4L568.4,255.9L570.4,255.3L571.6,255.3L572.3,255.4L572.6,255.6L573.2,256.0L575.1,257.9L576.6,258.8L577.7,259.3L581.0,260.3L581.7,260.7L582.2,261.2L582.4,261.5L582.8,262.5L588.7,262.5L594.7,262.6L597.4,262.5L599.5,262.6L602.6,263.2L603.6,263.6L605.6,264.7L606.9,265.9L608.7,267.8L610.0,269.0L612.0,270.3Z","cx":586.6,"cy":310.3,"area":12195},{"mn":"Өвөрхангай","en":"Övörhangay","d":"M520.1,229.6L520.1,231.1L520.1,232.4L520.6,235.0L521.1,236.4L521.5,237.0L522.7,238.3L524.6,240.0L525.8,241.3L526.1,241.9L526.4,242.6L526.6,243.3L526.6,244.3L526.6,245.5L526.3,247.4L525.5,247.6L524.9,247.9L524.2,248.5L522.8,249.9L524.1,251.4L525.1,252.9L525.6,253.6L526.3,255.0L527.1,256.3L527.4,257.2L527.7,258.0L527.7,258.8L527.8,263.2L527.9,263.9L528.2,264.6L528.5,265.0L529.0,265.4L533.0,268.2L534.3,269.5L532.7,271.3L532.5,272.0L532.3,273.0L532.2,275.2L532.0,276.3L530.1,278.7L529.7,279.7L529.3,280.5L528.6,281.3L526.6,282.2L522.6,282.4L521.7,282.7L521.2,283.0L520.9,283.6L520.7,284.0L520.5,287.2L520.4,287.8L519.1,294.5L518.9,297.7L517.4,300.3L510.4,301.1L508.4,301.4L507.6,301.8L506.8,302.3L505.1,304.1L503.9,305.8L503.6,306.6L503.4,307.5L503.4,308.4L503.5,309.4L503.7,310.5L504.1,311.5L504.7,312.7L506.0,314.4L509.3,317.7L509.7,319.0L508.9,320.7L508.6,321.6L508.4,322.6L508.5,325.5L508.3,326.2L508.0,327.1L505.8,331.4L505.1,332.4L504.2,333.4L498.9,337.7L492.5,341.3L491.6,343.0L486.3,355.1L485.8,356.6L485.3,358.8L484.7,360.1L484.2,360.8L482.7,362.3L482.3,363.5L482.3,365.0L484.3,370.6L484.5,371.8L484.5,372.5L472.9,371.5L457.2,372.8L448.2,375.8L445.8,377.0L440.7,355.6L439.8,352.9L438.3,349.6L437.9,348.5L437.8,347.7L437.8,347.0L438.0,346.5L439.2,343.4L440.0,340.8L439.3,339.6L436.5,337.7L435.3,336.6L433.3,335.4L429.5,334.1L428.7,333.6L428.1,332.8L427.7,332.0L427.4,331.0L426.9,328.9L426.7,327.2L426.3,322.4L426.2,321.6L426.1,321.0L426.2,319.6L426.1,318.6L425.7,316.2L425.7,315.4L425.9,314.6L426.2,314.0L428.0,312.3L429.4,310.2L430.6,307.3L430.6,306.2L430.6,303.8L431.9,299.0L432.0,297.2L431.8,295.6L431.4,293.3L431.3,289.4L431.6,288.3L432.0,287.2L432.4,286.3L433.0,285.5L433.6,284.9L435.3,284.3L436.2,283.8L437.0,283.1L437.6,282.3L437.8,281.8L438.0,280.9L438.0,279.1L437.8,276.7L437.5,275.7L437.1,274.9L436.6,274.5L436.3,273.7L436.9,272.4L439.6,268.8L439.7,268.0L439.5,267.4L439.1,266.7L438.9,266.0L438.7,265.2L438.4,261.5L435.5,257.8L432.0,254.3L431.6,253.8L430.5,251.4L447.2,247.7L448.6,246.7L449.5,245.7L451.6,244.1L458.1,242.2L461.8,240.7L462.6,240.6L463.4,240.9L464.2,241.7L465.4,243.6L466.0,244.3L466.8,244.9L467.6,245.1L469.3,244.4L469.8,241.8L469.9,239.6L470.3,238.7L470.6,238.0L473.0,236.4L474.3,234.3L476.1,230.1L476.2,228.8L475.7,228.4L475.0,228.1L474.4,227.8L473.9,227.2L473.5,226.4L473.2,225.5L473.0,224.6L473.3,223.9L473.8,223.5L474.6,223.6L475.0,223.7L477.6,225.2L479.3,225.1L480.1,225.2L485.4,227.2L486.3,228.1L486.9,229.1L488.6,232.8L489.3,233.4L490.5,233.8L496.0,234.4L500.8,234.3L502.3,233.8L505.5,231.8L507.8,231.3L508.9,231.2L509.6,231.2L510.7,231.4L511.4,231.5L514.0,231.1L517.9,230.3L520.1,229.6Z","cx":475.4,"cy":296.1,"area":10269},{"mn":"Говьсүмбэр","en":"Govĭ-Sümber","d":"M655.0,201.6L654.8,202.3L654.3,203.2L654.1,203.7L654.5,205.5L654.6,206.1L654.5,207.6L654.7,208.0L655.0,208.3L655.2,208.7L655.1,209.1L655.0,209.3L655.0,210.4L655.0,210.9L654.7,211.6L653.6,213.8L653.3,214.1L653.0,214.3L652.7,214.6L652.6,215.0L652.7,215.6L653.1,216.2L653.3,216.8L653.2,217.9L649.3,217.2L648.6,216.9L648.0,216.4L647.0,214.9L646.7,213.1L646.2,211.1L646.1,210.3L646.2,209.1L646.5,207.6L647.2,205.6L647.7,204.8L648.6,203.6L650.9,201.4L655.0,201.6Z","cx":650.7,"cy":209.5,"area":110},{"mn":"Улаанбаатар","en":"Ulaanbaatar","d":"M588.8,186.1L596.1,187.4L595.9,187.4L599.2,188.2L601.8,188.7L602.6,188.9L604.4,189.7L605.1,189.9L606.3,189.8L608.8,189.0L611.9,187.8L612.7,189.4L613.4,190.6L614.9,192.5L616.9,195.5L617.8,196.5L618.6,197.6L619.1,198.2L619.7,198.7L620.4,199.1L621.2,199.4L623.3,199.8L625.2,200.5L626.1,201.0L626.6,201.6L626.8,202.3L626.7,203.0L626.0,206.0L625.7,208.2L624.8,212.5L624.7,213.5L623.1,214.0L621.6,214.2L619.3,214.3L617.4,214.1L616.5,213.8L615.7,213.4L613.3,211.3L612.3,210.5L611.1,210.1L609.8,209.9L607.4,209.7L606.6,209.8L603.0,210.4L598.4,210.9L597.3,210.4L594.7,209.8L593.9,209.3L593.7,209.0L593.4,208.2L593.2,207.4L593.2,203.9L592.8,202.3L592.3,200.9L591.9,200.2L591.1,199.2L590.8,193.3L589.9,190.2L589.4,188.1L588.8,186.1Z","cx":607.3,"cy":200.7,"area":679}],"source":"Natural Earth 1:10m Admin-1 (public domain)"}</script>
+<script>
+/* =====================  ТУСЛАХУУД  ===================== */
+const $ = (id) => document.getElementById(id);
+const api = (url, opt) => fetch(url, opt).then(async r => {
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error("API"), {data: j, status: r.status});
+  return j;
+});
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const NS = "http://www.w3.org/2000/svg";
+const SVG_TAGS = new Set(["svg", "path", "g", "text", "circle", "rect", "polyline", "defs", "pattern", "line"]);
+function el(tag, attrs = {}, ...kids){
+  const e = SVG_TAGS.has(tag) ? document.createElementNS(NS, tag) : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)){
+    if (v === null || v === undefined || v === false) continue;
+    if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }
+  kids.flat().forEach(c => { if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); });
+  return e;
+}
+const fmt = (n, d = 2) => Number(n).toLocaleString("mn-MN", {maximumFractionDigits: d});
+const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+
+const LV = {
+  low:  {name: "Бага",  n: 1, msg: "Бэлчээрийн төлөв харьцангуй тогтвортой байна."},
+  mid:  {name: "Дунд",  n: 2, msg: "Талхагдлын эрсдэл дунд зэрэг, хяналт шаардлагатай."},
+  high: {name: "Өндөр", n: 3, msg: "Бэлчээр хүчтэй талхагдах эрсдэлтэй байна."},
+};
+
+let INFO, THRESH, ROWS = [], YEARS = [], AIMAGS = [], BY_AIMAG = {}, BY_YEAR = {}, STATS = {}, MAPDATA;
+const levelOf = (s) => s < THRESH.low_max ? "low" : s < THRESH.medium_max ? "mid" : "high";
+
+/* =====================  ХУУДАС СОЛИХ  ===================== */
+const inited = {};
+const PAGES = ["predict", "map", "zones", "facts", "help"];
+const panelInited = {};
+function showPage(name){
+  let panel = null;
+  if (name === "reports" || name === "history"){ panel = name; name = "facts"; }   // хуучин холбоосууд
+  if (!PAGES.includes(name)) name = "predict";
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id === "page-" + name));
+  document.querySelectorAll("header nav button").forEach(b => b.setAttribute("aria-current", b.dataset.page === name ? "page" : "false"));
+  if (location.hash !== "#" + name) window.history.replaceState(null, "", "#" + name);
+  window.scrollTo(0, 0);
+  if (!inited[name]){
+    inited[name] = true;
+    const starter = {map: initMap, zones: initZones, facts: initFacts, help: initHelp}[name];
+    if (starter) starter();
+  }
+  if (panel) openPanel(panel);
+}
+
+/* =====================  ТУСЛАМЖ, ТАНИЛЦУУЛГА, ЗААВАР  ===================== */
+const INTRO_KEY = "pastureIntroClosed";
+function introClosed(){ try{ return localStorage.getItem(INTRO_KEY) === "1"; }catch(e){ return false; } }
+function setIntro(show){
+  $("introCard").hidden = !show;
+  try{ if (show) localStorage.removeItem(INTRO_KEY); else localStorage.setItem(INTRO_KEY, "1"); }catch(e){}
+}
+function goTo(target){
+  const [page, sec] = target.split(":");
+  showPage(page);
+  if (!sec) return;
+  const t = $("help-" + sec);
+  if (!t) return;
+  if (t.tagName === "DETAILS") t.open = true;
+  t.scrollIntoView({behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start"});
+}
+function fillHelpNumbers(){
+  if (!INFO) return;
+  const v = {mae: INFO.metrics.unseen_aimag_cv.MAE, classacc: Math.round(INFO.metrics.unseen_aimag_cv.class_accuracy * 100),
+    low_max: THRESH.low_max, medium_max: THRESH.medium_max, years0: INFO.years[0], years1: INFO.years[1],
+    nsamples: INFO.n_samples, k: INFO.best_params.n_neighbors};
+  document.querySelectorAll("[data-fill]").forEach(e => { if (v[e.dataset.fill] !== undefined) e.textContent = v[e.dataset.fill]; });
+}
+function initHelp(){ fillHelpNumbers(); }
+
+const pctl = (arr, p) => {
+  const a = [...arr].sort((x, y) => x - y), i = (a.length - 1) * p, lo = Math.floor(i), hi = Math.ceil(i);
+  return a[lo] + (a[hi] - a[lo]) * (i - lo);
+};
+function addFieldHints(){
+  const typ = (f, div = 1, d = 2) => `${fmt(pctl(ROWS.map(r => r[f]), 0.1) / div, d)}–${fmt(pctl(ROWS.map(r => r[f]), 0.9) / div, d)}`;
+  const hints = {
+    Total_Livestock: `Аймгийн бүх малыг хонин толгойд шилжүүлж нэгтгэсэн тоо. Ихэнх аймагт ${typ("Total_Livestock", 1e6, 1)} сая орчим.`,
+    NDVI: `Хиймэл дагуулаар хэмжсэн ургамлын ногоон байдал (0–1). Ихэнх аймагт ${typ("NDVI", 1, 2)} орчим.`,
+    Temperature_C: `Жилийн дундаж агаарын хэм. Ихэнх аймагт ${typ("Temperature_C", 1, 1)} °C орчим.`,
+    Precipitation_mm: `Жилийн нийт хур тунадас. Ихэнх аймагт ${typ("Precipitation_mm", 1, 0)} мм орчим.`,
+    Stocking_Rate: `Бэлчээрт ногдох малын ачаалал. Утга их байх тусам ачаалал их. Ихэнх аймагт ${typ("Stocking_Rate", 1, 1)} орчим.`,
+  };
+  Object.entries(hints).forEach(([f, text]) => {
+    const field = $(f).closest(".field");
+    if (field && !field.querySelector(".hint")) field.append(el("div", {class: "hint"}, text));
+  });
+}
+
+/* =====================  1. ЭРСДЭЛ ТООЦОХ  ===================== */
+function setNdvi(v){
+  $("NDVI").value = v;
+  $("NDVI_range").value = v === "" ? 0 : Math.min(1, Math.max(0, v));
+  $("ndviPill").textContent = v === "" ? "–" : Number(v).toFixed(2);
+}
+function fillInputs(row){
+  INFO.features.forEach(f => { if (f === "NDVI") setNdvi(row[f]); else $(f).value = row[f]; });
+}
+function clearForm(){
+  INFO.features.forEach(f => { if (f === "NDVI") setNdvi(""); else $(f).value = ""; });
+  $("result").style.display = "none"; $("emptyMsg").style.display = "block";
+  showErrors([]); $("latency").textContent = ""; lastFilled = null;
+}
+function showErrors(list){
+  const box = $("errors");
+  box.replaceChildren(...list.map(t => el("div", {}, t)));
+  box.style.display = list.length ? "block" : "none";
+}
+
+let lastFilled = null;
+async function calculate(e){
+  if (e) e.preventDefault();
+  showErrors([]);
+  const body = {}, missing = [];
+  INFO.features.forEach(f => {
+    const v = $(f).value;
+    if (v === "") missing.push(INFO.feature_labels[f] + " – утга оруулна уу");
+    body[f] = v;
+  });
+  if (missing.length){ showErrors(missing); return; }
+  try{
+    const t0 = performance.now();
+    const res = await api("/api/predict", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+    $("latency").textContent = `Хариу өгсөн хугацаа: ${Math.round(performance.now() - t0)} мс`;
+    renderResult(res);
+  }catch(err){
+    showErrors(err.data && err.data.errors ? err.data.errors : ["Одоогоор тооцоолж чадсангүй. Хуудсыг дахин ачаалаад оролдоно уу."]);
+  }
+}
+
+function pctDiff(v, ref){ const d = (v / ref - 1) * 100; return `${fmt(Math.abs(d), 0)}%-иар ${d >= 0 ? "өндөр" : "бага"}`; }
+
+function renderResult(res){
+  const key = levelOf(res.risk_score), meta = LV[key];
+  $("emptyMsg").style.display = "none"; $("result").style.display = "block";
+  $("banner").className = "banner " + key;
+  $("bannerBadge").textContent = meta.n;
+  $("bannerTitle").textContent = `${meta.name} эрсдэл (${meta.n}-р түвшин)`;
+  $("bannerSub").textContent = meta.msg;
+
+  const C = 2 * Math.PI * 58, arc = $("ringArc");
+  arc.setAttribute("stroke", css("--" + key));
+  arc.setAttribute("stroke-dasharray", `${(res.risk_score / 100) * C} ${C}`);
+  $("ringNum").textContent = res.risk_score.toFixed(0);
+  $("marker").style.left = Math.min(100, Math.max(0, res.risk_score)) + "%";
+  $("scoreNote").textContent = `0 = эрсдэл маш бага, 100 = маш өндөр. Загварын дундаж алдаа ±${INFO.metrics.unseen_aimag_cv.MAE} оноо тул оноог яг тоо биш, ерөнхий чиглэл гэж ойлгоорой. Энэ нь бэлчээрийн бодит хэмжилт биш, өгөгдлөөс загварчилсан индекс юм.`;
+
+  const maxAbs = Math.max(1, ...res.factors.map(f => Math.abs(f.effect)));
+  $("factorList").replaceChildren(...res.factors.map(f => {
+    const up = f.effect > 0;
+    const text = f.effect === 0 ? "нөлөөгүй" : `${up ? "+" : "−"}${Math.abs(f.effect).toFixed(1)} оноо`;
+    return el("div", {class: "factor"},
+      el("div", {class: "r"}, el("span", {}, f.label), el("span", {style: `color:${up ? css("--high") : f.effect < 0 ? css("--low") : css("--muted")}`}, text)),
+      el("div", {class: "bar"}, el("i", {style: `width:${Math.abs(f.effect) / maxAbs * 100}%;background:${up ? css("--high") : css("--low")}`})));
+  }));
+
+  // Дүгнэлт: оролтыг бүртгэлийн дундажтай харьцуулна
+  const v = res.input, m = STATS.mean, items = [];
+  items.push(["w", `Ачааллын коэффициент ${fmt(v.Stocking_Rate)} нь бүртгэлийн дунджаас (${fmt(m.Stocking_Rate)}) ${pctDiff(v.Stocking_Rate, m.Stocking_Rate)} байна.`]);
+  items.push(["a", `NDVI ${fmt(v.NDVI, 3)} нь бүртгэлийн дунджаас (${fmt(m.NDVI, 3)}) ${pctDiff(v.NDVI, m.NDVI)}.`]);
+  items.push(["a", `Жилийн хур тунадас ${fmt(v.Precipitation_mm, 1)} мм нь дунджаас (${fmt(m.Precipitation_mm, 0)} мм) ${pctDiff(v.Precipitation_mm, m.Precipitation_mm)}.`]);
+  const top = res.factors[0];
+  if (top && Math.abs(top.effect) >= 1)
+    items.push(["w", `Оноонд хамгийн их нөлөөлсөн хүчин зүйл: ${top.label} (${top.effect > 0 ? "эрсдэлийг нэмэгдүүлсэн" : "эрсдэлийг бууруулсан"}, ${Math.abs(top.effect).toFixed(1)} оноо).`]);
+  const advice = {
+    high: "Бэлчээрийн ачааллыг бууруулах, отор нүүдлийн төлөвлөгөө гаргах, өвөл-хаврын нөөц тэжээлээ нэмэгдүүлэхийг зөвлөж байна.",
+    mid:  "Малын тоо, ачааллыг хянаж, NDVI-г улирал бүр шалгаарай.",
+    low:  "Одоогийн ачааллыг хадгалж, бэлчээрийн сэлгэн ашиглалтыг үргэлжлүүлээрэй.",
+  }[key];
+  items.push(["a", `Ерөнхий зөвлөмж (загварын гаралт биш): ${advice}`]);
+  $("find").className = "find " + key;
+  $("findList").replaceChildren(...items.map(([t, text]) => el("li", {}, el("i", {class: t}, t === "w" ? "!" : "i"), el("span", {}, text))));
+
+  const wb = $("warnBox");
+  wb.replaceChildren(...res.warnings.map(w => el("div", {}, w)));
+  wb.style.display = res.warnings.length ? "block" : "none";
+
+  $("neighbors").replaceChildren(...res.neighbors.map(n => el("tr", {},
+    el("td", {}, `${n.aimag}, ${n.year}`), el("td", {class: "n"}, n.risk_score.toFixed(1)), el("td", {class: "n"}, n.weight_pct + "%"))));
+
+  const same = lastFilled && INFO.features.every(f => Number($(f).value) === lastFilled[f]);
+  $("selfNote").textContent = same
+    ? `Энэ бүртгэл сургалтын өгөгдөлд орсон тул ойрын хөрш нь өөрөө болж байна. Өөрийг нь хасаж тооцвол KNN ${lastFilled.knn_estimate} оноо өгнө (бодит: ${lastFilled.actual_score}).` : "";
+
+  const k = INFO.best_params.n_neighbors, mt = INFO.metrics.unseen_aimag_cv;
+  $("modelFoot").textContent = `Загвар: K ойрын хөрш (k=${k}), ${INFO.years[0]}–${INFO.years[1]} оны ${INFO.n_samples} аймаг-жилийн бүртгэл дээр сургасан. Огт үзээгүй аймагт дундаж алдаа ${mt.MAE} оноо. Оноо нь загварчилсан индекс бөгөөд бэлчээрийн бодит хэмжилт биш.`;
+}
+
+async function sample(name){
+  $("fillAimag").value = name;
+  const hist = (await api("/api/aimag/" + encodeURIComponent(name))).history;
+  const row = hist[hist.length - 1];
+  lastFilled = {...row};
+  fillInputs(row);
+  calculate();
+}
+
+/* =====================  2. ГАЗРЫН ЗУРАГ  ===================== */
+const LAYERS = {
+  risk:      {label: "Эрсдэл",      get: r => r.score,            fmt: v => v.toFixed(0) + " оноо"},
+  ndvi:      {label: "NDVI",        get: r => r.NDVI,             fmt: v => v.toFixed(2),                  ramp: ["#E7DBAE", "#2E8B57"]},
+  livestock: {label: "Мал",         get: r => r.Total_Livestock,  fmt: v => (v / 1e6).toFixed(2) + " сая", ramp: ["#DCE9F5", "#1D4E89"]},
+  stocking:  {label: "Ачаалал",     get: r => r.Stocking_Rate,    fmt: v => v.toFixed(2),                  ramp: ["#F5E8CC", "#B5541C"]},
+  precip:    {label: "Хур тунадас", get: r => r.Precipitation_mm, fmt: v => v.toFixed(0) + " мм",          ramp: ["#EADFC2", "#1C6FB0"]},
+};
+const RISK_RAMP = [[0, "#86CDB0"], [50, "#F0D27C"], [100, "#C23B2B"]];
+const hex2rgb = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const lerp = (a, b, t) => a.map((x, i) => Math.round(x + (b[i] - x) * t));
+const rgb2hex = (c) => "#" + c.map(x => x.toString(16).padStart(2, "0")).join("");
+function rampColor(stops, t){
+  const p = Math.min(1, Math.max(0, t)) * 100;
+  for (let i = 0; i < stops.length - 1; i++){
+    const [p0, c0] = stops[i], [p1, c1] = stops[i + 1];
+    if (p <= p1 || i === stops.length - 2)
+      return rgb2hex(lerp(hex2rgb(c0), hex2rgb(c1), Math.min(1, Math.max(0, (p - p0) / (p1 - p0)))));
+  }
+}
+const lum = (hex) => { const [r, g, b] = hex2rgb(hex); return 0.299 * r + 0.587 * g + 0.114 * b; };
+
+const MS = {year: null, layer: "risk", filter: "all", query: "", selected: null, vb: null, base: null};
+const HIDE_LABEL = new Set(["Орхон", "Дархан-Уул", "Улаанбаатар", "Говьсүмбэр"]);
+const LABEL_POS = {"Төв": [598, 250], "Сэлэнгэ": [596, 104]};
+let regionEls = {}, labelEls = {};
+
+function layerColor(layer, row){
+  const L = LAYERS[layer], v = L.get(row);
+  if (layer === "risk") return rampColor(RISK_RAMP, v / 100);
+  const [lo, hi] = STATS.range[layer];
+  return rampColor([[0, L.ramp[0]], [100, L.ramp[1]]], (v - lo) / (hi - lo));
+}
+function syncSeg(){
+  document.querySelectorAll("#layerSeg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.layer === MS.layer)));
+}
+
+async function initMap(){
+  try{
+    await initMapInner();
+    $("mapError").style.display = "none";
+  }catch(err){
+    inited.map = false;   // дахин орох үед шинээр оролдоно
+    const box = $("mapError");
+    box.replaceChildren(
+      el("b", {}, "Газрын зургийг ачаалж чадсангүй."),
+      el("div", {}, err && err.status === 404
+        ? "Газрын зургийн өгөгдөл олдсонгүй."
+        : "Хуудсыг дахин ачаалаад оролдоно уу."),
+      el("button", {class: "btn", type: "button", style: "margin-top:8px", onclick: () => { inited.map = true; initMap(); }}, "Дахин оролдох"));
+    box.style.display = "block";
+    console.error(err);
+  }
+}
+
+async function initMapInner(){
+  MAPDATA = JSON.parse($("mapdata").textContent);   // зургийн өгөгдөл энэ файл дотроо байна
+  const svg = $("mapSvg");
+  MS.base = MAPDATA.viewBox.slice(); MS.vb = MS.base.slice();
+  svg.setAttribute("viewBox", MS.vb.join(" "));
+  svg.append(el("defs", {}, el("pattern", {id: "nodata", patternUnits: "userSpaceOnUse", width: 7, height: 7, patternTransform: "rotate(45)"},
+    el("rect", {width: 7, height: 7, fill: "#DCE5D9"}), el("line", {x1: 0, y1: 0, x2: 0, y2: 7, stroke: "#B3C3AF", "stroke-width": 2.5}))));
+  const gReg = el("g"), gLbl = el("g");
+  MAPDATA.regions.forEach(r => {
+    const has = !!BY_AIMAG[r.mn];
+    const p = el("path", {d: r.d, class: "reg" + (has ? "" : " nodata"), "fill-rule": "evenodd", "aria-label": r.mn,
+      tabindex: has ? 0 : null, role: has ? "button" : null});
+    if (has){
+      p.addEventListener("click", () => { if (!MS.dragged) selectAimag(r.mn); });
+      p.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); selectAimag(r.mn); } });
+    }
+    p.addEventListener("mousemove", (e) => showTip(e, r.mn));
+    p.addEventListener("mouseleave", () => { $("tip").style.display = "none"; });
+    p.addEventListener("focus", () => showTipAt(r));
+    p.addEventListener("blur", () => { $("tip").style.display = "none"; });
+    regionEls[r.mn] = p; gReg.append(p);
+    if (has && !HIDE_LABEL.has(r.mn)){
+      const [x, y] = LABEL_POS[r.mn] || [r.cx, r.cy];
+      const t = el("text", {x, y, class: "lbl"}, r.mn); labelEls[r.mn] = t; gLbl.append(t);
+    }
+  });
+  svg.append(gReg, gLbl);
+  MS.gReg = gReg;
+  enablePan(svg);
+
+  const yrs = $("mapYear");
+  yrs.replaceChildren(...YEARS.slice().reverse().map(y => el("option", {value: y}, y)));
+  MS.year = YEARS[YEARS.length - 1]; yrs.value = MS.year;
+  yrs.addEventListener("change", () => { MS.year = Number(yrs.value); updateMap(); });
+  $("mapFilter").addEventListener("change", (e) => { MS.filter = e.target.value; paintMap(); });
+  $("mapSearch").addEventListener("input", (e) => { MS.query = e.target.value.trim().toLowerCase(); paintMap(); });
+  $("mapSearch").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" || !MS.query) return;
+    const hit = AIMAGS.find(a => a.toLowerCase().includes(MS.query)); if (hit) selectAimag(hit);
+  });
+  $("layerSeg").replaceChildren(...Object.entries(LAYERS).map(([k, L]) =>
+    el("button", {type: "button", "data-layer": k, onclick: () => { MS.layer = k; syncSeg(); paintMap(); }}, L.label)));
+  syncSeg();
+  $("zIn").addEventListener("click", () => zoom(1.5));
+  $("zOut").addEventListener("click", () => zoom(1 / 1.5));
+  $("zFit").addEventListener("click", () => { MS.vb = MS.base.slice(); applyVb(); });
+
+  const top = [...(BY_YEAR[MS.year] || [])].sort((a, b) => b.score - a.score)[0];
+  MS.selected = top ? top.aimag : null;
+  updateMap();
+}
+
+function updateMap(){
+  const rows = BY_YEAR[MS.year] || [];
+  const m = mean(rows.map(r => r.score));
+  $("kpiMean").textContent = m.toFixed(1);
+  const prev = BY_YEAR[MS.year - 1], dEl = $("kpiDelta");
+  if (prev){
+    const d = m - mean(prev.map(r => r.score));
+    dEl.textContent = `${d > 0 ? "▲" : d < 0 ? "▼" : "•"} ${Math.abs(d).toFixed(1)} оноо`;
+    dEl.className = "delta " + (d > 0.05 ? "bad" : d < -0.05 ? "good" : "flat");
+  } else { dEl.textContent = ""; dEl.className = "delta flat"; }
+  $("kpiHigh").textContent = rows.filter(r => levelOf(r.score) === "high").length + " аймаг";
+  renderTop(rows); paintMap(); renderDrill();
+}
+
+function paintMap(){
+  const rows = Object.fromEntries((BY_YEAR[MS.year] || []).map(r => [r.aimag, r]));
+  const L = LAYERS[MS.layer];
+  $("mapTitle").textContent = `${L.label}, ${MS.year}`;
+  $("mapSub").textContent = MS.layer === "risk"
+    ? "Бэлчээрийн талхагдлын оноо (0–100): өндөр оноо = өндөр эрсдэл"
+    : "Өнгөний хүрээ 2010–2025 оны бүх бүртгэлээр тогтоогдсон тул жилүүдийг харьцуулж болно.";
+  MAPDATA.regions.forEach(({mn}) => {
+    const p = regionEls[mn], r = rows[mn];
+    if (!r){ p.setAttribute("fill", "url(#nodata)"); return; }
+    const fill = layerColor(MS.layer, r);
+    p.setAttribute("fill", fill);
+    const okLevel = MS.filter === "all" || levelOf(r.score) === MS.filter;
+    const okQuery = !MS.query || mn.toLowerCase().includes(MS.query);
+    p.style.opacity = okLevel && okQuery ? 1 : 0.2;
+    p.classList.toggle("sel", mn === MS.selected);
+    if (labelEls[mn]){ labelEls[mn].setAttribute("fill", lum(fill) < 140 ? "#fff" : "#14231B"); labelEls[mn].style.opacity = p.style.opacity; }
+  });
+  if (MS.selected && regionEls[MS.selected]) MS.gReg.append(regionEls[MS.selected]); // сонгосныг дээр гаргана
+  renderLegend();
+}
+
+function renderLegend(){
+  const lg = $("legend");
+  if (MS.layer === "risk"){
+    const grad = `linear-gradient(90deg,${RISK_RAMP.map(([p, c]) => `${c} ${p}%`).join(",")})`;
+    lg.replaceChildren(
+      el("div", {}, el("div", {class: "ramp", style: `background:${grad}`}), el("div", {class: "ends"}, el("span", {}, "0"), el("span", {}, "100"))),
+      el("span", {}, el("b", {}, "Бага"), ` (<${THRESH.low_max})`),
+      el("span", {}, el("b", {}, "Дунд"), ` (${THRESH.low_max}–${THRESH.medium_max})`),
+      el("span", {}, el("b", {}, "Өндөр"), ` (≥${THRESH.medium_max})`));
+  } else {
+    const L = LAYERS[MS.layer], [lo, hi] = STATS.range[MS.layer];
+    lg.replaceChildren(el("div", {}, el("div", {class: "ramp", style: `background:linear-gradient(90deg,${L.ramp[0]},${L.ramp[1]})`}),
+      el("div", {class: "ends"}, el("span", {}, L.fmt(lo)), el("span", {}, L.fmt(hi)))));
+  }
+}
+
+function renderTop(rows){
+  const sorted = [...rows].sort((a, b) => b.score - a.score).slice(0, 5);
+  $("topTitle").textContent = `Эрсдэл өндөр аймгууд (${MS.year})`;
+  $("topList").replaceChildren(...sorted.map((r, i) => {
+    const k = levelOf(r.score);
+    return el("button", {class: "toprow" + (r.aimag === MS.selected ? " sel" : ""), type: "button", onclick: () => selectAimag(r.aimag)},
+      el("span", {class: "rk"}, "#" + (i + 1)),
+      el("span", {}, el("b", {}, r.aimag), el("div", {class: "sub"}, `Мал ${(r.Total_Livestock / 1e6).toFixed(2)} сая • NDVI ${r.NDVI.toFixed(2)}`)),
+      el("span", {class: "lvl " + k}, `${LV[k].name} (${r.score.toFixed(0)})`),
+      el("div", {class: "bar"}, el("i", {style: `width:${r.score}%;background:${css("--" + k)}`})));
+  }));
+}
+
+function selectAimag(name){ MS.selected = name; updateMap(); }
+
+function renderDrill(){
+  const box = $("drill"), name = MS.selected, hist = BY_AIMAG[name];
+  if (!hist){ box.replaceChildren(el("p", {class: "sub"}, "Зурагнаас аймаг сонгоно уу.")); return; }
+  const cur = hist.find(r => r.year === MS.year), past = hist.filter(r => r.year <= MS.year);
+  if (!cur) return;
+  const prevRow = hist.find(r => r.year === MS.year - 1), ref5 = hist.find(r => r.year === MS.year - 5);
+  $("drillTitle").textContent = `${name}: дэлгэрэнгүй (${MS.year})`;
+  const k = levelOf(cur.score);
+
+  const dBadge = (d, goodWhenUp) => {
+    if (d === null || !isFinite(d)) return null;
+    const cls = Math.abs(d) < 1 ? "flat" : ((d > 0) === goodWhenUp ? "good" : "bad");
+    return el("span", {class: "delta " + cls}, `${d > 0 ? "+" : ""}${d.toFixed(0)}%`);
+  };
+  const livD = prevRow ? (cur.Total_Livestock / prevRow.Total_Livestock - 1) * 100 : null;
+  const ndviD = ref5 ? (cur.NDVI / ref5.NDVI - 1) * 100 : null;
+  const pAvg = mean(past.map(r => r.Precipitation_mm));
+  const precD = (cur.Precipitation_mm / pAvg - 1) * 100;
+  const natStock = mean((BY_YEAR[MS.year] || []).map(r => r.Stocking_Rate));
+  const stD = (cur.Stocking_Rate / natStock - 1) * 100;
+
+  const nd = past.map(r => r.NDVI), lo = Math.min(...nd), hi = Math.max(...nd), W = 130, H = 34;
+  const pts = nd.map((v, i) => `${(i / Math.max(1, nd.length - 1)) * W},${H - 3 - ((v - lo) / (hi - lo || 1)) * (H - 6)}`).join(" ");
+  const spark = el("svg", {viewBox: `0 0 ${W} ${H}`, width: W, height: H, "aria-hidden": "true"},
+    el("polyline", {points: pts, fill: "none", stroke: css("--primary"), "stroke-width": 2, "stroke-linejoin": "round"}));
+
+  const msgs = [];
+  if (precD < -20) msgs.push(`Хур тунадас ${name}-ийн ${past[0].year}–${MS.year} оны дунджаас ${Math.abs(precD).toFixed(0)}%-иар бага байна.`);
+  if (ndviD !== null && ndviD < -10) msgs.push(`NDVI 5 жилийн өмнөхөөс ${Math.abs(ndviD).toFixed(0)}%-иар буурсан.`);
+  if (stD > 20) msgs.push(`Ачааллын коэффициент улсын дунджаас ${stD.toFixed(0)}%-иар өндөр байна.`);
+  const adv = k === "high" ? "Ачааллыг бууруулах, отор нүүдэл болон нөөц тэжээлийн төлөвлөгөө хэрэгтэй."
+    : k === "mid" ? "Ачаалал болон ургамлын төлвийг улирал бүр хянах нь зүйтэй." : "Одоогийн төлөв тогтвортой байна.";
+
+  box.replaceChildren(
+    el("div", {class: "stat"}, el("div", {class: "row"}, el("span", {}, "Нийт мал"), dBadge(livD, false)),
+      el("b", {class: "big"}, `${(cur.Total_Livestock / 1e6).toFixed(2)} сая`),
+      el("span", {class: "sub"}, prevRow ? "өмнөх жилтэй харьцуулсан өөрчлөлт" : "хонин толгойд шилжүүлснээр")),
+    el("div", {class: "stat"}, el("div", {class: "row"}, el("span", {}, "NDVI-ийн хандлага"), dBadge(ndviD, true)),
+      el("div", {class: "row"}, el("b", {class: "big"}, cur.NDVI.toFixed(3)), spark),
+      el("span", {class: "sub"}, ref5 ? "5 жилийн өмнөхтэй харьцуулсан" : "")),
+    el("div", {class: "stat"}, el("div", {class: "row"}, el("span", {}, "Жилийн хур тунадас"), dBadge(precD, true)),
+      el("b", {class: "big"}, `${cur.Precipitation_mm.toFixed(0)} мм`),
+      el("span", {class: "sub"}, `${name}-ийн дундаж ${pAvg.toFixed(0)} мм-тэй харьцуулсан`)),
+    el("div", {class: "stat"}, el("div", {class: "row"}, el("span", {}, "Ачааллын коэффициент"), dBadge(stD, false)),
+      el("b", {class: "big"}, cur.Stocking_Rate.toFixed(2)),
+      el("span", {class: "sub"}, `улсын дундаж ${natStock.toFixed(2)}-той харьцуулсан`)),
+    el("div", {class: "alertbox " + k}, el("b", {}, `${LV[k].name} эрсдэл: ${cur.score.toFixed(0)} оноо`), msgs.join(" ") + (msgs.length ? " " : "") + adv));
+}
+
+/* ---- tooltip, томруулалт, чирэх ---- */
+function fillTip(name){
+  const row = (BY_YEAR[MS.year] || []).find(r => r.aimag === name), t = $("tip");
+  if (!row){ t.textContent = `${name}: өгөгдөлгүй`; return; }
+  const L = LAYERS[MS.layer], k = levelOf(row.score);
+  t.textContent = MS.layer === "risk" ? `${name}: ${row.score.toFixed(0)} оноо (${LV[k].name})` : `${name}: ${L.fmt(L.get(row))} • эрсдэл ${row.score.toFixed(0)}`;
+}
+function showTip(e, name){
+  const box = $("mapBox").getBoundingClientRect(), t = $("tip");
+  fillTip(name); t.style.display = "block";
+  t.style.left = Math.max(4, Math.min(box.width - t.offsetWidth - 8, e.clientX - box.left + 14)) + "px";
+  t.style.top = Math.max(4, e.clientY - box.top - 40) + "px";
+}
+function showTipAt(r){
+  const t = $("tip"), sb = $("mapSvg").getBoundingClientRect();
+  fillTip(r.mn); t.style.display = "block";
+  t.style.left = Math.max(4, ((r.cx - MS.vb[0]) / MS.vb[2]) * sb.width) + "px";
+  t.style.top = Math.max(4, ((r.cy - MS.vb[1]) / MS.vb[3]) * sb.height - 30) + "px";
+}
+function applyVb(){ $("mapSvg").setAttribute("viewBox", MS.vb.map(n => n.toFixed(1)).join(" ")); }
+function clampVb(){
+  const [, , bw, bh] = MS.base;
+  MS.vb[0] = Math.min(bw - MS.vb[2], Math.max(0, MS.vb[0]));
+  MS.vb[1] = Math.min(bh - MS.vb[3], Math.max(0, MS.vb[1]));
+}
+function zoom(f){
+  const [x, y, w, h] = MS.vb, [, , bw, bh] = MS.base;
+  const nw = Math.min(bw, Math.max(bw / 6, w / f)), nh = nw * bh / bw;
+  MS.vb = [x + (w - nw) / 2, y + (h - nh) / 2, nw, nh];
+  clampVb(); applyVb();
+}
+function enablePan(svg){
+  let start = null;
+  svg.addEventListener("pointerdown", (e) => { start = {x: e.clientX, y: e.clientY, vb: MS.vb.slice()}; MS.dragged = false; });
+  svg.addEventListener("pointermove", (e) => {
+    if (!start) return;
+    const dx = e.clientX - start.x, dy = e.clientY - start.y;
+    if (Math.abs(dx) + Math.abs(dy) > 5){ MS.dragged = true; svg.classList.add("drag"); }
+    if (!MS.dragged || MS.vb[2] >= MS.base[2]) return;
+    const k = start.vb[2] / svg.getBoundingClientRect().width;
+    MS.vb = [start.vb[0] - dx * k, start.vb[1] - dy * k, start.vb[2], start.vb[3]];
+    clampVb(); applyVb();
+  });
+  const end = () => { start = null; svg.classList.remove("drag"); setTimeout(() => { MS.dragged = false; }, 0); };
+  svg.addEventListener("pointerup", end); svg.addEventListener("pointerleave", end);
+}
+
+/* =====================  БЭЛЧЭЭРИЙН БҮС  ===================== */
+// Аймаг бүрийг давамгай бүсээр нь ангилсан (ойролцоо). Засахыг хүсвэл aimags жагсаалтыг өөрчилнө.
+const ZONES = {
+  mountain: {short: "Уул", name: "Өндөр уул, тайга", color: "#8D9BB0", share: "~10%",
+    desc: "Өндөр уул, тайгын бүс. Хүйтэн, ургалтын хугацаа богино тул бэлчээрийн нөхөн сэргэлт удаан.",
+    plants: "Уулын нуга, хөвд, мөнх цэвдгийн ургамал", animals: "Сарлаг, хонь, ямаа",
+    aimags: ["Хөвсгөл", "Баян-Өлгий", "Ховд"]},
+  forest: {short: "Ойн хээр", name: "Уул-ойт хээр", color: "#5B9A73", share: "~25%",
+    desc: "Ой ба хээрийн ургамал уулзсан бүс. Бэлчээрийн ургац харьцангуй сайн, хүн мал хамгийн их төвлөрсөн нутгийн нэг.",
+    plants: "Үетэн, өвслөг ургамал, ойн хэсэг", animals: "Үхэр, адуу, хонь",
+    aimags: ["Архангай", "Булган", "Сэлэнгэ", "Дархан-Уул", "Орхон", "Төв", "Хэнтий", "Завхан"]},
+  steppe: {short: "Хээр", name: "Хээр", color: "#C8BE63", share: "—",
+    desc: "Үетэн ургамал давамгайлсан өргөн уудам тал хээр. Зүүн Монголд зонхилно.",
+    plants: "Хялгана, цагаан өвс, үетэн", animals: "Хонь, адуу, үхэр",
+    aimags: ["Дорнод", "Сүхбаатар", "Өвөрхангай", "Увс"]},
+  gobi: {short: "Говь", name: "Говийн хээр", color: "#D9A55B", share: "20 гаруй%",
+    desc: "Хээр ба цөлийн хоорондох шилжилтийн зурвас. Хур тунадас бага, бэлчээрийн ургац жилээс жилд тогтворгүй.",
+    plants: "Харгана, таана, хялгана", animals: "Хонь, ямаа, тэмээ",
+    aimags: ["Дундговь", "Дорноговь", "Говьсүмбэр", "Баянхонгор"]},
+  desert: {short: "Цөл", name: "Говийн цөл", color: "#C27857", share: "—",
+    desc: "Ургамал сийрэг, зөвхөн ган гачигт тэсвэртэй ургамал ургана. Бэлчээрийн даац хамгийн бага.",
+    plants: "Заг (саксаул), баглуур, цөлийн сөөг", animals: "Тэмээ, ямаа",
+    aimags: ["Өмнөговь", "Говь-Алтай"]},
+};
+const ZONE_KEYS = ["mountain", "forest", "steppe", "gobi", "desert"];
+const ZONE_OF = {};
+ZONE_KEYS.forEach(k => ZONES[k].aimags.forEach(a => { ZONE_OF[a] = k; }));
+const ZS = {zone: "all", year: null, aimag: null};
+let zoneRegionEls = {}, zoneLabelEls = {};
+
+function zoneRows(k, year){ return (BY_YEAR[year] || []).filter(r => ZONE_OF[r.aimag] === k); }
+function zoneMean(k, year){ const rows = zoneRows(k, year); return rows.length ? mean(rows.map(r => r.score)) : null; }
+const swatch = (c) => el("span", {class: "swatch", style: `background:${c}`});
+
+function initZones(){
+  const data = JSON.parse($("mapdata").textContent);
+  const svg = $("zoneSvg");
+  svg.setAttribute("viewBox", data.viewBox.join(" "));
+  svg.append(el("defs", {}, el("pattern", {id: "zoneNoData", patternUnits: "userSpaceOnUse", width: 7, height: 7, patternTransform: "rotate(45)"},
+    el("rect", {width: 7, height: 7, fill: "#DCE5D9"}), el("line", {x1: 0, y1: 0, x2: 0, y2: 7, stroke: "#B3C3AF", "stroke-width": 2.5}))));
+  const gReg = el("g"), gLbl = el("g");
+  data.regions.forEach(r => {
+    const k = ZONE_OF[r.mn];
+    const p = el("path", {d: r.d, class: "reg" + (k ? "" : " nodata"), "fill-rule": "evenodd",
+      fill: k ? ZONES[k].color : "url(#zoneNoData)", "aria-label": k ? `${r.mn}: ${ZONES[k].name}` : r.mn,
+      tabindex: k ? 0 : null, role: k ? "button" : null});
+    const tip = $("zoneTip");
+    p.addEventListener("mousemove", (e) => {
+      const box = svg.parentNode.getBoundingClientRect();
+      const row = (BY_YEAR[ZS.year] || []).find(x => x.aimag === r.mn);
+      tip.textContent = k ? `${r.mn} • ${ZONES[k].short} • эрсдэл ${row ? row.score.toFixed(0) : "–"}` : `${r.mn}: өгөгдөлгүй`;
+      tip.style.display = "block";
+      tip.style.left = Math.max(4, Math.min(box.width - tip.offsetWidth - 8, e.clientX - box.left + 14)) + "px";
+      tip.style.top = Math.max(4, e.clientY - box.top - 40) + "px";
+    });
+    p.addEventListener("mouseleave", () => { tip.style.display = "none"; });
+    if (k){
+      p.addEventListener("click", () => setZone(k, r.mn));
+      p.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); setZone(k, r.mn); } });
+    }
+    zoneRegionEls[r.mn] = p; gReg.append(p);
+    if (k && !HIDE_LABEL.has(r.mn)){
+      const [x, y] = LABEL_POS[r.mn] || [r.cx, r.cy];
+      const t = el("text", {x, y, class: "lbl", fill: lum(ZONES[k].color) < 140 ? "#fff" : "#14231B"}, r.mn);
+      zoneLabelEls[r.mn] = t; gLbl.append(t);
+    }
+  });
+  svg.append(gReg, gLbl);
+  ZS.gReg = gReg;
+
+  const yrs = $("zoneYear");
+  yrs.replaceChildren(...YEARS.slice().reverse().map(y => el("option", {value: y}, y)));
+  ZS.year = YEARS[YEARS.length - 1]; yrs.value = ZS.year;
+  yrs.addEventListener("change", () => { ZS.year = Number(yrs.value); renderZones(); });
+
+  $("zoneSeg").replaceChildren(...[["all", "Бүгд"], ...ZONE_KEYS.map(k => [k, ZONES[k].short])].map(([k, label]) =>
+    el("button", {type: "button", "data-zone": k, onclick: () => setZone(k)}, label)));
+
+  $("zoneLegend").replaceChildren(
+    ...ZONE_KEYS.map(k => el("span", {}, swatch(ZONES[k].color), ZONES[k].name)),
+    el("span", {}, el("span", {class: "swatch hatch"}), "Улаанбаатар (өгөгдөлгүй)"));
+  renderZones();
+}
+
+function setZone(k, aimag = null){ ZS.zone = k; ZS.aimag = aimag; renderZones(); }
+
+function renderZones(){
+  // зураг
+  Object.entries(zoneRegionEls).forEach(([mn, p]) => {
+    const k = ZONE_OF[mn];
+    p.style.opacity = !k || ZS.zone === "all" || k === ZS.zone ? 1 : 0.2;
+    p.classList.toggle("sel", mn === ZS.aimag);
+    if (zoneLabelEls[mn]) zoneLabelEls[mn].style.opacity = p.style.opacity;
+  });
+  if (ZS.aimag && zoneRegionEls[ZS.aimag]) ZS.gReg.append(zoneRegionEls[ZS.aimag]);
+  document.querySelectorAll("#zoneSeg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.zone === ZS.zone)));
+
+  // баруун талын мэдээлэл
+  const box = $("zoneInfo");
+  if (ZS.zone === "all"){
+    box.replaceChildren(
+      el("h2", {}, "Бүсүүдийн тойм"),
+      el("p", {class: "sub", style: "margin:4px 0 0"}, `${ZS.year} оны аймгуудын дундаж оноо. Бүс дээр дарж дэлгэрэнгүйг харна уу.`),
+      el("div", {class: "toplist"}, ZONE_KEYS.map(k => {
+        const m = zoneMean(k, ZS.year), lv = levelOf(m);
+        return el("button", {class: "toprow", type: "button", onclick: () => setZone(k)},
+          swatch(ZONES[k].color),
+          el("span", {}, el("b", {}, ZONES[k].name), el("div", {class: "sub"}, `${ZONES[k].aimags.length} аймаг`)),
+          el("span", {class: "lvl " + lv}, `${LV[lv].name} (${m.toFixed(0)})`),
+          el("div", {class: "bar"}, el("i", {style: `width:${m}%;background:${css("--" + lv)}`})));
+      })));
+  } else {
+    const z = ZONES[ZS.zone], m = zoneMean(ZS.zone, ZS.year), lv = levelOf(m);
+    const rows = zoneRows(ZS.zone, ZS.year).sort((a, b) => b.score - a.score);
+    box.replaceChildren(
+      el("button", {class: "btn zback", type: "button", onclick: () => setZone("all")}, "← Бүх бүс"),
+      el("h2", {}, swatch(z.color), z.name),
+      el("p", {style: "margin:8px 0 0"}, z.desc),
+      el("div", {class: "stat"}, el("div", {class: "row"}, el("span", {}, `Дундаж эрсдэл, ${ZS.year}`), el("span", {class: "lvl " + lv}, LV[lv].name + " эрсдэл")),
+        el("b", {class: "big"}, `${m.toFixed(1)} оноо`),
+        el("div", {class: "bar"}, el("i", {style: `width:${m}%;background:${css("--" + lv)}`}))),
+      el("div", {class: "stat"}, el("div", {class: "row"}, el("span", {}, "Гол ургамал"), el("b", {}, z.plants))),
+      el("div", {class: "stat"}, el("div", {class: "row"}, el("span", {}, "Гол мал"), el("b", {}, z.animals))),
+      el("div", {class: "stat"}, el("div", {class: "row"}, el("span", {}, "Нутаг дэвсгэрийн эзлэх хувь"), el("b", {}, z.share))),
+      el("h3", {style: "margin:16px 0 8px"}, `Аймгууд (${rows.length})`),
+      el("div", {class: "toplist", style: "margin-top:0"}, rows.map(r => {
+        const l = levelOf(r.score);
+        return el("button", {class: "arow" + (r.aimag === ZS.aimag ? " sel" : ""), type: "button", onclick: () => setZone(ZS.zone, r.aimag)},
+          el("b", {}, r.aimag), el("span", {class: "lvl " + l}, `${LV[l].name} (${r.score.toFixed(0)})`),
+          el("div", {class: "bar"}, el("i", {style: `width:${r.score}%;background:${css("--" + l)}`})));
+      })));
+  }
+
+  // хүснэгт
+  const cols = ["Бүс", "Эзлэх хувь", "Гол ургамал", "Гол мал", "Аймаг", "Дундаж оноо", "Түвшин"];
+  $("zoneTable").replaceChildren(
+    el("thead", {}, el("tr", {}, cols.map((t, i) => el("th", {class: i === 1 || i === 4 || i === 5 ? "n" : ""}, t)))),
+    el("tbody", {}, ZONE_KEYS.map(k => {
+      const z = ZONES[k], m = zoneMean(k, ZS.year), lv = levelOf(m);
+      return el("tr", {class: "clickable" + (ZS.zone === k ? " zsel" : ""), tabindex: 0, onclick: () => setZone(k),
+          onkeydown: (e) => { if (e.key === "Enter") setZone(k); }},
+        el("td", {}, swatch(z.color), el("b", {}, z.name)),
+        el("td", {class: "n"}, z.share), el("td", {}, z.plants), el("td", {}, z.animals),
+        el("td", {class: "n"}, z.aimags.length), el("td", {class: "n"}, m.toFixed(1)),
+        el("td", {}, el("span", {class: "lvl " + lv}, LV[lv].name)));
+    })));
+}
+
+/* =====================  БАРИМТУУД  ===================== */
+const SOURCES = {
+  unccd: {short: "UNCCD", name: "UNCCD – Rangelands and pastoralists", url: "https://www.unccd.int/land-and-life/rangelands-and-pastoralists"},
+  fao:   {short: "FAO", name: "FAO – International Year of Rangelands and Pastoralists 2026", url: "https://www.fao.org/newsroom/detail/fao-launches-the-international-year-of-rangelands-and-pastoralists-2026-to-strengthen-these-ecosystems-and-support-the-people-who-sustain-them/en"},
+  unric: {short: "UNRIC", name: "UNRIC – UNCCD COP17 advances new pathways for land restoration, drought resilience and implementation", url: "https://unric.org/en/unccd-cop17-advances-new-pathways-for-land-restoration-drought-resilience-and-implementation/"},
+  slu:   {short: "SLU", name: "SLU – The International Year of Rangelands and Pastoralists 2026", url: "https://slu.se/en/Collaborative-Centres-and-Projects/slu-future-one-health/one-health-updates/other-info/iyrp-towards-a-global-embrace-to-valuing-rangelands-and-pastoralists"},
+  undp:  {short: "UNDP", name: "UNDP Mongolia – Preserving Nomadic Tradition in a Changing Climate", url: "https://www.undp.org/mongolia/blog/preserving-nomadic-tradition-changing-climate-path-forward-mongolian-herders"},
+  ifrc:  {short: "IFRC", name: "IFRC – Mongolia: helping herders survive iron dzud", url: "https://www.ifrc.org/article/mongolia-helping-herders-survive-iron-dzud"},
+  dairy: {short: "DairyNews", name: "DairyNews – Mongolia's Livestock Numbers Drop by 7 Million in 2024", url: "https://dairynews.today/global/news/mongolia-s-livestock-numbers-drop-by-7-million-in-2024.html"},
+  gogo:  {short: "Go Go Mongolia", name: "Go Go Mongolia – Over 40% of Mongolia's pastures to exceed capacity this winter and spring", url: "https://mongolia.gogo.mn/r/80wk2"},
+  unmn:  {short: "НҮБ дахь Монгол", name: "Closing remarks – UNCCD COP17 closing plenary", url: "https://www.un.int/mongolia/statements_speeches/closing-remarks-unccd-cop17-closing-plenary"},
+};
+
+const FACTS_WORLD = [
+  {big: "54%", title: "Дэлхийн хуурай газрын бэлчээр", src: ["unccd"],
+   text: "Бэлчээрийн газар дэлхийн хуурай газрын 54 гаруй хувийг буюу ойролцоогоор 80 сая км²-ийг эзэлдэг. Энэ нь дэлхийн хамгийн том газар ашиглалтын төрөл."},
+  {big: "~2 тэрбум", title: "Бэлчээрээр хангагддаг хүн", src: ["unric"],
+   text: "Бэлчээр ойролцоогоор 2 тэрбум хүнийг тэтгэж, 500 орчим сая малчин тэдгээрийг арчлан хамгаалдаг."},
+  {big: "50%+", title: "Дэлхийн малын талаас илүү нь", src: ["slu"],
+   text: "Дэлхийн малын талаас илүү хувь нь бэлчээрт тэжээгддэг."},
+  {big: "30%", title: "Хөрсний нүүрстөрөгчийн нөөц", src: ["fao"],
+   text: "Бэлчээр дэлхийн хөрсний органик нүүрстөрөгчийн нөөцийн ойролцоогоор 30 хувийг агуулдаг. Гэвч тэдгээрийн ойролцоогоор тал хувь нь доройтсон гэж үнэлэгддэг."},
+  {big: "2026", title: "Бэлчээр ба малчдын олон улсын жил", src: ["fao", "slu"],
+   text: "НҮБ-ын Ерөнхий Ассамблей 2022 оны 3-р сарын 22-нд Монгол Улсын саналаар 2026 оныг «Бэлчээр ба малчдын олон улсын жил» болгон зарласан. Саналыг Монгол Улс тэргүүлж, 60 улс дэмжсэн."},
+];
+
+const FACTS_MN = [
+  {big: "71 сая+", title: "Мал бэлчээрийн даацаас давсан", src: ["undp"],
+   text: "2022 оны байдлаар Монголын мал 71 саяас давж, бэлчээрийн даацаас ойролцоогоор 2.6 дахин их байна гэж UNDP тэмдэглэсэн."},
+  {big: "70%+", title: "Доройтсон бэлчээр", src: ["undp"],
+   text: "Бэлчээрийн 70 гаруй хувь тодорхой хэмжээгээр доройтсон бөгөөд 2021 оны байдлаар 23 хувь нь хүчтэй доройтсон байна (Монгол дахь цөлжилт ба газрын доройтлын үнэлгээ)."},
+  {big: "~8 сая", title: "2023–2024 оны зудад хорогдсон мал", src: ["ifrc"],
+   text: "2023–2024 оны хүнд зудад ойролцоогоор 8 сая мал хорогдсон нь нийт малын 12.5 хувьтай тэнцэнэ."},
+  {big: "57.6 сая", title: "2024 оны малын тоо", src: ["dairy"],
+   text: "Статистикийн мэдээгээр 2024 онд мал 10.9%-иар (7 сая) буурч 57.6 сая болсон: хонь 24.5, ямаа 22.9, үхэр 5.1, адуу 4.7, тэмээ 0.48 сая. (Хоёрдогч эх сурвалж.)"},
+  {big: "40%+", title: "2025–2026 оны өвөл, хаврын бэлчээр", src: ["gogo"],
+   text: "Цаг уур, орчны шинжилгээний газрын 2025 оны 9-р сарын үнэлгээгээр нутгийн 40 гаруй хувьд бэлчээр өвөл, хаврын улиралд даацаа хэтрэх төлөвтэй."},
+  {big: "COP17", title: "Улаанбаатарт болсон бага хурал", src: ["unric", "unmn"],
+   text: "UNCCD-ийн 17 дугаар Талуудын бага хурал 2026 оны 8-р сарын 17–28-нд Улаанбаатарт болж, «Улаанбаатарын тунхаг» батлагдсан. Rangelands Flagship Initiative-д 45 төслийн 1.2 тэрбум ам.доллар төвлөрүүлсэн."},
+];
+
+function dataFacts(){
+  const y1 = YEARS[0], y2 = YEARS[YEARS.length - 1], a = BY_YEAR[y1], b = BY_YEAR[y2];
+  const m1 = mean(a.map(r => r.score)), m2 = mean(b.map(r => r.score));
+  const hi = (rows) => rows.filter(r => levelOf(r.score) === "high").length;
+  const top = [...b].sort((x, y) => y.score - x.score)[0];
+  const l1 = a.reduce((s, r) => s + r.Total_Livestock, 0), l2 = b.reduce((s, r) => s + r.Total_Livestock, 0);
+  const sg = (v) => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(1);
+  const lp = (l2 / l1 - 1) * 100;
+  return [
+    {big: `${hi(b)} / ${b.length}`, title: `Өндөр эрсдэлтэй аймаг, ${y2}`,
+     text: `${y1} онд ${hi(a)} аймаг өндөр эрсдэлтэй (оноо ≥ ${THRESH.medium_max}) байсан бол ${y2} онд ${hi(b)} болсон.`},
+    {big: `${m1.toFixed(0)} → ${m2.toFixed(0)}`, title: `Улсын дундаж оноо, ${y1}–${y2}`,
+     text: `21 аймгийн эрсдэлийн оноон дундаж ${sg(m2 - m1)} оноогоор өөрчлөгдсөн.`},
+    {big: top.aimag, title: `Эрсдэл хамгийн өндөр аймаг, ${y2}`,
+     text: `${top.score.toFixed(0)} оноо. Ачааллын коэффициент ${top.Stocking_Rate.toFixed(2)}, NDVI ${top.NDVI.toFixed(2)}.`},
+    {big: `${lp >= 0 ? "+" : "−"}${Math.abs(lp).toFixed(0)}%`, title: "Нийт малын өөрчлөлт (хонин толгойд)",
+     text: `${y1} онд ${(l1 / 1e6).toFixed(0)} сая, ${y2} онд ${(l2 / 1e6).toFixed(0)} сая хонин толгой.`},
+  ];
+}
+
+function factCard(f, kind){
+  const src = f.src
+    ? ["Эх сурвалж: ", ...f.src.flatMap((id, i) => [i ? ", " : "", el("a", {href: SOURCES[id].url, target: "_blank", rel: "noopener noreferrer"}, SOURCES[id].short)])]
+    : ["Эх сурвалж: загварын өгөгдөл (database.xlsx)"];
+  return el("article", {class: "fact " + kind}, el("div", {class: "fbig"}, f.big), el("h3", {}, f.title), el("p", {}, f.text), el("div", {class: "fsrc"}, src));
+}
+
+function initFacts(){
+  $("factsData").replaceChildren(...dataFacts().map(f => factCard(f, "data")));
+  $("factsWorld").replaceChildren(...FACTS_WORLD.map(f => factCard(f, "world")));
+  $("factsMongolia").replaceChildren(...FACTS_MN.map(f => factCard(f, "mn")));
+  $("factsSources").replaceChildren(...Object.values(SOURCES).map(s =>
+    el("li", {}, el("a", {href: s.url, target: "_blank", rel: "noopener noreferrer"}, s.name))));
+  document.querySelectorAll("#factsToggle [data-panel]").forEach(b => b.addEventListener("click", () => {
+    openPanel(b.getAttribute("aria-pressed") === "true" ? null : b.dataset.panel);
+  }));
+}
+
+// Тайлан / Түүхэн өгөгдлийн хэсгийг нээх, хаах
+function openPanel(name){
+  ["reports", "history"].forEach(n => {
+    $("panel-" + n).hidden = n !== name;
+    const b = document.querySelector(`#factsToggle [data-panel="${n}"]`);
+    if (b) b.setAttribute("aria-pressed", String(n === name));
+  });
+  if (!name) return;
+  if (!panelInited[name]){ panelInited[name] = true; (name === "reports" ? initReports : initHistory)(); }
+  $("panel-" + name).scrollIntoView({behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start"});
+}
+
+/* =====================  3. ТАЙЛАН  ===================== */
+let trendChart, repSort = {key: "score", dir: -1};
+function initReports(){
+  $("repYear").replaceChildren(...YEARS.slice().reverse().map(y => el("option", {value: y}, y)));
+  $("repYear").value = YEARS[YEARS.length - 1];
+  $("repYear").addEventListener("change", renderReport);
+  $("repPrint").addEventListener("click", () => printPage("reports"));
+  const means = YEARS.map(y => mean(BY_YEAR[y].map(r => r.score)));
+  const highs = YEARS.map(y => BY_YEAR[y].filter(r => levelOf(r.score) === "high").length);
+  trendChart = new Chart($("trendChart"), {
+    type: "bar",
+    data: {labels: YEARS, datasets: [
+      {type: "line", label: "Дундаж оноо", data: means.map(v => +v.toFixed(1)), borderColor: css("--primary"), backgroundColor: css("--primary"), tension: .25, yAxisID: "y", pointRadius: 3},
+      {type: "bar", label: "Өндөр эрсдэлтэй аймгийн тоо", data: highs, backgroundColor: "rgba(179,38,30,.35)", yAxisID: "y2"}]},
+    options: {responsive: true, maintainAspectRatio: false,
+      scales: {y: {min: 0, max: 100, title: {display: true, text: "Оноо"}, grid: {color: "#D3E0D0"}},
+               y2: {position: "right", min: 0, max: 21, grid: {display: false}, title: {display: true, text: "Аймгийн тоо"}},
+               x: {grid: {display: false}}},
+      plugins: {legend: {position: "bottom"}}}});
+  renderReport();
+}
+function sortBy(k){ repSort = {key: k, dir: repSort.key === k ? -repSort.dir : -1}; renderReport(); }
+function renderReport(){
+  const year = Number($("repYear").value);
+  $("repTitle").textContent = `${year} оны аймгуудын үзүүлэлт`;
+  const cols = [["aimag", "Аймаг"], ["score", "Оноо"], ["level", "Түвшин"], ["Total_Livestock", "Мал (сая)"], ["NDVI", "NDVI"], ["Precipitation_mm", "Хур тунадас (мм)"], ["Temperature_C", "Хэм (°C)"], ["Stocking_Rate", "Ачаалал"]];
+  const rows = BY_YEAR[year].map(r => ({...r, level: levelOf(r.score)}));
+  const {key, dir} = repSort;
+  const lvOrder = {low: 1, mid: 2, high: 3};
+  rows.sort((a, b) => {
+    if (key === "aimag") return a.aimag.localeCompare(b.aimag, "mn") * dir;
+    if (key === "level") return (lvOrder[a.level] - lvOrder[b.level]) * dir;
+    return (a[key] - b[key]) * dir;
+  });
+  const isText = (k) => k === "aimag" || k === "level";
+  const cell = (r, k) => k === "aimag" ? r.aimag : k === "level" ? el("span", {class: "lvl " + r.level}, LV[r.level].name)
+    : k === "Total_Livestock" ? (r[k] / 1e6).toFixed(2) : k === "score" ? r[k].toFixed(1) : k === "NDVI" ? r[k].toFixed(3) : fmt(r[k], 2);
+  $("repTable").replaceChildren(
+    el("thead", {}, el("tr", {}, cols.map(([k, t]) => el("th", {class: "sortable" + (isText(k) ? "" : " n"), tabindex: 0, role: "button",
+      onclick: () => sortBy(k), onkeydown: (e) => { if (e.key === "Enter") sortBy(k); }},
+      t + (repSort.key === k ? (repSort.dir > 0 ? " ▲" : " ▼") : ""))))),
+    el("tbody", {}, rows.map(r => el("tr", {}, cols.map(([k]) => el("td", {class: isText(k) ? "" : "n"}, cell(r, k)))))));
+}
+
+/* =====================  4. ТҮҮХЭН ӨГӨГДӨЛ  ===================== */
+let histChart;
+function initHistory(){
+  $("histAimag").replaceChildren(...AIMAGS.map(a => el("option", {value: a}, a)));
+  $("histAimag").addEventListener("change", renderHistory);
+  renderHistory();
+}
+async function renderHistory(){
+  const name = $("histAimag").value;
+  const hist = (await api("/api/aimag/" + encodeURIComponent(name))).history;
+  if (histChart) histChart.destroy();
+  histChart = new Chart($("histChart"), {
+    type: "line",
+    data: {labels: hist.map(h => h.year), datasets: [
+      {label: "Бодит оноо", data: hist.map(h => h.actual_score), borderColor: css("--ink"), backgroundColor: css("--ink"), tension: .25, pointRadius: 3},
+      {label: "KNN таамаглал", data: hist.map(h => h.knn_estimate), borderColor: css("--primary"), backgroundColor: css("--primary"), borderDash: [6, 4], tension: .25, pointRadius: 3}]},
+    options: {responsive: true, maintainAspectRatio: false,
+      scales: {y: {min: 0, max: 100, grid: {color: "#D3E0D0"}}, x: {grid: {display: false}}},
+      plugins: {legend: {position: "bottom"}, title: {display: true, text: name + ": эрсдэлийн оноо"}}}});
+  const cols = [["year", "Жил"], ["actual_score", "Бодит оноо"], ["knn_estimate", "KNN"], ["Total_Livestock", "Мал (сая)"], ["NDVI", "NDVI"], ["Precipitation_mm", "Хур тунадас (мм)"], ["Stocking_Rate", "Ачаалал"]];
+  $("histTable").replaceChildren(
+    el("thead", {}, el("tr", {}, cols.map(([, t], i) => el("th", {class: i ? "n" : ""}, t)))),
+    el("tbody", {}, [...hist].reverse().map(r => el("tr", {}, cols.map(([k], i) => el("td", {class: i ? "n" : ""},
+      k === "Total_Livestock" ? (r[k] / 1e6).toFixed(2) : k === "NDVI" ? r[k].toFixed(3) : k === "year" ? String(r[k]) : fmt(r[k], 2)))))));
+}
+
+function printPage(name){
+  const p = $(name === "reports" ? "page-facts" : "page-" + name);
+  p.classList.add("printing");
+  if (name === "reports") document.body.classList.add("only-reports");
+  window.print();
+  setTimeout(() => { p.classList.remove("printing"); document.body.classList.remove("only-reports"); }, 300);
+}
+
+/* =====================  ЭХЛҮҮЛЭХ  ===================== */
+async function init(){
+  // Өгөгдөл ачаалахаас өмнө цэс, танилцуулга ажиллана (алдаа гарсан ч Тусламж нээгдэнэ)
+  document.querySelectorAll("header nav button").forEach(b => b.addEventListener("click", () => showPage(b.dataset.page)));
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest("[data-goto]");
+    if (a){ e.preventDefault(); goTo(a.dataset.goto); }
+  });
+  $("introCard").hidden = introClosed();
+  $("introClose").addEventListener("click", () => setIntro(false));
+  $("introReopen").addEventListener("click", () => { setIntro(true); showPage("predict"); });
+  window.addEventListener("hashchange", () => showPage(location.hash.slice(1)));
+  try{
+    const [info, ds] = await Promise.all([api("/api/model-info"), api("/api/dataset")]);
+    INFO = info; ROWS = ds.rows;
+  }catch(err){
+    console.error(err);
+    $("modelChip").textContent = "Холбогдож чадсангүй";
+    $("fatal").hidden = false;
+    showPage(location.hash.slice(1) || "predict");
+    return;
+  }
+  THRESH = INFO.thresholds;
+  YEARS = [...new Set(ROWS.map(r => r.year))].sort((a, b) => a - b);
+  AIMAGS = [...new Set(ROWS.map(r => r.aimag))].sort((a, b) => a.localeCompare(b, "mn"));
+  ROWS.forEach(r => { (BY_AIMAG[r.aimag] = BY_AIMAG[r.aimag] || []).push(r); (BY_YEAR[r.year] = BY_YEAR[r.year] || []).push(r); });
+  Object.values(BY_AIMAG).forEach(a => a.sort((x, y) => x.year - y.year));
+
+  STATS.mean = {}; STATS.range = {};
+  INFO.features.forEach(f => { STATS.mean[f] = mean(ROWS.map(r => r[f])); });
+  const lk = {ndvi: "NDVI", livestock: "Total_Livestock", stocking: "Stocking_Rate", precip: "Precipitation_mm"};
+  Object.entries(lk).forEach(([k, f]) => { STATS.range[k] = [Math.min(...ROWS.map(r => r[f])), Math.max(...ROWS.map(r => r[f]))]; });
+
+  $("modelChip").textContent = `Нарийвчлал: ±${INFO.metrics.unseen_aimag_cv.MAE} оноо`;
+  // Хэмжүүрийн босгууд
+  const g = $("gauge").children, w1 = THRESH.low_max, w2 = THRESH.medium_max - THRESH.low_max, w3 = 100 - THRESH.medium_max;
+  g[0].style.width = w1 + "%"; g[1].style.width = w2 + "%"; g[2].style.width = w3 + "%";
+  [["s1", w1, `0–${THRESH.low_max}`], ["s2", w2, `${THRESH.low_max}–${THRESH.medium_max}`], ["s3", w3, `${THRESH.medium_max}–100`]].forEach(([id, w, t]) => {
+    $(id).style.width = w + "%"; $(id).querySelector("small").textContent = t;
+  });
+  // Аймгаар бөглөх жагсаалт, талбарын тайлбар
+  $("fillAimag").replaceChildren(el("option", {value: ""}, "— Аймаг сонгох —"), ...AIMAGS.map(a => el("option", {value: a}, a)));
+  $("fillAimag").addEventListener("change", (e) => { if (e.target.value) sample(e.target.value); });
+  addFieldHints(); fillHelpNumbers();
+  const [sl, sh] = INFO.feature_ranges.Stocking_Rate;
+  $("stockHint").textContent = `(${sl} – ${sh})`;
+
+  $("form").addEventListener("submit", calculate);
+  $("clearBtn").addEventListener("click", clearForm);
+  $("printBtn").addEventListener("click", () => printPage("predict"));
+  $("NDVI_range").addEventListener("input", (e) => setNdvi(e.target.value));
+  $("NDVI").addEventListener("input", (e) => setNdvi(e.target.value));
+
+  showPage(location.hash.slice(1) || "predict");
+  sample("Төв");
+}
+init();
+</script>
+</body>
+</html>
