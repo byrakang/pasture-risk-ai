@@ -12,7 +12,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 BASE = Path(__file__).parent
-DATA_PATH = BASE / "data" / "database.xlsx"
+DATA_PATH = "database.xlsx"
 MODEL_DIR = BASE / "model"
 SHEET = "ML Model Dataset (Risk Score)"
 
