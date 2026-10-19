@@ -14,7 +14,6 @@ SHEET = "ML Model Dataset (Risk Score)"
 app = Flask(__name__, static_folder="static", static_url_path="/static")
 app.json.ensure_ascii = False  # Монгол үсэг JSON-д хэвээр гарна
 CORS(app)
- from flask import Flask, render_template, send_from_directory
 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
 
