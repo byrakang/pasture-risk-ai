@@ -285,40 +285,38 @@ details.faq p{margin:8px 0 0}
   body.only-reports #panel-reports[hidden]{display:block!important}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-*{
+* {
   box-sizing: border-box;
 }
 img {
     max-width:100%;
     height:auto;
 }
-
-@media screen and (max-width:768px) {
-  body {
-      margin:0;
-      pading:10px;
+  
+@media screen and (max-width:768px) 
+    body {
+          margin:0;
+          pading:10px;
+  }
+  
+    h1 {
+        font-size: 24px;
   }
 
-  h1 {
-      font-size: 24px;
+    h2 {
+        font-size: 20px;
   }
-
-  h2 {
-      font-size: 20px;
+  
+    table { 
+           display: block;
+           max-width: 100%;
+           overflow-x: auto;
   }
-  table {
-      display: block;
-      max-width: 100%;
-      overflow-x: auto;
-  }
-
+  
   input,
   select,
   textarea,
-  button {
-      max-width: 100%;
-  }
-}
+  button { max-width: 100%;}}
 </style>
 </head>
 <body>
