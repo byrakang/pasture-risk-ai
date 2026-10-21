@@ -1,26 +1,20 @@
 import json
 import os
 from pathlib import Path
- 
+
 import joblib
 import numpy as np
 import pandas as pd
 from flask import Flask, Response, jsonify, request, send_from_directory
 from flask_cors import CORS
- 
+
 BASE = Path(__file__).parent
 SHEET = "ML Model Dataset (Risk Score)"
- 
+
 app = Flask(__name__, static_folder="static", static_url_path="/static")
-app.json.ensure_ascii = False  # Монгол үсэг JSON-д хэвээр гарна
+app.json.ensure_ascii = False  
 CORS(app)
 
-app = Flask(__name__, static_folder="static", static_url_path="/static")
-
-@app.route("/")
-def index():
-    return send_from_directory(".", "index.html")
-   
 # ----------------------------------------------------------------- Ачаалалт
 regressor = joblib.load(BASE / "model" / "knn_regressor.joblib")
 classifier = joblib.load(BASE / "model" / "knn_classifier.joblib")
@@ -28,13 +22,13 @@ META = json.loads((BASE / "model" / "metadata.json").read_text(encoding="utf-8")
 FEATURES = META["features"]
 LOW_MAX = META["thresholds"]["low_max"]
 MEDIUM_MAX = META["thresholds"]["medium_max"]
- 
-df = pd.read_excel("database.xlsx", sheet_name=SHEET)
+
+df = pd.read_excel(BASE "database.xlsx", sheet_name=SHEET)
 scaler = regressor.named_steps["scaler"]
 knn = regressor.named_steps["knn"]
 X_scaled = scaler.transform(df[FEATURES])
 Y = df["Degradation_Risk_Score"].to_numpy()
- 
+
 LABELS = {
     "Total_Livestock": "Нийт мал (хонин толгойд)",
     "Precipitation_mm": "Жилийн хур тунадас (мм)",
@@ -42,8 +36,8 @@ LABELS = {
     "NDVI": "NDVI",
     "Stocking_Rate": "Ачааллын коэффициент",
 }
- 
- 
+
+
 # ----------------------------------------------------------------- Туслахууд
 def level_of(score: float) -> str:
     if score < LOW_MAX:
@@ -51,8 +45,8 @@ def level_of(score: float) -> str:
     if score < MEDIUM_MAX:
         return "Дунд (Medium)"
     return "Өндөр (High)"
- 
- 
+
+
 def knn_score(x_scaled_row, exclude_idx=None, with_neighbors=False):
     """
     KNN оноог гараар тооцно (sklearn-ийн regressor-тай ижил үр дүн).
@@ -66,13 +60,13 @@ def knn_score(x_scaled_row, exclude_idx=None, with_neighbors=False):
     if exclude_idx is not None:
         keep = idx != exclude_idx
         dist, idx = dist[keep][:k], idx[keep][:k]
- 
+
     if knn.weights == "distance":
         w = 1.0 / np.maximum(dist, 1e-12)
     else:
         w = np.ones_like(dist)
     score = float(np.sum(w * Y[idx]) / np.sum(w))
- 
+
     if not with_neighbors:
         return score, None
     neighbors = [
@@ -86,8 +80,8 @@ def knn_score(x_scaled_row, exclude_idx=None, with_neighbors=False):
         for i, d, wi in zip(idx, dist, w)
     ]
     return score, neighbors
- 
- 
+
+
 def parse_features(payload):
     """JSON-оос 5 шинж чанарыг шалгаж гаргана. (values, errors) буцаана."""
     values, errors = {}, []
@@ -110,8 +104,8 @@ def parse_features(payload):
     if "NDVI" in values and not (-1 <= values["NDVI"] <= 1):
         errors.append("'NDVI' -1..1 хооронд байх ёстой")
     return values, errors
- 
- 
+
+
 def range_warnings(values):
     """Сургалтын өгөгдлийн хүрээнээс гарсан утгыг анхааруулна (KNN extrapolate хийдэггүй)."""
     warnings = []
@@ -124,11 +118,11 @@ def range_warnings(values):
                 "тулгуурладаг тул үр дүн найдвар муутай."
             )
     return warnings
- 
- 
+
+
 MEDIANS = df[FEATURES].median().to_dict()
- 
- 
+
+
 def factor_effects(values, base_score):
     """
     Шинж чанар бүрийг сургалтын өгөгдлийн медиан утгаар сольж оноо хэрхэн
@@ -144,23 +138,23 @@ def factor_effects(values, base_score):
         out.append({"feature": f, "label": LABELS[f],
                     "effect": round(base_score - alt_score, 1)})
     return sorted(out, key=lambda r: abs(r["effect"]), reverse=True)
- 
- 
+
+
 def row_features(row):
     return {f: float(row[f]) for f in FEATURES}
- 
- 
+
+
 # ----------------------------------------------------------------- Endpoint-ууд
 @app.get("/")
 def index():
     return send_from_directory(app.static_folder, "index.html")
- 
- 
+
+
 @app.get("/api/health")
 def health():
     return jsonify(status="ok")
- 
- 
+
+
 @app.get("/api/model-info")
 def model_info():
     return jsonify(
@@ -170,16 +164,16 @@ def model_info():
         **{k: META[k] for k in ("best_params", "metrics", "n_samples", "years",
                                  "feature_ranges", "thresholds")},
     )
- 
- 
+
+
 @app.get("/api/aimags")
 def aimags():
     return jsonify(
         aimags=sorted(df["Аймаг"].unique().tolist()),
         years=sorted(df["Жил"].unique().tolist()),
     )
- 
- 
+
+
 @app.post("/api/predict")
 def predict():
     """
@@ -193,12 +187,12 @@ def predict():
     values, errors = parse_features(payload)
     if errors:
         return jsonify(errors=errors), 422
- 
+
     x = pd.DataFrame([values], columns=FEATURES)
     x_scaled = scaler.transform(x)[0]
     score, neighbors = knn_score(x_scaled, with_neighbors=True)
     cls = classifier.predict(x)[0]
- 
+
     return jsonify(
         risk_score=round(score, 1),
         risk_level=level_of(score),
@@ -209,8 +203,8 @@ def predict():
         factors=factor_effects(values, score),
         input=values,
     )
- 
- 
+
+
 @app.get("/api/dataset")
 def dataset():
     """Бүх аймаг-жилийн бодит өгөгдөл (газрын зураг, тайлан, график ашиглана)."""
@@ -221,8 +215,8 @@ def dataset():
         for _, r in df.iterrows()
     ]
     return jsonify(rows=rows, thresholds=META["thresholds"])
- 
- 
+
+
 @app.get("/api/dataset.csv")
 def dataset_csv():
     out = df.rename(columns={"Аймаг": "Aimag", "Жил": "Year"})
@@ -233,8 +227,8 @@ def dataset_csv():
         mimetype="text/csv; charset=utf-8",
         headers={"Content-Disposition": "attachment; filename=pasture_risk_dataset.csv"},
     )
- 
- 
+
+
 @app.get("/api/aimag/<name>")
 def aimag_history(name):
     """Аймгийн жил бүрийн бодит оноо болон KNN-ий leave-one-out таамаглал."""
@@ -254,8 +248,8 @@ def aimag_history(name):
             }
         )
     return jsonify(aimag=name, history=sorted(rows, key=lambda r: r["year"]))
- 
- 
+
+
 @app.get("/api/ranking")
 def ranking():
     """?year=2025 - тухайн жилийн аймгуудыг эрсдэлээр эрэмбэлнэ (default: сүүлийн жил)."""
@@ -279,10 +273,9 @@ def ranking():
     for rank, r in enumerate(out, 1):
         r["rank"] = rank
     return jsonify(year=year, ranking=out)
- 
- 
+
+
 if __name__ == "__main__":
     # Өөрийн компьютер дээр туршихад. Бусдад харуулахдаа serve.py ашиглана.
     app.run(host=os.environ.get("HOST", "127.0.0.1"), port=int(os.environ.get("PORT", "5000")),
             debug=True, use_reloader=False)
- 
