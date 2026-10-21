@@ -722,7 +722,6 @@ function addFieldHints(){
     NDVI: `Хиймэл дагуулаар хэмжсэн ургамлын ногоон байдал (0–1). Ихэнх аймагт ${typ("NDVI", 1, 2)} орчим.`,
     Temperature_C: `Жилийн дундаж агаарын хэм. Ихэнх аймагт ${typ("Temperature_C", 1, 1)} °C орчим.`,
     Precipitation_mm: `Жилийн нийт хур тунадас. Ихэнх аймагт ${typ("Precipitation_mm", 1, 0)} мм орчим.`,
-    Stocking_Rate: `Бэлчээрт ногдох малын ачаалал. Утга их байх тусам ачаалал их. Ихэнх аймагт ${typ("Stocking_Rate", 1, 1)} орчим.`,
   };
   Object.entries(hints).forEach(([f, text]) => {
     const field = $(f).closest(".field");
@@ -1481,7 +1480,7 @@ async function init(){
   showPage(location.hash.slice(1) || "predict");
   sample("Төв");
 }
-init();
+  init();
 </script>
 </body>
 </html>
