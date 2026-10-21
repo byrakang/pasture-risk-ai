@@ -1,4 +1,10 @@
+"""
+Бэлчээрийн талхагдлын эрсдэлийн оноо (Pasture Degradation Risk Score) -
+KNN загварыг сургах скрипт.
 
+Ажиллуулах:  python train_model.py
+Гаралт:      model/knn_regressor.joblib, model/knn_classifier.joblib, model/metadata.json
+"""
 import json
 from pathlib import Path
 
@@ -12,21 +18,31 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 BASE = Path(__file__).parent
-DATA_PATH = BASE / "database.xlsx"
+def _find(name, *dirs):
+    """Файлыг data/ хавтаснаас, эсвэл төслийн үндэс хавтаснаас хайна (GitHub-д хавтасгүй оруулсан ч ажиллана)."""
+    for d in dirs:
+        p = BASE / d / name
+        if p.exists():
+            return p
+    raise FileNotFoundError(f"{name} олдсонгүй. Хайсан хавтас: {', '.join(dirs)}")
+
+
+DATA_PATH = _find("database.xlsx", "data", ".")
 MODEL_DIR = BASE / "model"
 SHEET = "ML Model Dataset (Risk Score)"
 
 FEATURES = [
-    "Total_Livestock",     
-    "Precipitation_mm",   
-    "Temperature_C",       
-    "NDVI",                
-    "Stocking_Rate",       
+    "Total_Livestock",     # Нийт мал (хонин толгойд шилжүүлснээр)
+    "Precipitation_mm",    # Жилийн хур тунадас
+    "Temperature_C",       # Жилийн дундаж температур
+    "NDVI",                # Ургамлын индекс
+    "Stocking_Rate",       # Бэлчээрийн ачааллын коэффициент
 ]
 TARGET = "Degradation_Risk_Score"
 TARGET_CLASS = "Risk_Level_Class"
 GROUP = "Аймаг"
 
+# Оноог ангилах босго (өгөгдлийн Risk_Level_Class-тай таарч байгаа)
 LOW_MAX, MEDIUM_MAX = 35.0, 65.0
 
 
@@ -39,6 +55,8 @@ def score_to_level(score: float) -> str:
 
 
 def make_pipeline(estimator):
+    # KNN зайнд суурилдаг тул шинж чанаруудыг заавал стандартчилна
+    # (мал 10^6, NDVI 10^-1 орчим - стандартчилахгүй бол мал бүх зайг тодорхойлно)
     return Pipeline([("scaler", StandardScaler()), ("knn", estimator)])
 
 
@@ -49,9 +67,12 @@ def main():
     param_grid = {
         "knn__n_neighbors": [3, 5, 7, 9, 11, 15, 21],
         "knn__weights": ["uniform", "distance"],
-        "knn__p": [1, 2], 
+        "knn__p": [1, 2],  # 1 = Manhattan, 2 = Euclidean
     }
 
+    # ---- 1. Hyperparameter сонголт: аймгаар бүлэглэсэн CV ----
+    # Санамсаргүй CV нь нэг аймгийн өөр жилүүдийг сургалт/тест хоёрт хуваадаг тул
+    # хэт өөдрөг үр дүн өгдөг. GroupKFold нь "огт үзээгүй аймаг"-т хэр ажиллахыг үнэлнэ.
     gkf = GroupKFold(n_splits=7)
     search = GridSearchCV(
         make_pipeline(KNeighborsRegressor()),
@@ -64,8 +85,10 @@ def main():
     best = {k.replace("knn__", ""): v for k, v in search.best_params_.items()}
     print("Шилдэг параметр:", best)
 
+    # ---- 2. Үнэлгээ ----
     metrics = {}
 
+    # (a) Огт үзээгүй аймагт
     fold_pred = np.zeros(len(df))
     for tr, te in gkf.split(X, y, groups):
         m = make_pipeline(KNeighborsRegressor(**best)).fit(X.iloc[tr], y.iloc[tr])
@@ -78,6 +101,7 @@ def main():
         ),
     }
 
+    # (b) Цаг хугацааны хуваалт: 2010–2022-оор сургаад 2023–2025-ыг таамаглах
     train_mask = df["Жил"] <= 2022
     m = make_pipeline(KNeighborsRegressor(**best)).fit(X[train_mask], y[train_mask])
     pred = m.predict(X[~train_mask])
@@ -91,6 +115,7 @@ def main():
     for name, r in metrics.items():
         print(name, r)
 
+    # ---- 3. Эцсийн загварууд: бүх өгөгдөл дээр сургана ----
     regressor = make_pipeline(KNeighborsRegressor(**best)).fit(X, y)
     classifier = make_pipeline(KNeighborsClassifier(**best)).fit(X, y_cls)
 
