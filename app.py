@@ -182,7 +182,9 @@ def row_features(row):
 # ----------------------------------------------------------------- Endpoint-ууд
 @app.get("/")
 def index():
-    return send_from_directory(app.static_folder, "index.html")
+    # index.html repo-ийн үндсэн хавтсанд (static/ дотор биш) байгаа
+    folder = BASE if (BASE / "index.html").exists() else app.static_folder
+    return send_from_directory(folder, "index.html")
 
 
 @app.get("/api/health")
@@ -307,3 +309,8 @@ def ranking():
     for rank, r in enumerate(out, 1):
         r["rank"] = rank
     return jsonify(year=year, ranking=out)
+
+
+if __name__ == "__main__":
+    app.run(host=os.environ.get("HOST", "127.0.0.1"), port=int(os.environ.get("PORT", "5000")),
+            debug=True, use_reloader=False)
