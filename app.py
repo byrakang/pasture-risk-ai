@@ -9,6 +9,8 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.metrics import mean_absolute_error
 
 BASE = Path(__file__).parent
 SHEET = "ML Model Dataset (Risk Score)"
@@ -17,11 +19,9 @@ app = Flask(__name__, static_folder="static", static_url_path="/static")
 app.json.ensure_ascii = False  # Монгол үсэг JSON-д хэвээр гарна
 CORS(app)
 
-# ----------------------------------------------------------------- Өгөгдөл
-# Загварын feature (Stocking_Rate-г label-ийн эх үүсвэр тул feature-ээс хаслаа)
-FEATURES = ["Total_Livestock", "Precipitation_mm", "Temperature_C", "NDVI"]
+FEATURES = ["Total_Livestock", "Precipitation_mm", "Temperature_C", "NDVI", "Stocking_Rate"]
 STOCK = "Stocking_Rate"
-SHOW = FEATURES + [STOCK]  # сайтад харуулах багана (загварт ордоггүй)
+SHOW = FEATURES
 LOW_MAX, MEDIUM_MAX = 35, 65
 N_NEIGHBORS = 5
 
@@ -29,27 +29,30 @@ _xl = pd.ExcelFile(BASE / "database.xlsx")
 _sheet = SHEET if SHEET in _xl.sheet_names else _xl.sheet_names[0]
 df = pd.read_excel(_xl, sheet_name=_sheet).reset_index(drop=True)
 
-# ----------------------------------------------------------------- ML (таны код)
-# Класс: Stocking_Rate медианаас их бол 1 (өндөр ачаалал), бага бол 0.
-MEDIAN_STOCK = float(df["Stocking_Rate"].median())
+if "Degradation_Risk_Score" in df.columns:
+    TARGET = df["Degradation_Risk_Score"].astype(float).clip(0, 100)
+else:  # yеөр бол 4 feature-ээс тасралтгүй composite
+    mm = lambda s: (s - s.min()) / (s.max() - s.min() + 1e-9)
+    TARGET = 100 * (0.35*mm(df["Stocking_Rate"]) + 0.25*mm(df["Total_Livestock"])
+                    + 0.25*(1-mm(df["NDVI"])) + 0.15*(1-mm(df["Precipitation_mm"])))
+
 X = df[FEATURES]
-y = (df[STOCK] > MEDIAN_STOCK).astype(int)
+Y = TARGET.to_numpy()
 
-# 1) Шалгалт: 80/20 хуваалт (таны скриптийн адил)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 _sc = StandardScaler()
-_knn = KNeighborsClassifier(n_neighbors=N_NEIGHBORS)
-_knn.fit(_sc.fit_transform(X_train), y_train)
-_proba_test = _knn.predict_proba(_sc.transform(X_test))[:, 1] * 100
-TEST_ACC = float(accuracy_score(y_test, _knn.predict(_sc.transform(X_test))))
-TEST_MAE = float(np.mean(np.abs(_proba_test - y_test.to_numpy() * 100)))
+_knn = KNeighborsRegressor(n_neighbors=N_NEIGHBORS, weights="distance").fit(_sc.fit_transform(X_train), y_train)
+_pred = _knn.predict(_sc.transform(X_test))
+TEST_MAE = float(mean_absolute_error(y_test, _pred))
+_lvl = lambda a: np.where(a < LOW_MAX, 0, np.where(a < MEDIUM_MAX, 1, 2))
+TEST_ACC = float(np.mean(_lvl(_pred) == _lvl(y_test)))
 
-# 2) Сайтад ашиглах эцсийн загвар: бүх өгөгдөл дээр сургана
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
-knn = KNeighborsClassifier(n_neighbors=N_NEIGHBORS)
-knn.fit(X_scaled, y)
-Y = y.to_numpy() * 100.0  # хөрш бүрийн "оноо": 0 эсвэл 100
+knn = KNeighborsRegressor(n_neighbors=N_NEIGHBORS, weights="distance").fit(X_scaled, Y)
+    score = float(np.sum(w * Y[idx]) / np.sum(w))
+    spread = float(np.sqrt(np.sum(w * (Y[idx] - score) ** 2) / np.sum(w)))
+    return score, spread, neighbors    
 
 META = {
     "best_params": {"n_neighbors": N_NEIGHBORS},
@@ -69,8 +72,6 @@ LABELS = {
     "Stocking_Rate": "Ачааллын коэффициент",
 }
 
-
-# ----------------------------------------------------------------- Туслахууд
 def level_of(score: float) -> str:
     if score < LOW_MAX:
         return "Бага (Low)"
@@ -114,9 +115,7 @@ def knn_score(x_scaled_row, exclude_idx=None, with_neighbors=False):
     return score, neighbors
 
 
-# Мөр бүрийн leave-one-out оноо (газрын зураг, түүх, эрэмбэд ашиглана)
 LOO_SCORE = np.array([knn_score(X_scaled[i], exclude_idx=i)[0] for i in range(len(df))])
-# "Бодит оноо": өгөгдөлд Degradation_Risk_Score байвал түүнийг, үгүй бол ангиллын оноог
 ACTUAL = (df["Degradation_Risk_Score"].to_numpy(dtype=float)
           if "Degradation_Risk_Score" in df.columns else Y)
 
@@ -179,10 +178,8 @@ def row_features(row):
     return {f: float(row[f]) for f in SHOW}
 
 
-# ----------------------------------------------------------------- Endpoint-ууд
 @app.get("/")
 def index():
-    # index.html repo-ийн үндсэн хавтсанд (static/ дотор биш) байгаа
     folder = BASE if (BASE / "index.html").exists() else app.static_folder
     return send_from_directory(folder, "index.html")
 
@@ -226,14 +223,16 @@ def predict():
         return jsonify(errors=errors), 422
 
     x = pd.DataFrame([values], columns=FEATURES)
-    x_scaled = scaler.transform(x)[0]
-    score, neighbors = knn_score(x_scaled, with_neighbors=True)
-    cls = int(knn.predict(scaler.transform(x))[0])
+        x_scaled = scaler.transform(pd.DataFrame([values], columns=FEATURES))[0]
+    score, spread, neighbors = knn_score(x_scaled, with_neighbors=True)
+    pct = float((LOO_SCORE < score).mean() * 100)       # buh aimag-jiliin dotor хэд дэх хувьд
+    lo, hi = max(0, score - spread), min(100, score + spread)
 
     return jsonify(
         risk_score=round(score, 1),
         risk_level=level_of(score),
-        classifier_level="Өндөр ачаалал (1)" if cls == 1 else "Бага ачаалал (0)",
+        range=[round(lo, 1), round(hi, 1)],
+        percentile=round(pct),
         k=knn.n_neighbors,
         neighbors=neighbors,
         warnings=range_warnings(values),
@@ -259,7 +258,6 @@ def dataset_csv():
     out = df.rename(columns={"Аймаг": "Aimag", "Жил": "Year"}).copy()
     out["Model_Risk_Score"] = np.round(LOO_SCORE, 1)
     body = out.to_csv(index=False)
-    # utf-8-sig: Excel дээр монгол үсэг зөв нээгдэнэ
     return Response(
         "\ufeff" + body,
         mimetype="text/csv; charset=utf-8",
