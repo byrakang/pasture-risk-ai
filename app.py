@@ -5,12 +5,10 @@ import numpy as np
 import pandas as pd
 from flask import Flask, Response, jsonify, request, send_from_directory
 from flask_cors import CORS
-from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing import StandardScaler
-from sklearn.neighbors import KNeighborsRegressor
 from sklearn.metrics import mean_absolute_error
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.preprocessing import StandardScaler
 
 BASE = Path(__file__).parent
 SHEET = "ML Model Dataset (Risk Score)"
@@ -19,8 +17,8 @@ app = Flask(__name__, static_folder="static", static_url_path="/static")
 app.json.ensure_ascii = False  # Монгол үсэг JSON-д хэвээр гарна
 CORS(app)
 
+# ----------------------------------------------------------------- Өгөгдөл
 FEATURES = ["Total_Livestock", "Precipitation_mm", "Temperature_C", "NDVI", "Stocking_Rate"]
-STOCK = "Stocking_Rate"
 SHOW = FEATURES
 LOW_MAX, MEDIUM_MAX = 35, 65
 N_NEIGHBORS = 5
@@ -29,30 +27,48 @@ _xl = pd.ExcelFile(BASE / "database.xlsx")
 _sheet = SHEET if SHEET in _xl.sheet_names else _xl.sheet_names[0]
 df = pd.read_excel(_xl, sheet_name=_sheet).reset_index(drop=True)
 
+
+# ----------------------------------------------------------------- Зорилтот утга (тасралтгүй 0-100)
+def _minmax(s):
+    return (s - s.min()) / (s.max() - s.min() + 1e-9)
+
+
 if "Degradation_Risk_Score" in df.columns:
     TARGET = df["Degradation_Risk_Score"].astype(float).clip(0, 100)
-else:  # yеөр бол 4 feature-ээс тасралтгүй composite
-    mm = lambda s: (s - s.min()) / (s.max() - s.min() + 1e-9)
-    TARGET = 100 * (0.35*mm(df["Stocking_Rate"]) + 0.25*mm(df["Total_Livestock"])
-                    + 0.25*(1-mm(df["NDVI"])) + 0.15*(1-mm(df["Precipitation_mm"])))
+else:
+    # Excel-д бэлэн оноо байхгүй бол 5 үзүүлэлтээс тасралтгүй composite индекс байгуулна
+    TARGET = 100 * (
+        0.35 * _minmax(df["Stocking_Rate"])
+        + 0.25 * _minmax(df["Total_Livestock"])
+        + 0.25 * (1 - _minmax(df["NDVI"]))
+        + 0.15 * (1 - _minmax(df["Precipitation_mm"]))
+    )
 
 X = df[FEATURES]
-Y = TARGET.to_numpy()
+Y = TARGET.to_numpy(dtype=float)
 
+# ----------------------------------------------------------------- ML
+# 1) Шалгалт: 80/20 хуваалт
 X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 _sc = StandardScaler()
-_knn = KNeighborsRegressor(n_neighbors=N_NEIGHBORS, weights="distance").fit(_sc.fit_transform(X_train), y_train)
+_knn = KNeighborsRegressor(n_neighbors=N_NEIGHBORS, weights="distance")
+_knn.fit(_sc.fit_transform(X_train), y_train)
 _pred = _knn.predict(_sc.transform(X_test))
 TEST_MAE = float(mean_absolute_error(y_test, _pred))
-_lvl = lambda a: np.where(a < LOW_MAX, 0, np.where(a < MEDIUM_MAX, 1, 2))
+
+
+def _lvl(a):
+    a = np.asarray(a)
+    return np.where(a < LOW_MAX, 0, np.where(a < MEDIUM_MAX, 1, 2))
+
+
 TEST_ACC = float(np.mean(_lvl(_pred) == _lvl(y_test)))
 
+# 2) Сайтад ашиглах эцсийн загвар: бүх өгөгдөл дээр сургана
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
-knn = KNeighborsRegressor(n_neighbors=N_NEIGHBORS, weights="distance").fit(X_scaled, Y)
-    score = float(np.sum(w * Y[idx]) / np.sum(w))
-    spread = float(np.sqrt(np.sum(w * (Y[idx] - score) ** 2) / np.sum(w)))
-    return score, spread, neighbors    
+knn = KNeighborsRegressor(n_neighbors=N_NEIGHBORS, weights="distance")
+knn.fit(X_scaled, Y)
 
 META = {
     "best_params": {"n_neighbors": N_NEIGHBORS},
@@ -72,6 +88,8 @@ LABELS = {
     "Stocking_Rate": "Ачааллын коэффициент",
 }
 
+
+# ----------------------------------------------------------------- Туслахууд
 def level_of(score: float) -> str:
     if score < LOW_MAX:
         return "Бага (Low)"
@@ -82,9 +100,9 @@ def level_of(score: float) -> str:
 
 def knn_score(x_scaled_row, exclude_idx=None, with_neighbors=False):
     """
-    Эрсдэлийн оноо = KNN классификаторын P(өндөр ачаалал) * 100.
-    (knn.predict_proba-той ижил үр дүн). exclude_idx өгвөл тухайн мөрийг хөрш
-    болгохгүй (leave-one-out).
+    Эрсдэлийн оноо = хөрш аймаг-жилүүдийн оноог зайгаар жинлэсэн дундаж (тасралтгүй).
+    Буцаах: (score, spread, neighbors). spread = хөршүүдийн оноон дахь жинлэсэн хазайлт.
+    exclude_idx өгвөл тухайн мөрийг хөрш болгохгүй (leave-one-out).
     """
     k = knn.n_neighbors
     n_query = k + 1 if exclude_idx is not None else k
@@ -94,34 +112,32 @@ def knn_score(x_scaled_row, exclude_idx=None, with_neighbors=False):
         keep = idx != exclude_idx
         dist, idx = dist[keep][:k], idx[keep][:k]
 
-    if knn.weights == "distance":
-        w = 1.0 / np.maximum(dist, 1e-12)
-    else:
-        w = np.ones_like(dist)
+    w = 1.0 / np.maximum(dist, 1e-12)
     score = float(np.sum(w * Y[idx]) / np.sum(w))
+    spread = float(np.sqrt(np.sum(w * (Y[idx] - score) ** 2) / np.sum(w)))
 
-    if not with_neighbors:
-        return score, None
-    neighbors = [
-        {
-            "aimag": str(df.iloc[i]["Аймаг"]),
-            "year": int(df.iloc[i]["Жил"]),
-            "risk_score": float(Y[i]),
-            "distance": round(float(d), 3),
-            "weight_pct": round(float(wi / w.sum() * 100), 1),
-        }
-        for i, d, wi in zip(idx, dist, w)
-    ]
-    return score, neighbors
+    neighbors = None
+    if with_neighbors:
+        neighbors = [
+            {
+                "aimag": str(df.iloc[i]["Аймаг"]),
+                "year": int(df.iloc[i]["Жил"]),
+                "risk_score": round(float(Y[i]), 1),
+                "distance": round(float(d), 3),
+                "weight_pct": round(float(wi / w.sum() * 100), 1),
+            }
+            for i, d, wi in zip(idx, dist, w)
+        ]
+    return score, spread, neighbors
 
 
+# Мөр бүрийн leave-one-out оноо (газрын зураг, түүх, эрэмбэд ашиглана)
 LOO_SCORE = np.array([knn_score(X_scaled[i], exclude_idx=i)[0] for i in range(len(df))])
-ACTUAL = (df["Degradation_Risk_Score"].to_numpy(dtype=float)
-          if "Degradation_Risk_Score" in df.columns else Y)
+ACTUAL = Y
 
 
 def parse_features(payload):
-    """JSON-оос 4 шинж чанарыг шалгаж гаргана. (values, errors) буцаана."""
+    """JSON-оос шинж чанаруудыг шалгаж гаргана. (values, errors) буцаана."""
     values, errors = {}, []
     for f in FEATURES:
         if f not in payload:
@@ -168,7 +184,7 @@ def factor_effects(values, base_score):
         alt = dict(values)
         alt[f] = MEDIANS[f]
         xs = scaler.transform(pd.DataFrame([alt], columns=FEATURES))[0]
-        alt_score, _ = knn_score(xs)
+        alt_score = knn_score(xs)[0]
         out.append({"feature": f, "label": LABELS[f],
                     "effect": round(base_score - alt_score, 1)})
     return sorted(out, key=lambda r: abs(r["effect"]), reverse=True)
@@ -178,6 +194,7 @@ def row_features(row):
     return {f: float(row[f]) for f in SHOW}
 
 
+# ----------------------------------------------------------------- Endpoint-ууд
 @app.get("/")
 def index():
     folder = BASE if (BASE / "index.html").exists() else app.static_folder
@@ -192,7 +209,7 @@ def health():
 @app.get("/api/model-info")
 def model_info():
     return jsonify(
-        algorithm="K-Nearest Neighbors (Classifier)",
+        algorithm="K-Nearest Neighbors (Regressor, distance-weighted)",
         features=FEATURES,
         feature_labels=LABELS,
         **{k: META[k] for k in ("best_params", "metrics", "n_samples", "years",
@@ -213,7 +230,7 @@ def predict():
     """
     Body (JSON):
     {"Total_Livestock": 3200000, "Precipitation_mm": 120, "Temperature_C": -3,
-     "NDVI": 0.33}
+     "NDVI": 0.33, "Stocking_Rate": 1.2}
     """
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
@@ -222,11 +239,10 @@ def predict():
     if errors:
         return jsonify(errors=errors), 422
 
-    x = pd.DataFrame([values], columns=FEATURES)
-        x_scaled = scaler.transform(pd.DataFrame([values], columns=FEATURES))[0]
+    x_scaled = scaler.transform(pd.DataFrame([values], columns=FEATURES))[0]
     score, spread, neighbors = knn_score(x_scaled, with_neighbors=True)
-    pct = float((LOO_SCORE < score).mean() * 100)       # buh aimag-jiliin dotor хэд дэх хувьд
-    lo, hi = max(0, score - spread), min(100, score + spread)
+    pct = float((LOO_SCORE < score).mean() * 100)
+    lo, hi = max(0.0, score - spread), min(100.0, score + spread)
 
     return jsonify(
         risk_score=round(score, 1),
@@ -276,7 +292,7 @@ def aimag_history(name):
         rows.append(
             {
                 "year": int(df.at[i, "Жил"]),
-                "actual_score": float(ACTUAL[i]),
+                "actual_score": round(float(ACTUAL[i]), 1),
                 "actual_level": level_of(float(ACTUAL[i])),
                 "knn_estimate": round(float(LOO_SCORE[i]), 1),
                 **row_features(df.loc[i]),
@@ -297,7 +313,7 @@ def ranking():
         out.append(
             {
                 "aimag": str(df.at[i, "Аймаг"]),
-                "actual_score": float(ACTUAL[i]),
+                "actual_score": round(float(ACTUAL[i]), 1),
                 "knn_estimate": round(float(LOO_SCORE[i]), 1),
                 "knn_level": level_of(float(LOO_SCORE[i])),
                 "actual_level": level_of(float(ACTUAL[i])),
