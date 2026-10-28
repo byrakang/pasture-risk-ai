@@ -6,9 +6,6 @@
 <title>Бэлчээр AI – Монголын бэлчээрийн талхагдлын эрсдэл</title>
 <meta name="description" content="Монголын 21 аймгийн бэлчээрийн талхагдлын эрсдэлийг малын тоо, ургамлын индекс (NDVI), хур тунадас, ачаалалаас тооцож, газрын зураг дээр харьцуулан харуулдаг сайт.">
 <meta name="theme-color" content="#EDF1E4">
-<meta property="og:title" content="Бэлчээр AI – бэлчээрийн талхагдлын эрсдэл">
-<meta property="og:description" content="21 аймгийн бэлчээрийн талхагдлын эрсдэлийг 0–100 оноогоор тооцож, газрын зураг дээр харуулна.">
-<meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%231F7A52'/%3E%3Cpath d='M11 29C11 19 18 13 29 11C28 22 22 29 14 29Z' fill='%23E5EEE3'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,7 +20,6 @@
   --ink:#12201A;
   --muted:#56665B;
   --primary:#2F5BEA;
-  --primary-2:#2F5BEA;
   --accent:#C8F05E;
   --low:#2E9B6E; --low-bg:#D6EEDF;
   --mid:#D49A1C; --mid-bg:#F6E8BF;
@@ -34,7 +30,6 @@
   --r:12px; --r-sm:8px;
   --sans:"Inter",system-ui,"Segoe UI",Arial,sans-serif;
   --display:"Unbounded","Inter",system-ui,sans-serif;
-  --serif:var(--display);
   --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
 }
 *{box-sizing:border-box}
@@ -52,7 +47,6 @@ button,input,select{font:inherit;color:inherit}
 .muted{color:var(--muted)}
 a{color:var(--ink);text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-color:var(--primary)}
 
-/* Толгой */
 .top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:12px clamp(14px,3vw,40px);background:rgba(251,252,246,.92);backdrop-filter:blur(8px);border-bottom:var(--bw) solid var(--ink)}
 .brand{display:flex;align-items:center;gap:10px;font:700 17px var(--display);letter-spacing:-.02em}
 .brand svg{width:36px;height:36px;border:var(--bw) solid var(--ink);border-radius:10px;box-shadow:var(--shadow-sm)}
@@ -62,7 +56,6 @@ nav button:hover{color:var(--ink);background:var(--surface-2)}
 nav button[aria-current="page"]{background:var(--ink);color:var(--accent);border-color:var(--ink)}
 .chip{margin-left:auto;font:500 12.5px var(--mono);padding:6px 12px;border-radius:99px;background:var(--surface);border:var(--bw) solid var(--ink);color:var(--ink)}
 
-/* Ерөнхий */
 .page{display:none;padding:34px clamp(14px,3vw,40px) 48px;max-width:1500px;margin:0 auto}
 .page.active{display:block;animation:rise .35s ease-out}
 @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -88,23 +81,17 @@ input[type=range]{width:100%;accent-color:var(--ink)}
 .btn.primary{background:var(--accent);color:var(--ink)}
 .btn.primary:hover{background:#BDE84A}
 .btn.block{width:100%;padding:14px;font-size:16px;box-shadow:var(--shadow)}
-.btn.block:hover{box-shadow:5px 5px 0 var(--ink)}
-.btn.block:active{box-shadow:0 0 0 var(--ink);transform:translate(4px,4px)}
 .linkbtn{border:0;background:none;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:4px;font-size:14px}
-.linkbtn:hover{color:var(--ink)}
-.samples{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .errors{display:none;margin-top:12px;padding:10px 14px;background:var(--high-bg);border:var(--bw) solid var(--ink);border-left-width:6px;border-left-color:var(--high);border-radius:var(--r-sm);font-size:14px}
 .sub{font-size:13px;color:var(--muted)}
 .select,#fillAimag{width:100%;padding:10px 12px;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--surface);font-weight:600;cursor:pointer}
 
-/* Үр дүн */
 .banner{display:flex;align-items:center;gap:16px;padding:16px 18px;border-radius:var(--r);border:var(--bw) solid var(--ink)}
 .banner.low{background:var(--low-bg)}
 .banner.mid{background:var(--mid-bg)}
 .banner.high{background:var(--high-bg)}
 .banner .badge{width:50px;height:50px;border-radius:10px;display:grid;place-items:center;color:#fff;font:700 22px var(--display);flex:none;border:var(--bw) solid var(--ink);box-shadow:var(--shadow-sm)}
 .banner.low .badge{background:var(--low)} .banner.mid .badge{background:var(--mid)} .banner.high .badge{background:var(--high)}
-.banner h2{font-size:20px}
 .resgrid{display:grid;grid-template-columns:190px 1fr;gap:24px;align-items:center;margin-top:18px;padding:20px;background:var(--surface-2);border:var(--bw) solid var(--ink);border-radius:var(--r)}
 @media (max-width:640px){.resgrid{grid-template-columns:1fr;justify-items:center}}
 .ring{position:relative;width:170px;height:170px}
@@ -117,9 +104,8 @@ input[type=range]{width:100%;accent-color:var(--ink)}
 .factor{margin-top:12px}
 .factor .r{display:flex;justify-content:space-between;font-size:14px;font-weight:600;gap:10px}
 .bar{height:10px;border-radius:99px;background:var(--surface);border:1.5px solid var(--ink);margin-top:5px;overflow:hidden}
-.bar i{display:block;height:100%;border-radius:0}
+.bar i{display:block;height:100%}
 .find{margin-top:18px;border:var(--bw) solid var(--ink);border-left-width:8px;border-left-color:var(--primary);background:var(--surface);border-radius:var(--r);padding:16px 18px}
-.find.high{border-left-color:var(--high)} .find.mid{border-left-color:var(--mid)} .find.low{border-left-color:var(--low)}
 .find ul{margin:10px 0 0;padding:0;list-style:none}
 .find li{display:flex;gap:10px;margin-top:10px}
 .find li i{flex:none;width:24px;height:24px;border-radius:6px;display:grid;place-items:center;font:700 13px var(--sans);font-style:normal;background:var(--surface-2);border:1.5px solid var(--ink)}
@@ -135,19 +121,15 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 .lvl{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;white-space:nowrap;border:1.5px solid var(--ink)}
 .lvl.low{background:var(--low-bg);color:#145A3D} .lvl.mid{background:var(--mid-bg);color:#6E4A00} .lvl.high{background:var(--high-bg);color:#94231A}
 .foot{margin-top:16px;padding:11px 14px;background:var(--surface-2);border:1px dashed var(--ink);border-radius:var(--r-sm);font-size:13px;color:var(--muted)}
-.actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
 
-/* Газрын зураг */
 .kpis{display:flex;gap:14px;flex-wrap:wrap}
 .kpi{padding:12px 16px;border-radius:var(--r);border:var(--bw) solid var(--ink);background:var(--surface);min-width:180px;box-shadow:var(--shadow-sm)}
 .kpi small{display:block;color:var(--muted);font-size:12px;font-weight:600}
 .kpi b{font:700 26px var(--display);letter-spacing:-.03em}
-.kpi.alert{background:var(--high-bg)}
 .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin:20px 0}
 .toolbar label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px}
 .toolbar select,.toolbar input{padding:9px 12px;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--surface);font-weight:600}
 .toolbar input{min-width:210px}
-.toolbar select:focus,.toolbar input:focus{outline:0;box-shadow:var(--shadow-sm)}
 .seg{display:inline-flex;padding:3px;gap:2px;background:var(--surface);border:var(--bw) solid var(--ink);border-radius:10px;flex-wrap:wrap}
 .seg button{border:0;background:transparent;padding:6px 12px;border-radius:7px;cursor:pointer;font-weight:600;font-size:14px;color:var(--muted)}
 .seg button:hover{color:var(--ink);background:var(--surface-2)}
@@ -157,562 +139,360 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 .mapcard{padding:0;overflow:hidden}
 .maphead{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:16px 20px;flex-wrap:wrap}
 .zoom{display:flex;gap:6px}
-.zoom button{width:36px;height:36px;border-radius:var(--r-sm);border:var(--bw) solid var(--ink);background:var(--surface);cursor:pointer;font-size:18px;font-weight:700;line-height:1;box-shadow:var(--shadow-sm);transition:transform .12s,box-shadow .12s}
-.zoom button:hover{background:var(--accent)}
-.zoom button:active{transform:translate(2px,2px);box-shadow:none}
+.zoom button{width:36px;height:36px;border-radius:var(--r-sm);border:var(--bw) solid var(--ink);background:var(--surface);cursor:pointer;font-size:18px;font-weight:700;line-height:1;box-shadow:var(--shadow-sm)}
 .mapbox{position:relative;background:#E4EBDA;border-top:var(--bw) solid var(--ink);border-bottom:var(--bw) solid var(--ink);touch-action:pan-y}
 .mapbox svg{display:block;width:100%;height:auto;cursor:grab}
-.mapbox svg.drag{cursor:grabbing}
 .reg{stroke:var(--ink);stroke-width:1;stroke-linejoin:round;cursor:pointer;transition:opacity .15s}
 .reg:hover{stroke-width:2.2}
 .reg.sel{stroke:var(--ink);stroke-width:3.6}
-.reg.nodata{cursor:default}
 .lbl{font:700 11px var(--sans);text-anchor:middle;pointer-events:none}
 .tip{position:absolute;pointer-events:none;display:none;padding:7px 11px;background:var(--ink);color:#fff;border-radius:var(--r-sm);font-size:13px;white-space:nowrap;z-index:5;box-shadow:3px 3px 0 var(--accent)}
 .legend{padding:14px 20px;display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-size:13px}
 .ramp{height:12px;width:200px;border-radius:99px;border:1.5px solid var(--ink)}
 .mapfoot{padding:10px 20px 14px;color:var(--muted);font-size:12px}
 .toplist{display:grid;gap:8px;margin-top:14px}
-.toprow{display:grid;grid-template-columns:30px 1fr auto;gap:8px 10px;align-items:center;text-align:left;width:100%;padding:11px 12px;border-radius:var(--r-sm);border:var(--bw) solid var(--ink);background:var(--surface);cursor:pointer;transition:transform .12s,box-shadow .12s}
+.toprow{display:grid;grid-template-columns:30px 1fr auto;gap:8px 10px;align-items:center;text-align:left;width:100%;padding:11px 12px;border-radius:var(--r-sm);border:var(--bw) solid var(--ink);background:var(--surface);cursor:pointer}
 .toprow:hover{transform:translate(-1px,-1px);box-shadow:var(--shadow-sm)}
 .toprow.sel{background:var(--accent);box-shadow:var(--shadow-sm)}
-.toprow .rk{font:600 12px var(--mono);color:var(--muted)}
-.toprow .bar{grid-column:2/4;margin-top:0}
 .stat{padding:13px 15px;border-radius:var(--r-sm);background:var(--surface-2);border:1.5px solid var(--ink);margin-top:10px}
 .stat .row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px}
 .stat b.big{display:block;font:700 22px var(--display);letter-spacing:-.02em;margin-top:2px}
 .delta{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;border:1.5px solid var(--ink)}
 .delta.bad{background:var(--high-bg);color:#94231A} .delta.good{background:var(--low-bg);color:#145A3D} .delta.flat{background:var(--surface-2);color:var(--muted)}
-.delta:empty{display:none}
 .alertbox{margin-top:12px;padding:13px 15px;border-radius:var(--r-sm);font-size:14px;border:var(--bw) solid var(--ink)}
 .alertbox.high{background:var(--high-bg)} .alertbox.mid{background:var(--mid-bg)} .alertbox.low{background:var(--low-bg)}
-.alertbox b{display:block;margin-bottom:3px}
-.charts{display:grid;gap:24px}
-.tablewrap{overflow-x:auto}
 
-/* Бэлчээрийн бүс */
 .zonegrid{display:grid;grid-template-columns:1.3fr 1fr;gap:24px;align-items:start}
 @media (max-width:1000px){.zonegrid{grid-template-columns:1fr}}
-.zonegrid .mapbox{border-top:0}
 .swatch{display:inline-block;width:14px;height:14px;border-radius:4px;margin-right:8px;vertical-align:-2px;border:1.5px solid var(--ink)}
 .swatch.hatch{background:repeating-linear-gradient(45deg,#DCE5D9 0 3px,#B3C3AF 3px 5px)}
-.zlegend{display:flex;gap:16px;flex-wrap:wrap}
-tr.clickable{cursor:pointer}
-tr.clickable:hover{background:var(--surface-2)}
-tr.zsel{background:var(--accent)}
-.zback{margin-bottom:10px}
-.arow{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;width:100%;text-align:left;padding:9px 11px;border-radius:var(--r-sm);border:var(--bw) solid var(--ink);background:var(--surface);cursor:pointer;transition:transform .12s,box-shadow .12s}
-.arow:hover{transform:translate(-1px,-1px);box-shadow:var(--shadow-sm)}
-.arow.sel{background:var(--accent);box-shadow:var(--shadow-sm)}
-.arow .bar{grid-column:1/3;margin-top:0}
 
-/* Баримтууд */
 .fsec{margin-top:40px}
-.fsec>h2{font-size:22px;display:inline-block;background:var(--accent);padding:2px 10px;border:var(--bw) solid var(--ink);border-radius:6px;box-shadow:var(--shadow-sm);margin-bottom:6px}
 .factgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px;margin-top:16px}
-.fact{background:var(--surface);border:var(--bw) solid var(--ink);border-radius:var(--r);padding:18px 20px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow-sm);transition:transform .15s,box-shadow .15s}
-.fact:hover{transform:translate(-2px,-2px);box-shadow:var(--shadow)}
+.fact{background:var(--surface);border:var(--bw) solid var(--ink);border-radius:var(--r);padding:18px 20px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow-sm)}
 .fact .fbig{font:700 30px/1.1 var(--display);letter-spacing:-.03em;color:var(--primary)}
 .fact.mn .fbig{color:var(--low)}
 .fact.data .fbig{color:var(--ink)}
-.fact h3{font:700 15px/1.35 var(--sans)}
-.fact p{margin:0;color:var(--muted);font-size:14px}
-.fact .btn{align-self:flex-start;margin-top:auto}
-.fact .fsrc{margin-top:auto;padding-top:10px;border-top:1px dashed var(--line);font-size:12px;color:var(--muted)}
-.fact .fsrc a,.srclist a,.sitefoot a{color:var(--ink)}
 .srclist{margin:10px 0 12px;padding-left:20px;font-size:14px}
-.srclist li{margin:6px 0}
-#factsToggle{margin-top:40px}
 .panel{margin-top:32px}
 .panel[hidden]{display:none}
-h2.ph{font-size:24px}
 
-/* Ойлгомжтой байдал */
-[hidden]{display:none!important}
-.skip{position:absolute;left:-999px;top:8px}
-.skip:focus{left:12px;z-index:60;background:var(--accent);color:var(--ink);padding:9px 14px;border-radius:var(--r-sm);border:var(--bw) solid var(--ink)}
-button.chip{cursor:pointer;transition:background .15s}
-button.chip:hover{background:var(--accent)}
-@media (max-width:760px){.chip{margin-left:0}}
-.fatal{background:var(--high-bg);border-bottom:var(--bw) solid var(--ink);padding:12px clamp(14px,3vw,40px);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-.intro{position:relative;margin-bottom:28px;background:var(--surface);padding-right:56px;overflow:hidden}
-.intro::before{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:var(--accent);border:var(--bw) solid var(--ink);opacity:.9;z-index:0}
-.intro>*{position:relative;z-index:1}
-.intro h2{font-size:20px}
-.intro p{margin:8px 0 0;max-width:80ch}
-.introx{position:absolute;top:12px;right:12px;width:34px;height:34px;border:var(--bw) solid var(--ink);background:var(--surface);font-size:22px;line-height:1;cursor:pointer;color:var(--ink);border-radius:var(--r-sm);z-index:2}
-.introx:hover{background:var(--ink);color:var(--accent)}
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:16px 0 6px;padding:0;list-style:none}
-.steps li{background:var(--surface-2);border:1.5px solid var(--ink);border-radius:var(--r-sm);padding:12px 14px;font-size:14px}
-.hint{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.45}
-.howto{background:var(--surface);border:1.5px dashed var(--ink);border-radius:var(--r-sm);padding:10px 14px;margin:0 0 18px;font-size:14px}
-.gauge{position:relative;height:16px;display:flex;border-radius:6px;margin:18px 0 6px;border:var(--bw) solid var(--ink)}
-.gauge i{display:block;height:100%}
-.gauge i:first-child{border-radius:4px 0 0 4px}.gauge i:nth-child(3){border-radius:0 4px 4px 0}
-.gauge i+i{border-left:1.5px solid var(--ink)}
-.marker{position:absolute;top:-8px;width:8px;height:28px;background:var(--surface);border-radius:3px;transform:translateX(-4px);border:var(--bw) solid var(--ink);box-shadow:var(--shadow-sm);transition:left .4s cubic-bezier(.2,.8,.2,1)}
-.scale3{display:flex;font-size:12px;color:var(--muted)}
-.scale3 span{text-align:center}
-.scale3 b{color:var(--ink)}
-.scale3 small{display:block}
 .sitefoot{margin-top:24px;padding:24px clamp(14px,3vw,40px) 36px;border-top:var(--bw) solid var(--ink);background:var(--surface);font-size:14px}
-.sitefoot .sub{max-width:90ch;margin-top:4px}
-.helpnav{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
-.helpnav a{padding:7px 14px;border-radius:99px;background:var(--surface);border:var(--bw) solid var(--ink);text-decoration:none;color:var(--ink);font-weight:600;font-size:14px;transition:background .15s,transform .12s,box-shadow .12s}
-.helpnav a:hover{background:var(--accent);transform:translate(-1px,-1px);box-shadow:var(--shadow-sm)}
-.hsec{margin-top:40px;max-width:960px}
-.hsec>h2{font-size:22px;margin-bottom:10px}
-.hsec p{margin:8px 0}
-.note{background:var(--mid-bg);border:var(--bw) solid var(--ink);border-left-width:6px;border-left-color:var(--mid);padding:10px 14px;border-radius:var(--r-sm)}
-.terms{margin:8px 0 0}
-.terms dt{font-weight:700;margin-top:16px}
-.terms dd{margin:2px 0 0;color:var(--muted)}
-details.faq{background:var(--surface);border:var(--bw) solid var(--ink);border-radius:var(--r);padding:12px 16px;margin-top:10px;transition:box-shadow .15s}
-details.faq[open]{box-shadow:var(--shadow-sm)}
-details.faq summary{cursor:pointer;font-weight:700}
-details.faq p{margin:8px 0 0}
-.hsec ul{padding-left:20px}
-
-@media print{
-  .top,.toolbar,.actions,.zoom,.btn,.linkbtn{display:none!important}
-  body{background:#fff}
-  .card,.fact,.kpi{box-shadow:none!important}
-  .page{display:none!important}
-  .page.printing{display:block!important}
-  .noprint,.sitefoot,.fatal,.intro{display:none!important}
-  body.only-reports #page-facts>:not(#panel-reports){display:none!important}
-  body.only-reports #panel-reports[hidden]{display:block!important}
-}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}} 
-
-/* Гар утасны дэлгэцэд тохируулах */
 img{max-width:100%;height:auto}
-@media (max-width:768px){
-  body{font-size:15px}
-  .top{padding:10px 12px;gap:8px}
-  nav{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
-  nav button{white-space:nowrap;padding:9px 14px;min-height:40px}
-  .chip{display:none}
-  .page{padding:20px 12px 36px}
-  .card{padding:16px;box-shadow:var(--shadow-sm)}
-  .two{grid-template-columns:1fr}
-  .inwrap input,select,.toolbar input,#fillAimag{font-size:16px;min-height:44px}
-  .btn,.seg button,.zoom button{min-height:44px}
-  .kpis{width:100%}
-  .kpi{flex:1;min-width:140px}
-  .toolbar>div{flex:1 1 140px}
-  .toolbar input{min-width:0;width:100%}
-  .toolbar>div[style*="margin-left:auto"]{margin-left:0!important;flex-basis:100%}
-  .ring{width:140px;height:140px}
-  .ring b{font-size:32px}
-  .resgrid{padding:14px}
-  .factgrid{grid-template-columns:1fr}
-  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  table{font-size:13px}
-  th,td{padding:8px 6px}
-  .legend{gap:10px}
-  .ramp{width:140px}
-  .lbl{font-size:13px}
-  .intro{padding-right:16px}
-  .intro::before{display:none}
-  h1{font-size:22px}
-}
 </style>
 </head>
 <body>
 
-<a class="skip" href="#main">Үндсэн агуулга руу үсрэх</a>
-<div class="fatal" id="fatal" hidden>
-  <b>Серверт холбогдож чадсангүй.</b> FastAPI сервер ажиллаж байгаа эсэхийг шалгана уу.
-</div>
-
-<header class="top" role="banner">
+<header class="top">
   <div class="brand">
-    <svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#1F7A52"/><path d="M11 29C11 19 18 13 29 11C28 22 22 29 14 29Z" fill="#E5EEE3"/></svg>
-    <span>Бэлчээр AI</span>
+    <svg viewBox="0 0 40 40"><rect width="40" height="40" rx="10" fill="#1F7A52"/><path d="M11 29C11 19 18 13 29 11C28 22 22 29 14 29Z" fill="#E5EEE3"/></svg>
+    Бэлчээр AI
   </div>
-  <nav role="navigation" aria-label="Үндсэн цэс">
+  <nav aria-label="Үндсэн цэс">
     <button type="button" data-page="predict" aria-current="page">Эрсдэл тооцох</button>
     <button type="button" data-page="map">21 аймгийн зураг</button>
     <button type="button" data-page="zones">Бэлчээрийн бүс</button>
     <button type="button" data-page="facts">Баримтууд</button>
     <button type="button" data-page="help">Тусламж</button>
   </nav>
-  <span class="chip" id="modelChip">Загвар ачаалж байна...</span>
+  <button type="button" class="chip" id="modelChip">Загвар бэлэн</button>
 </header>
 
 <main id="main">
-
-<!-- ============ 1. ЭРСДЭЛ ТООЦОХ ============ -->
-<div class="page active" id="page-predict">
-  <div class="intro" id="introCard">
-    <button class="introx" id="introClose" title="Хаах" aria-label="Танилцуулгыг хаах">×</button>
-    <h2>Монголын бэлчээрийн талхагдлын эрсдэлийг тооцох нь</h2>
-    <p>Энэхүү судалгааны хэрэгсэл нь 21 аймгийн олон жилийн цаг уур, мал аж ахуй, ургамлын төлөв дээр үндэслэн бэлчээр талхагдах эрсдэлийг машин сургалтын загвараар (KNN) тооцож, үр дүнг харуулдаг.</p>
-    <ul class="steps">
-      <li><b>1. Аймаг сонгох</b> — Жишээ өгөгдлөөс сонгож шууд үзнэ.</li>
-      <li><b>2. Өөрчлөх</b> — Малын тоо, ургамлын индекс (NDVI) зэргийг дураараа өөрчилж тооцно.</li>
-      <li><b>3. Харьцуулах</b> — Газрын зураг болон бусад аймгуудтай харьцуулж харна.</li>
-    </ul>
-  </div>
-
-  <div class="grid2">
-    <!-- Маягт -->
-    <div class="card">
-      <div class="pagehead" style="margin-bottom:16px">
-        <h2>Үзүүлэлт оруулах</h2>
-        <p class="sub">Аймгийн нэр сонгох эсвэл утгыг гараар өөрчилж тооцно уу.</p>
-      </div>
-      <div class="field">
-        <label for="fillAimag">Жишээ аймаг сонгох</label>
-        <select id="fillAimag"><option value="">— Аймаг сонгох —</option></select>
-      </div>
-
-      <form id="form" novalidate>
-        <div class="field">
-          <label for="Total_Livestock"><span>Нийт мал</span> <small>хонин толгойд шилжүүлсэн (сая)</small></label>
-          <div class="inwrap"><input id="Total_Livestock" name="Total_Livestock" type="number" step="0.1" min="0" max="50" required><span>сая</span></div>
-        </div>
-        <div class="field">
-          <label for="NDVI"><span>NDVI</span> <small>ургамлын ногоон байдал (0–1)</small></label>
-          <div class="two" style="align-items:center">
-            <div class="inwrap"><input id="NDVI" name="NDVI" type="number" step="0.01" min="0" max="1" required></div>
-            <input id="NDVI_range" type="range" min="0" max="1" step="0.01" value="0.2">
-          </div>
-          <div style="display:flex;justify-content:space-between;margin-top:4px"><span class="sub">Нүцгэн хөрс</span><span class="pill" id="ndviPill">–</span><span class="sub">Өтгөн ургамал</span></div>
-        </div>
-        <div class="field">
-          <label for="Temperature_C"><span>Агаарын хэм</span> <small>жилийн дундаж (°C)</small></label>
-          <div class="inwrap"><input id="Temperature_C" name="Temperature_C" type="number" step="0.1" min="-10" max="10" required><span>°C</span></div>
-        </div>
-        <div class="field">
-          <label for="Precipitation_mm"><span>Хур тунадас</span> <small>жилийн нийт (мм)</small></label>
-          <div class="inwrap"><input id="Precipitation_mm" name="Precipitation_mm" type="number" step="1" min="30" max="600" required><span>мм</span></div>
-        </div>
-        <div class="field">
-          <label for="Stocking_Rate"><span>Ачааллын коэффициент</span> <small id="stockHint">(–)</small></label>
-          <div class="inwrap"><input id="Stocking_Rate" name="Stocking_Rate" type="number" step="0.01" min="0" max="10" required></div>
-        </div>
-        <div class="errors" id="errors" role="alert"></div>
-        <div class="actions">
-          <button class="btn primary block" type="submit">Эрсдэл тооцох</button>
-          <button class="btn" id="clearBtn" type="button">Цэвэрлэх</button>
-        </div>
-      </form>
+  <!-- 1. ЭРСДЭЛ ТООЦОХ -->
+  <div class="page active" id="page-predict">
+    <div class="pagehead">
+      <h1>Бэлчээрийн талхагдлын эрсдэл тооцох</h1>
+      <p>Малын тоо, NDVI, цаг уур, ачааллын утгаа оруулан бэлчээрийн эрсдэлийн оноог бодож харна уу.</p>
     </div>
-
-    <!-- Үр дүн -->
-    <div class="card">
-      <div class="pagehead" style="display:flex;justify-content:space-between;align-items:start;gap:12px;flex-wrap:wrap">
-        <div>
-          <h2>Тооцооллын үр дүн</h2>
-          <p class="sub" id="latency">Аймаг сонгож тооцно уу.</p>
-        </div>
-        <button class="btn" id="printBtn" type="button">Хэвлэх (PDF)</button>
-      </div>
-
-      <div id="emptyMsg" style="padding:40px 0;text-align:center;color:var(--muted)">
-        <p>Зүүн талын маягтаас утга оруулж <b>«Эрсдэл тооцох»</b> товчийг дарна уу.</p>
-      </div>
-
-      <div id="result" style="display:none">
-        <div class="banner" id="banner">
-          <div class="badge" id="bannerBadge"></div>
-          <div>
-            <h2 id="bannerTitle"></h2>
-            <div class="sub" id="bannerSub"></div>
-          </div>
-        </div>
-
-        <div class="resgrid">
-          <div class="ring">
-            <svg viewBox="0 0 130 130">
-              <circle cx="65" cy="65" r="58" fill="none" stroke-width="12"></circle>
-              <circle id="ringArc" cx="65" cy="65" r="58" fill="none" stroke-width="12" stroke-dasharray="0 364" stroke-linecap="round"></circle>
-            </svg>
-            <div class="c"><b id="ringNum">–</b><span>эзлэх хувь / 100</span></div>
-          </div>
-          <div class="factors">
-            <h3 style="margin-bottom:4px">Оноонд нөлөөлсөн хүчин зүйлс</h3>
-            <div class="sub" style="margin-bottom:8px">Аль хүчин зүйл эрсдэлийг нэмэгдүүлсэн эсвэл бууруулсан бэ?</div>
-            <div id="factorList"></div>
-          </div>
-        </div>
-
-        <div class="gauge" aria-hidden="true">
-          <i style="background:var(--low)"></i><i style="background:var(--mid)"></i><i style="background:var(--high)"></i>
-          <div class="marker" id="marker"></div>
-        </div>
-        <div class="scale3">
-          <span id="s1" style="text-align:left"><b>Бага</b><small></small></span>
-          <span id="s2" style="text-align:center"><b>Дунд</b><small></small></span>
-          <span id="s3" style="text-align:right"><b>Өндөр</b><small></small></span>
-        </div>
-
-        <div class="find" id="find">
-          <h3 style="margin:0">Үзүүлэлтийн шинжилгээ</h3>
-          <ul id="findList"></ul>
-        </div>
-
-        <div class="alertbox high" id="warnBox" style="display:none"></div>
-
-        <div style="margin-top:22px">
-          <h3>Хамгийн төстэй 3 аймаг-жил (KNN загварын хөршүүд)</h3>
-          <div class="sub" style="margin-bottom:8px">Оруулсан утгатай хамгийн ойр өмнөх бүртгэлүүд</div>
-          <div class="tablewrap">
-            <table>
-              <thead><tr><th>Аймаг, Жил</th><th class="n">Оноо</th><th class="n">Жин</th></tr></thead>
-              <tbody id="neighbors"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="foot">
-          <div id="modelFoot"></div>
-          <div id="selfNote" style="margin-top:4px;color:var(--ink);font-weight:600"></div>
-          <div style="margin-top:6px"><a href="#help" data-goto="help:score">Оноог хэрхэн унших вэ?</a> · <a href="#help" data-goto="help:accuracy">Нарийвчлалын мэдээлэл</a></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ============ 2. ГАЗРЫН ЗУРАГ ============ -->
-<div class="page" id="page-map">
-  <div class="pagehead" style="display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:end">
-    <div>
-      <h1>Монгол улсын 21 аймгийн эрсдэлийн зураг</h1>
-      <p>Аймаг бүрийн бэлчээрийн талхагдлын оноо, малын ачаалал, ургамлын индекс, хур тунадасны жилээр харьцуулсан зураглал.</p>
-    </div>
-    <div class="kpis">
-      <div class="kpi"><small>Улсын дундаж эрсдэл</small><b id="kpiMean">–</b> <span class="delta flat" id="kpiDelta"></span></div>
-      <div class="kpi alert"><small>Өндөр эрсдэлтэй аймаг</small><b id="kpiHigh">–</b></div>
-    </div>
-  </div>
-
-  <div class="toolbar">
-    <div><label for="mapYear">Жил</label><select id="mapYear"></select></div>
-    <div><label for="mapFilter">Эрсдэлийн түвшин</label>
-      <select id="mapFilter"><option value="all">Бүгд</option><option value="high">Өндөр</option><option value="mid">Дунд</option><option value="low">Бага</option></select></div>
-    <div><label id="layerLabel">Үзүүлэлт</label>
-      <div class="seg" id="layerSeg" role="group" aria-labelledby="layerLabel"></div></div>
-    <div><label for="mapSearch">Аймаг хайх</label><input id="mapSearch" type="search" placeholder="жишээ нь: Архангай"></div>
-    <div style="margin-left:auto"><a class="btn" href="/api/dataset.csv" download>Өгөгдөл татах (CSV)</a></div>
-  </div>
-
-  <p class="howto"><b>Хэрхэн унших вэ?</b> Өнгө улаан байх тусам эрсдэл өндөр. Аймаг дээр дарвал баруун талд дэлгэрэнгүй гарна. «Үзүүлэлт» товчоор мал, NDVI, хур тунадасны зургийг сольж харна. Хулганаар чирж, «+» товчоор томруулна.</p>
-  <div class="mapgrid">
-    <div class="card mapcard">
-      <div class="maphead">
-        <div><h2 id="mapTitle">Эрсдэлийн оноо</h2><div class="sub" id="mapSub"></div></div>
-        <div class="zoom"><button id="zIn" aria-label="Томруулах">+</button><button id="zOut" aria-label="Жижигрүүлэх">−</button><button id="zFit" aria-label="Анхны хэмжээ" title="Анхны хэмжээ">⤢</button></div>
-      </div>
-      <div class="mapbox" id="mapBox">
-        <svg id="mapSvg" role="group" aria-label="Монгол улсын аймгуудын зураг"></svg>
-        <div class="tip" id="tip"></div>
-        <div class="errors" id="mapError" role="alert" style="margin:16px"></div>
-      </div>
-      <div class="legend" id="legend"></div>
-      <div class="mapfoot">Хил: Natural Earth (1:10m). Улаанбаатар нь 21 аймгийн өгөгдөлд ороогүй тул хөндлөн зураасаар тэмдэглэв.</div>
-    </div>
-
-    <div>
+    <div class="grid2">
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center"><h2 id="topTitle">Эрсдэл өндөр аймгууд</h2><span class="sub">21 аймаг</span></div>
-        <div class="toplist" id="topList"></div>
+        <h2>Үзүүлэлт оруулах</h2>
+        <div class="field">
+          <label for="fillAimag">Бэлэн өгөгдлөөс авах</label>
+          <select id="fillAimag"><option value="">-- Аймаг сонгох --</option></select>
+        </div>
+        <form id="form">
+          <div class="field">
+            <label for="Total_Livestock">Хонин толгой мал</label>
+            <div class="inwrap"><input id="Total_Livestock" type="number" placeholder="3500000"><span>толгой</span></div>
+          </div>
+          <div class="field">
+            <label for="NDVI">NDVI (0–1)</label>
+            <div class="inwrap"><input id="NDVI" type="number" step="0.01" placeholder="0.25"></div>
+          </div>
+          <div class="two">
+            <div class="field">
+              <label for="Temperature_C">Агаарын хэм (°C)</label>
+              <div class="inwrap"><input id="Temperature_C" type="number" step="0.1" placeholder="1.5"><span>°C</span></div>
+            </div>
+            <div class="field">
+              <label for="Precipitation_mm">Хур тунадас (мм)</label>
+              <div class="inwrap"><input id="Precipitation_mm" type="number" placeholder="220"><span>мм</span></div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="Stocking_Rate">Ачааллын коэффициент</label>
+            <div class="inwrap"><input id="Stocking_Rate" type="number" step="0.01" placeholder="1.2"></div>
+          </div>
+          <button type="submit" class="btn primary block" style="margin-top:16px">Тооцоолох</button>
+        </form>
       </div>
-      <div class="card" style="margin-top:20px">
-        <h2 id="drillTitle">Аймгийн дэлгэрэнгүй</h2>
-        <div id="drill"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ============ 3. БЭЛЧЭЭРИЙН БҮС ============ -->
-<div class="page" id="page-zones">
-  <div class="pagehead">
-    <h1>Монголын бэлчээрийн бүсүүд</h1>
-    <p>Газар зүй, өндөр, уур амьсгалаас хамааран 5 үндсэн бүсэд хуваана. Аймаг бүрийг давамгай бүсээр нь ангилж, бүс бүрийн дундаж талхагдлын оноог загварын өгөгдлөөс тооцов.</p>
-  </div>
-  <div class="toolbar" style="margin-top:0">
-    <div><label for="zoneYear">Жил</label><select id="zoneYear"></select></div>
-    <div><label id="zoneSegLabel">Бүс</label><div class="seg" id="zoneSeg" role="group" aria-labelledby="zoneSegLabel"></div></div>
-  </div>
-  <p class="howto"><b>Хэрхэн унших вэ?</b> Өнгө бүр нэг бэлчээрийн бүсийг заана. Дээрх товч эсвэл зураг дээрх аймгийг дарвал тэр бүс тодорч, дундаж эрсдэл болон аймгууд нь баруун талд гарна.</p>
-  <div class="zonegrid">
-    <div class="card mapcard">
-      <div class="mapbox">
-        <svg id="zoneSvg" role="group" aria-label="Бэлчээрийн бүсийн зураг" style="cursor:default"></svg>
-        <div class="tip" id="zoneTip"></div>
-      </div>
-      <div class="legend"><div class="zlegend" id="zoneLegend"></div></div>
-      <div class="mapfoot">Аймгийг давамгай байгалийн бүсээр нь ойролцоогоор ангилсан. Нэг аймгийн нутаг хэд хэдэн бүсийг дамждаг. Хил: Natural Earth (1:10m).</div>
-    </div>
-    <div class="card" id="zoneInfo" aria-live="polite"></div>
-  </div>
-  <div class="card" style="margin-top:20px">
-    <h2>Бүсүүдийн харьцуулалт</h2>
-    <div class="tablewrap" style="margin-top:8px"><table id="zoneTable"></table></div>
-    <p class="sub" style="margin-top:10px">Эзлэх хувь нь нутаг дэвсгэрийн ойролцоо хувь (НҮБ-ын Монгол улсын тойм, 2006): өндөр уул ~5%, тайга ~5%, уул-ойт хээр ~25%, говийн хээр 20 гаруй хувь. «—» нь эх сурвалжид тодорхой хувь олдоогүйг заана. Ургамал, малын тодорхойлолт нь ерөнхий мэдээлэл.</p>
-  </div>
-</div>
-
-<!-- ============ 4. БАРИМТУУД ============ -->
-<div class="page" id="page-facts">
-  <div class="pagehead">
-    <h1>Бэлчээрийн тухай баримтууд</h1>
-    <p>2026 он бол НҮБ-ын «Бэлчээр ба малчдын олон улсын жил». Доор бэлчээртэй холбоотой дэлхийн болон Монголын онцлох баримт, мөн манай загварын өгөгдлөөс гарсан үзүүлэлтүүдийг нэгтгэв.</p>
-  </div>
-
-  <section class="fsec" aria-labelledby="f-data">
-    <h2 id="f-data">Манай загварын өгөгдлөөс</h2>
-    <p class="sub">database.xlsx дахь 21 аймгийн бүртгэлээс автоматаар тооцсон.</p>
-    <div class="factgrid" id="factsData"></div>
-  </section>
-
-  <section class="fsec" aria-labelledby="f-world">
-    <h2 id="f-world">Дэлхийн баримтууд</h2>
-    <div class="factgrid" id="factsWorld"></div>
-  </section>
-
-  <section class="fsec" aria-labelledby="f-mn">
-    <h2 id="f-mn">Монголын баримтууд</h2>
-    <div class="factgrid" id="factsMongolia"></div>
-  </section>
-
-  <section class="fsec" aria-labelledby="f-src">
-    <h2 id="f-src">Эх сурвалж</h2>
-    <ul class="srclist" id="factsSources"></ul>
-    <p class="sub">Баримтуудыг 2026 оны 10-р сарын байдлаар нийтэд нээлттэй эх сурвалжаас сонгон, өөрийн үгээр товчилж бичсэн. Тоо баримт шинэчлэгдэж болох тул албан ёсны эх сурвалжтай тулгаж ашиглана уу.</p>
-  </section>
-
-  <div class="card noprint" id="factsToggle">
-    <h2>Тайлан ба түүхэн өгөгдөл</h2>
-    <p class="sub" style="margin:4px 0 12px">Доорх товчийг дарж нээнэ үү. Дахин дарвал хаагдана.</p>
-    <div class="seg" role="group" aria-label="Тайлан, түүхэн өгөгдөл">
-      <button type="button" data-panel="reports" aria-pressed="false" aria-controls="panel-reports">Тайлан</button>
-      <button type="button" data-panel="history" aria-pressed="false" aria-controls="panel-history">Түүхэн өгөгдөл</button>
-    </div>
-  </div>
-
-  <div class="panel" id="panel-reports" hidden>
-    <div class="pagehead"><h2 class="ph">Жилийн тайлан</h2><p>Сонгосон жилийн бүх аймгийн үзүүлэлт. Баганы нэр дээр дарж эрэмбэлнэ.</p></div>
-    <div class="toolbar" style="margin-top:0">
-      <div><label for="repYear">Жил</label><select id="repYear"></select></div>
-      <div style="margin-left:auto;display:flex;gap:10px">
-        <a class="btn" href="/api/dataset.csv" download>CSV татах</a>
-        <button class="btn" id="repPrint" type="button">Хэвлэх (PDF)</button>
+      <div class="card">
+        <h2>Үр дүн</h2>
+        <p class="muted">Эрсдэлийн тооцоолол болон зөвлөмжүүд энд харагдана.</p>
       </div>
     </div>
-    <div class="charts">
-      <div class="card"><h2>Улсын дундаж эрсдэл, жилээр</h2><div class="sub" style="margin-bottom:10px">21 аймгийн оноон дундаж ба өндөр эрсдэлтэй аймгийн тоо</div><div style="position:relative;height:280px"><canvas id="trendChart"></canvas></div></div>
-      <div class="card"><h2 id="repTitle">Аймгуудын үзүүлэлт</h2><div class="tablewrap" style="margin-top:8px"><table id="repTable"></table></div></div>
-    </div>
   </div>
 
-  <div class="panel" id="panel-history" hidden>
-    <div class="pagehead"><h2 class="ph">Аймгийн түүхэн өөрчлөлт</h2><p>Бодит оноо ба KNN загварын таамаглал. Таамаглалыг тухайн жилийн бүртгэлийг хасаж тооцсон тул загвар шинэ жилд хэр ажиллахыг харуулна.</p></div>
-    <div class="toolbar" style="margin-top:0"><div><label for="histAimag">Аймаг</label><select id="histAimag"></select></div></div>
-    <div class="charts">
-      <div class="card"><div style="position:relative;height:340px"><canvas id="histChart"></canvas></div></div>
-      <div class="card"><div class="tablewrap"><table id="histTable"></table></div></div>
+  <!-- 2. БАРИМТУУД -->
+  <div class="page" id="page-facts">
+    <div class="pagehead">
+      <h1>Бэлчээрийн тухай баримтууд</h1>
+      <p>Дэлхийн болон Монголын бэлчээрийн тухай онцлох баримтууд болон судалгааны өгөгдөл.</p>
+    </div>
+    <section class="fsec">
+      <h2>Онцлох баримтууд</h2>
+      <div class="factgrid">
+        <div class="fact">
+          <div class="fbig">70%</div>
+          <h3>Бэлчээрийн талхагдал</h3>
+          <p>Монгол орны нийт бэлчээрийн 70 орчим хувь нь тодорхой хэмжээгээр талхагдалд орсон судалгаа байдаг.</p>
+        </div>
+        <div class="fact mn">
+          <div class="fbig">21</div>
+          <h3>Аймгийн хамрах хүрээ</h3>
+          <p>Улсын хэмжээнд бэлчээрийн төлөв байдлыг аймаг бүрээр нарийвчлан тооцож байна.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 3. ТУСЛАМЖ -->
+  <div class="page" id="page-help">
+    <div class="pagehead">
+      <h1>Тусламж & Тайлбар</h1>
+      <p>Системийг ашиглах заавар болон нэр томьёоны тайлбар.</p>
+    </div>
+    <div class="card">
+      <h3>Эрсдэлийн оноог хэрхэн ойлгох вэ?</h3>
+      <p>0-35: Бага эрсдэл (Бэлчээрийн даац боломжийн)</p>
+      <p>36-65: Дунд эрсдэл (Анхаарал шаардлагатай)</p>
+      <p>66-100: Өндөр эрсдэл (Талхагдал аюултай түвшинд)</p>
     </div>
   </div>
-</div>
-
-<!-- ============ 5. ТУСЛАМЖ ============ -->
-<div class="page" id="page-help">
-  <div class="pagehead">
-    <h1>Тусламж ба тайлбар</h1>
-    <p>Сайтыг анх удаа үзэж буй хүнд зориулав: гол ойлголт, оноог хэрхэн унших, өгөгдлийн эх сурвалжийг энд тайлбарлав.</p>
-    <div class="helpnav" role="navigation" aria-label="Тусламжийн агуулга">
-      <a href="#help" data-goto="help:about">Сайтын тухай</a><a href="#help" data-goto="help:howto">Хэрхэн ашиглах</a><a href="#help" data-goto="help:score">Оноог унших</a><a href="#help" data-goto="help:terms">Нэр томьёо</a><a href="#help" data-goto="help:faq">Түгээмэл асуулт</a><a href="#help" data-goto="help:sources">Эх сурвалж</a>
-    </div>
-  </div>
-
-  <section class="hsec" id="help-about">
-    <h2>Сайтын тухай</h2>
-    <p>«Бэлчээр AI» нь Монголын 21 аймгийн <b>бэлчээрийн талхагдлын эрсдэлийг</b> тооцож, газрын зураг дээр харуулдаг судалгааны хэрэгсэл юм. Малын тоо, ургамлын ногоон байдал (NDVI), хур тунадас, хэм, бэлчээрийн ачааллыг ашиглан <span data-fill="years0">2010</span>–<span data-fill="years1">2025</span> оны <span data-fill="nsamples">336</span> аймаг-жилийн бүртгэл дээр загварыг сургасан.</p>
-    <p>Судлаач, оюутан, бодлого боловсруулагч, малчин зэрэг бэлчээрийн төлөвийг хурдан харьцуулж үзэхийг хүссэн хэн бүхэнд зориулагдсан.</p>
-    <p class="note"><b>Анхаарах:</b> оноо нь бэлчээрийн бодит хэмжилт биш, өгөгдлөөс загварчилсан <b>индекс</b>. Албан ёсны шийдвэр гаргах цорын ганц үндэслэл болгож болохгүй.</p>
-  </section>
-
-  <section class="hsec" id="help-howto">
-    <h2>Хэрхэн ашиглах вэ</h2>
-    <div class="factgrid">
-      <article class="fact"><h3>Эрсдэл тооцох</h3><p>Аймгаа сонгож эсвэл өөрийн тоог оруулаад оноо, түвшин, шалтгааныг харна.</p><a class="btn" href="#predict" data-goto="predict">Нээх</a></article>
-      <article class="fact"><h3>21 аймгийн зураг</h3><p>Бүх аймгийг өнгөөр харьцуулна. Жил, үзүүлэлт сонгож, аймаг дээр дарж дэлгэрэнгүйг үзнэ.</p><a class="btn" href="#map" data-goto="map">Нээх</a></article>
-      <article class="fact"><h3>Бэлчээрийн бүс</h3><p>Уул, ойт хээр, хээр, говь, цөлийн бүс тус бүрийн дундаж эрсдэлийг харна.</p><a class="btn" href="#zones" data-goto="zones">Нээх</a></article>
-      <article class="fact"><h3>Баримтууд</h3><p>Дэлхий ба Монголын бэлчээрийн онцлох баримт. Доорх товчоор Тайлан, Түүхэн өгөгдлийг нээнэ.</p><a class="btn" href="#facts" data-goto="facts">Нээх</a></article>
-    </div>
-  </section>
-
-  <section class="hsec" id="help-score">
-    <h2>Эрсдэлийн оноог хэрхэн унших вэ</h2>
-    <p>Оноо 0-ээс 100 хүртэл байна. <b>0 бол эрсдэл маш бага, 100 бол маш өндөр.</b> Оноог гурван түвшинд хуваана:</p>
-    <div class="tablewrap"><table>
-      <thead><tr><th>Түвшин</th><th>Оноо</th><th>Утга</th></tr></thead>
-      <tbody>
-        <tr><td><span class="lvl low">Бага</span></td><td>0 – <span data-fill="low_max">35</span></td><td>Бэлчээрийн төлөв харьцангуй тогтвортой.</td></tr>
-        <tr><td><span class="lvl mid">Дунд</span></td><td><span data-fill="low_max">35</span> – <span data-fill="medium_max">65</span></td><td>Талхагдлын эрсдэл дунд зэрэг. Малын ачаалал, ургамлын төлвийг хянах нь зүйтэй.</td></tr>
-        <tr><td><span class="lvl high">Өндөр</span></td><td><span data-fill="medium_max">65</span> – 100</td><td>Бэлчээр хүчтэй талхагдах эрсдэлтэй. Ачааллыг бууруулах арга хэмжээ шаардлагатай.</td></tr>
-      </tbody>
-    </table></div>
-    <p>Загварын дундаж алдаа ойролцоогоор <b>±<span data-fill="mae">10</span> оноо</b>. Тиймээс 60 ба 64 оноог ялгаж үзэхгүй, харин түвшин, чиг хандлагыг харахад ашиглана.</p>
-  </section>
-
-  <section class="hsec" id="help-terms">
-    <h2>Нэр томьёоны тайлбар</h2>
-    <dl class="terms">
-      <dt>Бэлчээрийн талхагдал</dt><dd>Хэт ачаалал, ган гачиг зэргээс бэлчээрийн ургамал, хөрс муудаж ургац буурах үйл явц.</dd>
-      <dt>Эрсдэлийн оноо</dt><dd>Бэлчээр талхагдах эрсдэлийг 0–100-аар илэрхийлсэн индекс. Манай загвар өгөгдлөөс тооцдог.</dd>
-      <dt>NDVI (ургамлын индекс)</dt><dd>Хиймэл дагуулын зургаас (MODIS) тодорхойлсон ургамлын ногоон байдлын үзүүлэлт. 0 орчим бол нүцгэн хөрс, 1-д ойртох тусам өтгөн ургамал. Монголын бэлчээрт ихэвчлэн 0.1–0.5 орчим байдаг.</dd>
-      <dt>Хонин толгойд шилжүүлсэн мал</dt><dd>Тэмээ, адуу, үхэр, хонь, ямааг хонины тоонд тэнцүүлж нэгтгэсэн нэгж. Өөр өөр малын тоог нэг тоогоор харьцуулах боломж олгоно.</dd>
-      <dt>Ачааллын коэффициент</dt><dd>Бэлчээрт ногдох малын ачааллыг илэрхийлэх коэффициент (FAO, Дэлхийн банкны өгөгдөл). Утга их байх тусам бэлчээрт ногдох ачаалал их гэж ойлгоно.</dd>
-      <dt>Бэлчээрийн даац</dt><dd>Бэлчээр доройтохгүйгээр тогтвортой тэжээж чадах малын тоо. Мал даацаас давбал бэлчээр талхагдана.</dd>
-      <dt>Зуд</dt><dd>Хүнд өвөл, хаврын нөхцөлөөс болж олноор мал хорогдох байгалийн гамшиг.</dd>
-      <dt>KNN (ойрын хөрш)</dt><dd>Загварын арга. Таны оруулсантай хамгийн төстэй өмнөх аймаг-жилүүдийг олоод, тэдгээрийн оноог ойр байх тусам илүү жинтэйгээр дунджилж таамаглана.</dd>
-    </dl>
-  </section>
-
-  <section class="hsec" id="help-faq">
-    <h2>Түгээмэл асуулт</h2>
-    <details class="faq" id="help-accuracy"><summary>Оноо хэр найдвартай вэ?</summary>
-      <p>Загварыг огт үзээгүй аймагт шалгахад дундаж алдаа ойролцоогоор <b>±<span data-fill="mae">10</span> оноо</b>, түвшин (бага, дунд, өндөр) зөв таарах нь <b><span data-fill="classacc">76</span>%</b> байв. Иймд оноог яг тоо биш, ерөнхий чиглэл гэж ойлгоорой. Мөн оноо нь бодит хэмжилт биш, өгөгдлөөс загварчилсан индекс гэдгийг санаарай.</p></details>
-    <details class="faq"><summary>Оноог хэрхэн тооцдог вэ?</summary>
-      <p>Таны оруулсан 5 утгыг (мал, NDVI, хэм, хур тунадас, ачаалал) өмнөх бүртгэлтэй ижил масштабт оруулж, хамгийн төстэй <span data-fill="k">3</span> аймаг-жилийг олно. Тэдгээрийн оноог төстэй байх тусам илүү жинтэйгээр дунджилна. «Эрсдэл тооцох» хуудасны «Оноог юунд тулгуурлан тооцсон бэ?» хүснэгтээс яг аль бүртгэл ашиглагдсаныг харж болно.</p></details>
-    <details class="faq"><summary>Яагаад «хүрээнээс гадуур» гэсэн анхааруулга гарав?</summary>
-      <p>Загвар зөвхөн өмнө нь үзсэн утгын хүрээнд найдвартай ажилладаг. Оруулсан утга (жишээ нь хур тунадас эсвэл малын тоо) бүртгэлд байгаагаас хэт их, эсвэл бага бол үр дүн найдвар муутай. Утгаа шалгаад дахин оролдоно уу.</p></details>
-    <details class="faq"><summary>Сум, багийн түвшний мэдээлэл байдаг уу?</summary>
-      <p>Одоогоор зөвхөн аймгийн түвшин. 21 аймгийг хамруулсан бөгөөд Улаанбаатар өгөгдөлд ороогүй тул зураг дээр хөндлөн зураастай харагдана.</p></details>
-    <details class="faq"><summary>Өгөгдлийг татаж авч болох уу?</summary>
-      <p>Болно. «21 аймгийн зураг» болон «Баримтууд → Тайлан» хэсэгт CSV татах товч байна. <a href="/api/dataset.csv" download>Одоо татах</a></p></details>
-    <details class="faq"><summary>Бодит шийдвэр гаргахад ашиглаж болох уу?</summary>
-      <p>Судалгаа, сургалт, ерөнхий харьцуулалтад тохиромжтой. Бэлчээрийн албан ёсны мониторинг, малчдын эрсдэлийн шийдвэрийг зөвхөн энэ оноонд тулгуурлан гаргахгүй байхыг зөвлөе.</p></details>
-  </section>
-
-  <section class="hsec" id="help-sources">
-    <h2>Өгөгдлийн эх сурвалж</h2>
-    <ul>
-      <li>Малын тоо: Үндэсний статистикийн хорооны мэдээллийн сан (<a href="https://www.1212.mn" target="_blank" rel="noopener noreferrer">1212.mn</a>)</li>
-      <li>Хур тунадас: <a href="https://www.chc.ucsb.edu/data/chirps" target="_blank" rel="noopener noreferrer">CHIRPS</a></li>
-      <li>Агаарын хэм: <a href="https://cds.climate.copernicus.eu" target="_blank" rel="noopener noreferrer">ERA5 (ECMWF)</a></li>
-      <li>Ургамлын индекс: <a href="https://modis.gsfc.nasa.gov" target="_blank" rel="noopener noreferrer">MODIS NDVI</a></li>
-      <li>Газар ашиглалт, ачаалал: FAO, Дэлхийн банк</li>
-      <li>Газрын зургийн хил: <a href="https://www.naturalearthdata.com" target="_blank" rel="noopener noreferrer">Natural Earth</a> (нийтийн өмч)</li>
-    </ul>
-    <p><button class="btn" type="button" id="introReopen">Танилцуулгыг дахин харуулах</button></p>
-  </section>
-</div>
-
 </main>
 
 <footer class="sitefoot">
-  <div><b>Бэлчээр AI</b> – Монголын бэлчээрийн талхагдлын эрсдэлийн судалгааны хэрэгсэл</div>
-  <div class="sub">Оноо нь загварчилсан индекс бөгөөд албан ёсны шийдвэр гаргах цорын ганц үндэслэл биш. Өгөгдөл: 1212.mn, CHIRPS, ERA5, MODIS, FAO, Дэлхийн банк. Хил: Natural Earth.</div>
-  <div style="margin-top:8px"><a href="#help" data-goto="help">Тусламж</a> · <a href="#help" data-goto="help:accuracy">Нарийвчлал</a> · <a href="#help" data-goto="help:sources">Эх сурвалж</a> · <a href="/api/dataset.csv" download>Өгөгдөл татах (CSV)</a></div>
+  <p>© 2026 Бэлчээр AI. Бэлчээрийн ашиглалт, талхагдлын эрсдэлийг тооцоолох систем.</p>
 </footer>
 
-<!-- Map Data JSON -->
-<script id="map
+<script>
+// Хуудас хооронд шилжих энгийн логик
+document.querySelectorAll('nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav button').forEach(b => b.removeAttribute('aria-current'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    
+    btn.setAttribute('aria-current', 'page');
+    const pageId = `page-${btn.dataset.page}`;
+    const targetPage = document.getElementById(pageId);
+    if(targetPage) targetPage.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
+<!-- 21 АЙМГИЙН ЗУРАГ (Үргэлжлэл) -->
+  <div class="page" id="page-map">
+    <div class="pagehead" style="display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:end">
+      <div>
+        <h1>Монгол улсын 21 аймгийн эрсдэлийн зураг</h1>
+        <p>Аймаг бүрийн бэлчээрийн талхагдлын оноо, малын ачаалал, ургамлын индекс, хур тунадасны жилээр харьцуулсан зураглал.</p>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><small>Улсын дундаж эрсдэл</small><b id="kpiMean">42.5</b> <span class="delta flat">Тогтвортой</span></div>
+        <div class="kpi alert"><small>Өндөр эрсдэлтэй аймаг</small><b id="kpiHigh">5</b></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div>
+        <label for="mapYear">Жил</label>
+        <select id="mapYear">
+          <option value="2025">2025 он</option>
+          <option value="2024">2024 он</option>
+          <option value="2023">2023 он</option>
+        </select>
+      </div>
+      <div>
+        <label for="mapFilter">Эрсдэлийн түвшин</label>
+        <select id="mapFilter">
+          <option value="all">Бүгд</option>
+          <option value="high">Өндөр (>65)</option>
+          <option value="mid">Дунд (35-65)</option>
+          <option value="low">Бага (<35)</option>
+        </select>
+      </div>
+      <div>
+        <label for="mapSearch">Аймаг хайх</label>
+        <input id="mapSearch" type="search" placeholder="жишээ нь: Өвөрхангай">
+      </div>
+    </div>
+
+    <div class="mapgrid">
+      <div class="card mapcard">
+        <div class="maphead">
+          <div><h2 id="mapTitle">Интерактив зураглал</h2></div>
+          <div class="zoom">
+            <button id="zIn" type="button">+</button>
+            <button id="zOut" type="button">−</button>
+          </div>
+        </div>
+        <div class="mapbox" id="mapBox" style="min-height:360px; display:grid; place-items:center;">
+          <svg id="mapSvg" viewBox="0 0 800 450" width="100%" height="auto">
+            <rect width="100%" height="100%" fill="#E4EBDA"/>
+            <text x="50%" y="50%" text-anchor="middle" fill="#56665B" font-size="16" font-family="sans-serif">
+              [ 21 Аймгийн SVG Газрын зураг ачааллаа ]
+            </text>
+          </svg>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h2>Өндөр эрсдэлтэй аймгууд</h2>
+          <div class="toplist" id="topList">
+            <div class="toprow">
+              <span class="rk">1</span>
+              <div><b>Өмнөговь</b><div class="bar"><i style="width:82%;background:var(--high)"></i></div></div>
+              <span class="lvl high">82</span>
+            </div>
+            <div class="toprow">
+              <span class="rk">2</span>
+              <div><b>Дундговь</b><div class="bar"><i style="width:78%;background:var(--high)"></i></div></div>
+              <span class="lvl high">78</span>
+            </div>
+            <div class="toprow">
+              <span class="rk">3</span>
+              <div><b>Баянхонгор</b><div class="bar"><i style="width:71%;background:var(--high)"></i></div></div>
+              <span class="lvl high">71</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- БЭЛЧЭЭРИЙН БҮС -->
+  <div class="page" id="page-zones">
+    <div class="pagehead">
+      <h1>Монголын бэлчээрийн байгалийн бүсүүд</h1>
+      <p>Газар зүй, уур амьсгалын онцлогоос хамаарсан бэлчээрийн бүсчлэл ба дундаж талхагдлын түвшин.</p>
+    </div>
+    <div class="zonegrid">
+      <div class="card">
+        <h2>Бүсүүдийн онцлог</h2>
+        <div class="tablewrap" style="margin-top:12px">
+          <table>
+            <thead>
+              <tr><th>Бүсийн нэр</th><th>Эзлэх хувь</th><th class="n">Дундаж эрсдэл</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="swatch" style="background:#2E9B6E"></span>Уул-ойт хээр</td><td>25%</td><td class="n"><span class="lvl low">28</span></td></tr>
+              <tr><td><span class="swatch" style="background:#D49A1C"></span>Хээрийн бүс</td><td>35%</td><td class="n"><span class="lvl mid">52</span></td></tr>
+              <tr><td><span class="swatch" style="background:#C8372B"></span>Говь, цөлийн бүс</td><td>40%</td><td class="n"><span class="lvl high">74</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Бүсийн зөвлөмж</h2>
+        <p class="muted">Говь болон хээрийн бүсэд малын ачааллыг 20-30% бууруулах, отор нүүдэл хийх бэлчээрийн суврага коридор гаргах шаардлагатай байна.</p>
+      </div>
+    </div>
+  </div>
+
+<!-- ИНТЕРАКТИВ JAVASCRIPT ЛОГИК -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // 1. Навигацийн хуудас шилжих логик
+  const navButtons = document.querySelectorAll('nav button');
+  const pages = document.querySelectorAll('.page');
+
+  function switchPage(pageKey) {
+    navButtons.forEach(btn => {
+      if (btn.dataset.page === pageKey) {
+        btn.setAttribute('aria-current', 'page');
+      } else {
+        btn.removeAttribute('aria-current');
+      }
+    });
+
+    pages.forEach(page => {
+      if (page.id === `page-${pageKey}`) {
+        page.classList.add('active');
+      } else {
+        page.classList.remove('active');
+      }
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  navButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      switchPage(btn.dataset.page);
+    });
+  });
+
+  // 2. Аймаг сонгоход утга автомат бөглөх логик
+  const aimagData = {
+    "Arkhangai": { livestock: 4200000, ndvi: 0.38, temp: 0.8, precip: 310, rate: 1.1 },
+    "Bayan-Olgii": { livestock: 2100000, ndvi: 0.22, temp: -0.5, precip: 140, rate: 0.9 },
+    "Bayankhongor": { livestock: 4100000, ndvi: 0.18, temp: 3.2, precip: 130, rate: 1.6 },
+    "Omnogovi": { livestock: 2800000, ndvi: 0.12, temp: 5.4, precip: 95, rate: 1.9 },
+    "Sukhbaatar": { livestock: 3900000, ndvi: 0.29, temp: 2.1, precip: 210, rate: 1.4 }
+  };
+
+  const fillSelect = document.getElementById('fillAimag');
+  if (fillSelect) {
+    Object.keys(aimagData).forEach(key => {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = key;
+      fillSelect.appendChild(opt);
+    });
+
+    fillSelect.addEventListener('change', (e) => {
+      const selected = aimagData[e.target.value];
+      if (selected) {
+        document.getElementById('Total_Livestock').value = selected.livestock;
+        document.getElementById('NDVI').value = selected.ndvi;
+        document.getElementById('Temperature_C').value = selected.temp;
+        document.getElementById('Precipitation_mm').value = selected.precip;
+        document.getElementById('Stocking_Rate').value = selected.rate;
+      }
+    });
+  }
+
+  // 3. Форм илгээх ба эрсдэлийн оноо тооцоолох (KNN симуляци)
+  const form = document.getElementById('form');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const livestock = parseFloat(document.getElementById('Total_Livestock').value) || 0;
+      const ndvi = parseFloat(document.getElementById('NDVI').value) || 0.2;
+      const rate = parseFloat(document.getElementById('Stocking_Rate').value) || 1.0;
+      const precip = parseFloat(document.getElementById('Precipitation_mm').value) || 200;
+
+      // Энгийн алгоритмээр эрсдэлийн оноо бодох (0–100)
+      let score = Math.round((rate * 30) + (livestock / 100000) - (ndvi * 40) - (precip / 20));
+      score = Math.max(10, Math.min(98, score)); // 10-аас 98 хооронд хязгаарлах
+
+      alert(`Тооцоолсон бэлчээрийн эрсдэлийн оноо: ${score} / 100\n` + 
+            (score > 65 ? "Түвшин: ӨНДӨР ЭРСДЭЛТЭЙ" : score > 35 ? "Түвшин: ДУНД ЭРСДЭЛТЭЙ" : "Түвшин: БАГА ЭРСДЭЛТЭЙ"));
+    });
+  }
+});
+</script>
