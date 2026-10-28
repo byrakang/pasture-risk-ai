@@ -14,3 +14,5 @@ Thumbs.db
 # Түр файл
 *.log
 ~$*.xlsx
+
+.work/

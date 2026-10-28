@@ -4,459 +4,441 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Бэлчээр AI – Монголын бэлчээрийн талхагдлын эрсдэл</title>
-<meta name="description" content="Монголын 21 аймгийн бэлчээрийн талхагдлын эрсдэлийг малын тоо, ургамлын индекс (NDVI), хур тунадас, ачаалалаас тооцож, газрын зураг дээр харьцуулан харуулдаг сайт.">
+<meta name="description" content="Монголын 21 аймгийн бэлчээрийн талхагдлын эрсдэлийг малын тоо, ургамлын индекс (NDVI), хур тунадас, ачаалалаас KNN загвараар тооцож, газрын зураг дээр харьцуулан харуулдаг сайт.">
 <meta name="theme-color" content="#EDF1E4">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%231F7A52'/%3E%3Cpath d='M11 29C11 19 18 13 29 11C28 22 22 29 14 29Z' fill='%23E5EEE3'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<style>
-:root{
-  --bg:#EDF1E4;
-  --surface:#FBFCF6;
-  --surface-2:#F2F5EB;
-  --line:#D3DBC7;
-  --ink:#12201A;
-  --muted:#56665B;
-  --primary:#2F5BEA;
-  --accent:#C8F05E;
-  --low:#2E9B6E; --low-bg:#D6EEDF;
-  --mid:#D49A1C; --mid-bg:#F6E8BF;
-  --high:#C8372B; --high-bg:#F8DAD4;
-  --bw:2px;
-  --shadow:4px 4px 0 var(--ink);
-  --shadow-sm:2px 2px 0 var(--ink);
-  --r:12px; --r-sm:8px;
-  --sans:"Inter",system-ui,"Segoe UI",Arial,sans-serif;
-  --display:"Unbounded","Inter",system-ui,sans-serif;
-  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
-}
-*{box-sizing:border-box}
-html{scroll-padding-top:90px}
-body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.6 var(--sans);-webkit-font-smoothing:antialiased;
-  background-image:radial-gradient(rgba(18,32,26,.07) 1px,transparent 1px);background-size:22px 22px}
-h1,h2,h3{margin:0;letter-spacing:-.015em;text-wrap:balance}
-h1,h2{font-family:var(--display);font-weight:600}
-h1{font-size:clamp(24px,3vw,34px);line-height:1.15;letter-spacing:-.025em}
-h2{font-size:18px;line-height:1.3}
-h3{font:700 15px/1.35 var(--sans)}
-button,input,select{font:inherit;color:inherit}
-:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
-::selection{background:var(--accent);color:var(--ink)}
-.muted{color:var(--muted)}
-a{color:var(--ink);text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-color:var(--primary)}
-
-/* ---------- ТОЛГОЙ & ЦЭС ---------- */
-.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:12px clamp(14px,3vw,40px);background:rgba(251,252,246,.92);backdrop-filter:blur(8px);border-bottom:var(--bw) solid var(--ink)}
-.brand{display:flex;align-items:center;gap:10px;font:700 17px var(--display);letter-spacing:-.02em}
-.brand svg{width:36px;height:36px;border:var(--bw) solid var(--ink);border-radius:10px;box-shadow:var(--shadow-sm)}
-nav{display:flex;gap:2px;flex-wrap:wrap}
-nav button{border:var(--bw) solid transparent;background:transparent;padding:7px 13px;border-radius:var(--r-sm);cursor:pointer;font-weight:600;font-size:14px;color:var(--muted);transition:color .15s,background .15s}
-nav button:hover{color:var(--ink);background:var(--surface-2)}
-nav button[aria-current="page"]{background:var(--ink);color:var(--accent);border-color:var(--ink)}
-.chip{margin-left:auto;font:500 12.5px var(--mono);padding:6px 12px;border-radius:99px;background:var(--surface);border:var(--bw) solid var(--ink);color:var(--ink)}
-
-/* ---------- ЕРӨНХИЙ БҮТЭЦ ---------- */
-.page{display:none;padding:34px clamp(14px,3vw,40px) 48px;max-width:1500px;margin:0 auto}
-.page.active{display:block;animation:rise .35s ease-out}
-@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.pagehead{margin-bottom:26px}
-.pagehead p{margin:10px 0 0;max-width:72ch;color:var(--muted);font-size:16px}
-.card{background:var(--surface);border:var(--bw) solid var(--ink);border-radius:var(--r);padding:22px;box-shadow:var(--shadow)}
-.grid2{display:grid;grid-template-columns:minmax(320px,430px) 1fr;gap:24px;align-items:start}
-@media (max-width:980px){.grid2{grid-template-columns:1fr}}
-.field{margin-top:16px}
-.field>label{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:600;font-size:14px;margin-bottom:6px}
-.field small{color:var(--muted);font-weight:400;font-size:12.5px}
-.inwrap{display:flex;align-items:center;background:var(--surface);border:var(--bw) solid var(--ink);border-radius:var(--r-sm);padding:0 12px;transition:box-shadow .15s,transform .15s}
-.inwrap:focus-within{box-shadow:var(--shadow-sm);transform:translate(-1px,-1px)}
-.inwrap input{flex:1;min-width:0;border:0;background:transparent;padding:10px 0;outline:0;font-weight:600;font-variant-numeric:tabular-nums}
-.inwrap span{color:var(--muted);font:500 12px var(--mono);margin-left:8px;white-space:nowrap}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-input[type=range]{width:100%;accent-color:var(--ink)}
-.pill{font:600 13px var(--mono);padding:2px 9px;border-radius:6px;background:var(--accent);border:var(--bw) solid var(--ink)}
-.ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;border:var(--bw) solid var(--ink);background:var(--surface);padding:9px 16px;border-radius:var(--r-sm);font-weight:700;font-size:14px;text-decoration:none;color:var(--ink);box-shadow:var(--shadow-sm);transition:transform .12s,box-shadow .12s,background .12s}
-.btn:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink);background:var(--surface-2)}
-.btn:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--ink)}
-.btn.primary{background:var(--accent);color:var(--ink)}
-.btn.primary:hover{background:#BDE84A}
-.btn.block{width:100%;padding:14px;font-size:16px;box-shadow:var(--shadow)}
-.select,#fillAimag{width:100%;padding:10px 12px;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--surface);font-weight:600;cursor:pointer}
-
-/* ---------- ҮР ДҮНГИЙН ХЭСЭГ ---------- */
-.banner{display:flex;align-items:center;gap:16px;padding:16px 18px;border-radius:var(--r);border:var(--bw) solid var(--ink)}
-.banner.low{background:var(--low-bg)}
-.banner.mid{background:var(--mid-bg)}
-.banner.high{background:var(--high-bg)}
-.banner .badge{width:50px;height:50px;border-radius:10px;display:grid;place-items:center;color:#fff;font:700 22px var(--display);flex:none;border:var(--bw) solid var(--ink);box-shadow:var(--shadow-sm)}
-.banner.low .badge{background:var(--low)} .banner.mid .badge{background:var(--mid)} .banner.high .badge{background:var(--high)}
-.banner h2{font-size:20px}
-.resgrid{display:grid;grid-template-columns:190px 1fr;gap:24px;align-items:center;margin-top:18px;padding:20px;background:var(--surface-2);border:var(--bw) solid var(--ink);border-radius:var(--r)}
-@media (max-width:640px){.resgrid{grid-template-columns:1fr;justify-items:center}}
-.ring{position:relative;width:170px;height:170px}
-.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
-.ring svg circle:first-child{stroke:#DCE3D2}
-.ring .c{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
-.ring b{font:700 40px/1 var(--display);letter-spacing:-.03em}
-.ring span{font-size:12px;color:var(--muted);margin-top:4px}
-.factors{width:100%}
-.factor{margin-top:12px}
-.factor .r{display:flex;justify-content:space-between;font-size:14px;font-weight:600;gap:10px}
-.bar{height:10px;border-radius:99px;background:var(--surface);border:1.5px solid var(--ink);margin-top:5px;overflow:hidden}
-.bar i{display:block;height:100%}
-.find{margin-top:18px;border:var(--bw) solid var(--ink);border-left-width:8px;border-left-color:var(--primary);background:var(--surface);border-radius:var(--r);padding:16px 18px}
-.find ul{margin:10px 0 0;padding:0;list-style:none}
-.find li{display:flex;gap:10px;margin-top:10px}
-.find li i{flex:none;width:24px;height:24px;border-radius:6px;display:grid;place-items:center;font:700 13px var(--sans);font-style:normal;background:var(--surface-2);border:1.5px solid var(--ink)}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{padding:10px 8px;text-align:left;border-bottom:1px solid var(--line)}
-thead th{border-bottom:var(--bw) solid var(--ink)}
-th{font:600 11.5px var(--sans);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);white-space:nowrap}
-td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
-.lvl{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;white-space:nowrap;border:1.5px solid var(--ink)}
-.lvl.low{background:var(--low-bg);color:#145A3D} .lvl.mid{background:var(--mid-bg);color:#6E4A00} .lvl.high{background:var(--high-bg);color:#94231A}
-.foot{margin-top:16px;padding:11px 14px;background:var(--surface-2);border:1px dashed var(--ink);border-radius:var(--r-sm);font-size:13px;color:var(--muted)}
-
-/* ---------- ГАЗРЫН ЗУРАГ & ИНТЕРАКТИВ ---------- */
-.kpis{display:flex;gap:14px;flex-wrap:wrap}
-.kpi{padding:12px 16px;border-radius:var(--r);border:var(--bw) solid var(--ink);background:var(--surface);min-width:180px;box-shadow:var(--shadow-sm)}
-.kpi small{display:block;color:var(--muted);font-size:12px;font-weight:600}
-.kpi b{font:700 26px var(--display);letter-spacing:-.03em}
-.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin:20px 0}
-.toolbar label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px}
-.toolbar select,.toolbar input{padding:9px 12px;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--surface);font-weight:600}
-.toolbar input{min-width:210px}
-.seg{display:inline-flex;padding:3px;gap:2px;background:var(--surface);border:var(--bw) solid var(--ink);border-radius:10px;flex-wrap:wrap}
-.seg button{border:0;background:transparent;padding:6px 12px;border-radius:7px;cursor:pointer;font-weight:600;font-size:14px;color:var(--muted)}
-.seg button:hover{color:var(--ink);background:var(--surface-2)}
-.seg button[aria-pressed="true"]{background:var(--ink);color:var(--accent)}
-.mapgrid{display:grid;grid-template-columns:1fr minmax(320px,400px);gap:24px;align-items:start}
-@media (max-width:1100px){.mapgrid{grid-template-columns:1fr}}
-.mapcard{padding:0;overflow:hidden}
-.maphead{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:16px 20px;flex-wrap:wrap}
-.zoom{display:flex;gap:6px}
-.zoom button{width:36px;height:36px;border-radius:var(--r-sm);border:var(--bw) solid var(--ink);background:var(--surface);cursor:pointer;font-size:18px;font-weight:700;line-height:1;box-shadow:var(--shadow-sm)}
-.mapbox{position:relative;background:#E4EBDA;border-top:var(--bw) solid var(--ink);border-bottom:var(--bw) solid var(--ink);touch-action:pan-y}
-.mapbox svg{display:block;width:100%;height:auto;cursor:grab}
-.reg{stroke:var(--ink);stroke-width:1;stroke-linejoin:round;cursor:pointer;transition:opacity .15s}
-.reg:hover{stroke-width:2.2}
-.reg.sel{stroke:var(--ink);stroke-width:3.6}
-.tip{position:absolute;pointer-events:none;display:none;padding:7px 11px;background:var(--ink);color:#fff;border-radius:var(--r-sm);font-size:13px;white-space:nowrap;z-index:5;box-shadow:3px 3px 0 var(--accent)}
-.legend{padding:14px 20px;display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-size:13px}
-.ramp{height:12px;width:200px;border-radius:99px;border:1.5px solid var(--ink)}
-.mapfoot{padding:10px 20px 14px;color:var(--muted);font-size:12px}
-.toplist{display:grid;gap:8px;margin-top:14px}
-.toprow{display:grid;grid-template-columns:30px 1fr auto;gap:8px 10px;align-items:center;text-align:left;width:100%;padding:11px 12px;border-radius:var(--r-sm);border:var(--bw) solid var(--ink);background:var(--surface);cursor:pointer}
-.toprow:hover{transform:translate(-1px,-1px);box-shadow:var(--shadow-sm)}
-.toprow.sel{background:var(--accent);box-shadow:var(--shadow-sm)}
-
-/* ---------- БАРИМТУУД & ТУСЛАМЖ ---------- */
-.fsec{margin-top:40px}
-.factgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px;margin-top:16px}
-.fact{background:var(--surface);border:var(--bw) solid var(--ink);border-radius:var(--r);padding:18px 20px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow-sm)}
-.fact .fbig{font:700 30px/1.1 var(--display);letter-spacing:-.03em;color:var(--primary)}
-.fact.mn .fbig{color:var(--low)}
-.srclist{margin:10px 0 12px;padding-left:20px;font-size:14px}
-.hsec{margin-top:40px;max-width:960px}
-.hsec>h2{font-size:22px;margin-bottom:10px}
-.note{background:var(--mid-bg);border:var(--bw) solid var(--ink);border-left-width:6px;border-left-color:var(--mid);padding:10px 14px;border-radius:var(--r-sm)}
-details.faq{background:var(--surface);border:var(--bw) solid var(--ink);border-radius:var(--r);padding:12px 16px;margin-top:10px}
-details.faq summary{cursor:pointer;font-weight:700}
-details.faq p{margin:8px 0 0}
-.sitefoot{margin-top:24px;padding:24px clamp(14px,3vw,40px) 36px;border-top:var(--bw) solid var(--ink);background:var(--surface);font-size:14px}
-img{max-width:100%;height:auto}
-</style>
+<link rel="stylesheet" href="static/styles.css">
 </head>
 <body>
 
 <header class="top">
-  <div class="brand">
-    <svg viewBox="0 0 40 40"><rect width="40" height="40" rx="10" fill="#1F7A52"/><path d="M11 29C11 19 18 13 29 11C28 22 22 29 14 29Z" fill="#E5EEE3"/></svg>
-    Бэлчээр AI
-  </div>
+  <button type="button" class="brand" data-page="predict" aria-label="Бэлчээр AI – нүүр хуудас">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#1F7A52"/><path d="M11 29C11 19 18 13 29 11C28 22 22 29 14 29Z" fill="#E5EEE3"/></svg>
+    <span>Бэлчээр AI</span>
+  </button>
   <nav aria-label="Үндсэн цэс">
     <button type="button" data-page="predict" aria-current="page">Эрсдэл тооцох</button>
-    <button type="button" data-page="map">21 аймгийн зураг</button>
+    <button type="button" data-page="map">Газрын зураг</button>
     <button type="button" data-page="facts">Баримтууд</button>
     <button type="button" data-page="help">Тусламж</button>
   </nav>
-  <button type="button" class="chip" id="modelChip">Загвар бэлэн</button>
+  <button type="button" class="chip" id="modelChip" data-page="help">Загвар ачаалж байна…</button>
 </header>
 
 <main id="main">
 
+<div class="globalerr" id="apiError" hidden role="alert"></div>
+
 <!-- ============ 1. ЭРСДЭЛ ТООЦОХ ============ -->
-<div class="page active" id="page-predict">
+<section class="page active" id="page-predict">
   <div class="pagehead">
+    <span class="eyebrow">Машин сургалтын загвар · 2010–2025</span>
     <h1>Бэлчээрийн талхагдлын эрсдэл тооцох</h1>
-    <p>Малын тоо, NDVI, цаг уур, ачааллын утгаа оруулан бэлчээрийн эрсдэлийн оноог бодож харна уу.</p>
+    <p>Малын тоо, NDVI, хур тунадас, температур, ачааллын утгаа оруулахад KNN загвар түүхэн 336 аймаг-жилийн өгөгдөлтэй харьцуулж эрсдэлийн оноог тооцно.</p>
   </div>
 
-  <div class="grid2">
-    <div class="card">
-      <h2>Үзүүлэлт оруулах</h2>
-      <div class="field" style="margin-top:10px">
-        <label for="fillAimag">Бэлэн өгөгдлөөс авах</label>
-        <select id="fillAimag"><option value="">-- Аймаг сонгох --</option></select>
-      </div>
-      <form id="form" style="margin-top:12px">
-        <div class="field">
-          <label for="Total_Livestock">Хонин толгойд шилжүүлсэн мал <small>(толгой)</small></label>
-          <div class="inwrap"><input id="Total_Livestock" type="number" step="1000" min="0" value="3500000"><span>толгой</span></div>
-        </div>
-        <div class="field">
-          <label for="NDVI">NDVI <small>(ургамлын индекс, 0–1)</small></label>
-          <div class="inwrap"><input id="NDVI" type="number" step="0.01" min="0" max="1" value="0.25"></div>
-        </div>
-        <div class="two">
-          <div class="field">
-            <label for="Temperature_C">Агаарын хэм <small>(°C)</small></label>
-            <div class="inwrap"><input id="Temperature_C" type="number" step="0.1" value="1.5"><span>°C</span></div>
-          </div>
-          <div class="field">
-            <label for="Precipitation_mm">Хур тунадас <small>(мм)</small></label>
-            <div class="inwrap"><input id="Precipitation_mm" type="number" step="1" value="220"><span>мм</span></div>
-          </div>
-        </div>
-        <div class="field">
-          <label for="Stocking_Rate">Ачааллын коэффициент</label>
-          <div class="inwrap"><input id="Stocking_Rate" type="number" step="0.01" value="1.2"></div>
-        </div>
-        <button type="submit" class="btn primary block" style="margin-top:20px">Эрсдэл тооцох</button>
-      </form>
-    </div>
-
-    <div>
-      <div id="emptyMsg" class="card" style="text-align:center;padding:40px 20px">
-        <h2>Тооцоолол хийгдээгүй байна</h2>
-        <p class="muted">Зүүн талын маягтад утгаа оруулан «Эрсдэл тооцох» товчийг дарна уу.</p>
+  <div class="grid2 predict-grid">
+    <form class="card formcard" id="predictForm" novalidate>
+      <div class="formhead">
+        <h2>Үзүүлэлт оруулах</h2>
+        <button type="reset" class="linkbtn" id="resetForm">Анхны утга</button>
       </div>
 
-      <div id="result" style="display:none">
+      <div class="preset">
+        <div class="field">
+          <label for="presetAimag">Бэлэн өгөгдөл</label>
+          <select id="presetAimag">
+            <option value="">Аймаг сонгох…</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="presetYear">Жил</label>
+          <select id="presetYear" disabled>
+            <option value="">—</option>
+          </select>
+        </div>
+      </div>
+      <p class="hint" id="presetHint">Аймаг, жил сонговол тухайн жилийн бодит үзүүлэлтүүд талбарт орно.</p>
+
+      <div class="field" id="field-livestock">
+        <label for="Total_Livestock">Нийт мал <small>хонин толгойд</small></label>
+        <div class="inwrap">
+          <input id="Total_Livestock" name="Total_Livestock" type="number" step="10000" min="0" inputmode="numeric" value="5050000" required>
+          <span>толгой</span>
+        </div>
+        <input type="range" id="Total_Livestock_range" min="1000000" max="8000000" step="50000" value="5050000" aria-label="Нийт мал, гулсуур">
+      </div>
+
+      <div class="field" id="field-ndvi">
+        <label for="NDVI">Ургамлын индекс <small>NDVI · 0–1</small></label>
+        <div class="inwrap">
+          <input id="NDVI" name="NDVI" type="number" step="0.005" min="0" max="1" inputmode="decimal" value="0.26" required>
+        </div>
+        <input type="range" id="NDVI_range" min="0" max="0.6" step="0.005" value="0.26" aria-label="NDVI, гулсуур">
+      </div>
+
+      <div class="two">
+        <div class="field" id="field-temp">
+          <label for="Temperature_C">Агаарын хэм <small>°C</small></label>
+          <div class="inwrap">
+            <input id="Temperature_C" name="Temperature_C" type="number" step="0.1" inputmode="decimal" value="-0.7" required>
+            <span>°C</span>
+          </div>
+          <input type="range" id="Temperature_C_range" min="-6" max="8" step="0.1" value="-0.7" aria-label="Температур, гулсуур">
+        </div>
+        <div class="field" id="field-precip">
+          <label for="Precipitation_mm">Хур тунадас <small>мм</small></label>
+          <div class="inwrap">
+            <input id="Precipitation_mm" name="Precipitation_mm" type="number" step="1" min="0" inputmode="numeric" value="249" required>
+            <span>мм</span>
+          </div>
+          <input type="range" id="Precipitation_mm_range" min="0" max="500" step="5" value="249" aria-label="Хур тунадас, гулсуур">
+        </div>
+      </div>
+
+      <div class="field" id="field-rate">
+        <label for="Stocking_Rate">Ачааллын коэффициент <small>1.0 = даацтай тэнцүү</small></label>
+        <div class="inwrap">
+          <input id="Stocking_Rate" name="Stocking_Rate" type="number" step="0.01" min="0" inputmode="decimal" value="1.84" required>
+        </div>
+        <input type="range" id="Stocking_Rate_range" min="0.5" max="3.2" step="0.05" value="1.84" aria-label="Ачааллын коэффициент, гулсуур">
+      </div>
+
+      <button type="submit" class="btn primary block" id="predictBtn" style="margin-top:20px">Эрсдэл тооцох</button>
+      <p class="formfoot">Сургалтын хүрээ: мал 1.54–7.77 сая · NDVI 0.12–0.50 · хур тунадас 19–463 мм · ачаалал 0.83–3.15. Хүрээнээс гарсан утгыг анхааруулна.</p>
+    </form>
+
+    <div class="results" id="results">
+      <div class="card intro" id="predictIntro">
+        <div class="introicon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5m0 14h16M7 15l4-5 3 3 4-6"/></svg>
+        </div>
+        <div>
+          <h2>Загвар бэлэн</h2>
+          <p class="muted">Зүүн талын маягтын утгыг оруулаад «Эрсдэл тооцох» дарна уу. Доор оноо, хүчин зүйлсийн нөлөө, хамгийн төстэй түүхэн жишээнүүд болон зөвлөмж гарна.</p>
+          <div class="introstats" id="introStats"></div>
+        </div>
+      </div>
+
+      <div class="card block guidecard" id="predictGuide">
+        <div class="cardhead">
+          <h2>Оноог хэрхэн унших вэ</h2>
+          <span class="cardhint">0–100 оноо</span>
+        </div>
+        <div class="guidebands">
+          <div class="gband low"><b>0–35</b><strong>Бага</strong><span>Тогтвортой, жилийн хяналт хангалттай.</span></div>
+          <div class="gband mid"><b>35–65</b><strong>Дунд</strong><span>Ачаалал, NDVI-г анхаарч хянана.</span></div>
+          <div class="gband high"><b>65–100</b><strong>Өндөр</strong><span>Ачааллыг бууруулж, арга хэмжээ авна.</span></div>
+        </div>
+        <h3 class="guidesteps-title">Загвар хэрхэн ажилладаг вэ</h3>
+        <ol class="steps">
+          <li><b>1</b><span>5 үзүүлэлтийг ижил масштабт стандартчилна.</span></li>
+          <li><b>2</b><span>Түүхэн 336 аймаг-жилээс хамгийн ойр 5 тохиолдлыг олно.</span></li>
+          <li><b>3</b><span>Тэдгээрийн оноог зайгаар жинлэн нэгтгэж оноо гаргана.</span></li>
+        </ol>
+      </div>
+
+      <div class="note err" id="predictError" hidden></div>
+
+      <div id="predictResult" hidden>
         <div class="banner" id="banner">
-          <div class="badge" id="bannerBadge">1</div>
-          <div>
-            <h2 id="bannerTitle">Бага эрсдэл</h2>
-            <div class="sub" id="bannerSub" style="color:inherit;opacity:.9">Бэлчээрийн төлөв харьцангуй тогтвортой</div>
+          <div class="badge" id="bannerBadge">0</div>
+          <div class="bannertext">
+            <h2 id="bannerTitle">—</h2>
+            <p id="bannerSub">—</p>
           </div>
+          <div class="bannerchip" id="percentileChip">—</div>
         </div>
 
         <div class="resgrid">
-          <div class="ring">
-            <svg viewBox="0 0 140 140">
+          <div class="ring" id="scoreRing">
+            <svg viewBox="0 0 140 140" aria-hidden="true">
               <circle cx="70" cy="70" r="58" fill="none" stroke-width="14"/>
-              <circle id="ringArc" cx="70" cy="70" r="58" fill="none" stroke-width="14" stroke-dasharray="0 364" stroke-linecap="round"/>
+              <circle id="ringArc" cx="70" cy="70" r="58" fill="none" stroke-width="14" stroke-dasharray="0 364.4" stroke-linecap="round"/>
             </svg>
-            <div class="c">
+            <div class="ringlabel">
               <b id="ringNum">0</b>
-              <span>оноо</span>
+              <span>оноо / 100</span>
             </div>
           </div>
-          <div style="width:100%">
-            <div style="font-weight:700;font-size:14px">Эрсдэлийн түвшин (0–100 оноо)</div>
-            <p class="sub" id="scoreNote" style="margin-top:6px"></p>
+          <div class="scoremeta">
+            <div class="minikpis">
+              <div class="mini"><small>Боломжит хүрээ</small><b id="rangeVal">—</b><span>хөршүүдийн тархалт</span></div>
+              <div class="mini"><small>Улсын дундаж</small><b id="natMeanVal">—</b><span>бүх аймаг-жил</span></div>
+              <div class="mini"><small>Харьцуулалт</small><b id="percentileVal">—</b><span>түүхэн ажиглалт</span></div>
+            </div>
+            <p class="scorenote" id="scoreNote">—</p>
           </div>
         </div>
 
-        <div class="card" style="margin-top:20px">
-          <h2>Хүчин зүйлсийн нөлөөлөл</h2>
+        <div class="card block" id="factorsCard">
+          <div class="cardhead">
+            <h2>Хүчин зүйлсийн нөлөөлөл</h2>
+            <span class="cardhint">Медиан утгатай харьцуулсан зөрүү</span>
+          </div>
           <div class="factors" id="factorList"></div>
+          <div class="factorlegend"><span><i class="sw red"></i> эрсдэл нэмэгдүүлнэ</span><span><i class="sw green"></i> эрсдэл бууруулна</span></div>
         </div>
 
+        <div class="card block" id="neighborsCard">
+          <div class="cardhead">
+            <h2>Хамгийн төстэй түүхэн тохиолдлууд</h2>
+            <span class="cardhint" id="neighborsHint">k = 5</span>
+          </div>
+          <div class="tablewrap">
+            <table class="neigh">
+              <thead><tr><th>Аймаг</th><th class="n">Он</th><th class="n">Оноо</th><th class="n">Зай</th><th class="n">Жин</th></tr></thead>
+              <tbody id="neighborRows"></tbody>
+            </table>
+          </div>
+          <p class="cardfoot">Оноо нь эдгээр тохиолдлын оноог зайгаар жинлэсэн дундажаар бодогдоно.</p>
+        </div>
+
+        <div id="warningsWrap"></div>
+
         <div class="find" id="find">
-          <h2>Шалтгаан ба Зөвлөмж</h2>
+          <div class="cardhead"><h2>Шалтгаан ба зөвлөмж</h2><span class="cardhint">Оруулсан утгад үндэслэсэн</span></div>
           <ul id="findList"></ul>
+        </div>
+
+        <div class="resultfoot">
+          <span id="modelFoot">—</span>
+          <div class="resultactions">
+            <button type="button" class="btn" id="toMapBtn" hidden>Газрын зураг дээр харах</button>
+            <button type="button" class="btn primary" id="editBtn">Утгаа өөрчлөх</button>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
+</section>
 
 <!-- ============ 2. ГАЗРЫН ЗУРАГ ============ -->
-<div class="page" id="page-map">
+<section class="page" id="page-map">
   <div class="pagehead">
-    <h1>Монгол улсын 21 аймгийн эрсдэлийн зураг</h1>
-    <p>Аймаг бүрийн бэлчээрийн талхагдлын оноог газрын зураг дээр харьцуулан харна.</p>
+    <span class="eyebrow">21 аймаг · 16 жил</span>
+    <h1>Монголын бэлчээрийн эрсдэлийн зураг</h1>
+    <p>Аймаг бүрийн эрсдэлийн оноог он жилээр харьцуулна. Аймаг дээр дарж дэлгэрэнгүй үзүүлэлт, түүхийг харна уу.</p>
   </div>
-  <div class="card mapcard">
-    <div class="maphead">
-      <div><h2>Интерактив зураглал</h2></div>
-    </div>
-    <div class="mapbox" id="mapBox" style="min-height:350px; display:grid; place-items:center;">
-      <span style="font-weight:600; color:var(--muted)">[ 21 Аймгийн Интерактив Газрын Зураг ]</span>
-    </div>
+
+  <div class="kpis" id="mapKpis" aria-live="polite"></div>
+
+  <div class="mapgrid">
+    <section class="card mapcard">
+      <div class="maphead">
+        <div class="maptitle">
+          <h2>Эрсдэлийн зураглал</h2>
+          <p class="muted small" id="mapSub">—</p>
+        </div>
+        <div class="mapctl">
+          <label class="ctl">
+            <span>Он</span>
+            <select id="mapYear"></select>
+          </label>
+          <div class="seg" id="metricSeg" role="group" aria-label="Онооны төрөл">
+            <button type="button" data-metric="score" aria-pressed="true">Өгөгдлийн оноо</button>
+            <button type="button" data-metric="knn" aria-pressed="false">Загварын оноо</button>
+          </div>
+          <div class="zoom">
+            <button type="button" id="zoomOut" aria-label="Жижигрүүлэх">−</button>
+            <button type="button" id="zoomIn" aria-label="Томруулах">+</button>
+            <button type="button" id="zoomReset" aria-label="Анхны хэмжээнд буцаах">⟲</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mapbox" id="mapBox">
+        <div class="mapsearch">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="mapSearch" list="aimagOptions" placeholder="Аймаг хайх…" aria-label="Аймаг хайх" autocomplete="off">
+          <datalist id="aimagOptions"></datalist>
+        </div>
+        <svg id="mapSvg" viewBox="0 0 1000 560" role="img" aria-label="Монгол улсын 21 аймгийн бэлчээрийн эрсдэлийн газрын зураг"></svg>
+        <div class="mapempty" id="mapEmpty">Газрын зургийг ачаалж байна…</div>
+        <div class="tip" id="mapTip" role="status"></div>
+        <div class="maphint">Чирж зөөх · + / − томруулах</div>
+      </div>
+
+      <div class="legend">
+        <div class="legendtitle">Эрсдэл</div>
+        <div class="legendscale">
+          <div class="ramp"></div>
+          <div class="ticks"><span style="left:0">0</span><span style="left:35%">35</span><span style="left:65%">65</span><span style="left:100%">100</span></div>
+        </div>
+        <div class="legenditems">
+          <span><i class="sw green"></i>Бага</span>
+          <span><i class="sw amber"></i>Дунд</span>
+          <span><i class="sw red"></i>Өндөр</span>
+          <span><i class="sw nodata"></i>Өгөгдөлгүй</span>
+        </div>
+      </div>
+      <p class="mapfoot">Хилийн геометр: geoBoundaries (OpenStreetMap, ODbL). Өгөгдөл: MODIS NDVI, ERA5, CHIRPS, 1212.mn, FAO/WB — 2010–2025. Улаанбаатарт бэлчээрийн өгөгдөл байхгүй; жижиг аймгуудын нэр томруулахад харагдана.</p>
+    </section>
+
+    <aside class="mapside">
+      <section class="card sidecard" id="sidePanel">
+        <div class="sideintro">
+          <h2>Аймаг сонгоно уу</h2>
+          <p class="muted">Зураг дээрх аймаг дээр дарж эсвэл баруун жагсаалтаас сонгож, жилийн үзүүлэлт, түүхийг харна уу.</p>
+        </div>
+      </section>
+      <section class="card rankcard" id="rankCard">
+        <div class="cardhead">
+          <h2>Хамгийн өндөр эрсдэл</h2>
+          <span class="cardhint" id="rankYear">—</span>
+        </div>
+        <div class="ranklist" id="rankList"></div>
+      </section>
+    </aside>
   </div>
-</div>
+
+  <section class="card tablecard">
+    <div class="cardhead">
+      <h2>Бүх аймгийн үзүүлэлт</h2>
+      <div class="tabletools">
+        <span class="cardhint" id="tableYear">—</span>
+        <a class="btn tiny" href="/api/dataset.csv" download>CSV татах</a>
+      </div>
+    </div>
+    <div class="tablewrap">
+      <table class="aimagtable">
+        <thead>
+          <tr>
+            <th class="n">#</th><th>Аймаг</th><th class="n">Оноо</th><th>Түвшин</th>
+            <th class="n">Загвар</th><th class="n">NDVI</th><th class="n">Ачаалал</th>
+            <th class="n">Хур тунадас</th><th class="n">Өмнөх жил</th>
+          </tr>
+        </thead>
+        <tbody id="aimagTable"></tbody>
+      </table>
+    </div>
+  </section>
+</section>
 
 <!-- ============ 3. БАРИМТУУД ============ -->
-<div class="page" id="page-facts">
+<section class="page" id="page-facts">
   <div class="pagehead">
+    <span class="eyebrow">Өгөгдлийн тойм</span>
     <h1>Бэлчээрийн тухай баримтууд</h1>
-    <p>Дэлхийн болон Монголын бэлчээрийн төлөв байдлын онцлох баримтууд.</p>
+    <p>Судалгааны өгөгдөл болон загварын үр дүнгээс гарсан гол тоо баримтууд.</p>
   </div>
-  <section class="fsec">
-    <div class="factgrid">
-      <article class="fact">
-        <div class="fbig">70%</div>
-        <h3>Бэлчээрийн талхагдал</h3>
-        <p>Монгол орны нийт бэлчээрийн 70 орчим хувь нь тодорхой хэмжээгээр талхагдалд орсон судалгаа байдаг.</p>
-      </article>
-      <article class="fact mn">
-        <div class="fbig">21</div>
-        <h3>Аймгийн хамрах хүрээ</h3>
-        <p>Улсын хэмжээнд бэлчээрийн төлөв байдлыг аймаг бүрээр нарийвчлан тооцож байна.</p>
-      </article>
+
+  <div class="factgrid" id="factGrid"></div>
+
+  <section class="card block trendcard">
+    <div class="cardhead">
+      <h2>Улсын дундаж эрсдэл, 2010–2025</h2>
+      <span class="cardhint">21 аймгийн дундаж оноо</span>
+    </div>
+    <div class="trend" id="trendChart" role="img" aria-label="Улсын дундаж эрсдэлийн он жилийн график"></div>
+    <div class="legend smalllegend">
+      <span><i class="sw green"></i> Бага (0–35)</span>
+      <span><i class="sw amber"></i> Дунд (35–65)</span>
+      <span><i class="sw red"></i> Өндөр (65–100)</span>
     </div>
   </section>
-</div>
+
+  <div class="twocol">
+    <section class="card block">
+      <h2>Өгөгдлийн эх сурвалж</h2>
+      <ul class="srclist">
+        <li><b>Малын тоо</b> — 1212.mn, аймаг/жилээр, хонин толгойд шилжүүлсэн.</li>
+        <li><b>Уур амьсгал</b> — ERA5 (температур), CHIRPS (жилийн хур тунадас).</li>
+        <li><b>Ургамлын индекс</b> — MODIS NDVI, бэлчээрийн биомасс, доройтлын хувь.</li>
+        <li><b>Газар ашиглалт</b> — FAO & World Bank, бэлчээрийн талбай, ачааллын коэффициент.</li>
+        <li><b>Хилийн геометр</b> — geoBoundaries MNG ADM1 (OpenStreetMap, ODbL).</li>
+      </ul>
+      <p class="small muted">Эрсдэлийн оноо нь 0–100 хүртэлх индекс бөгөөд 35 ба 65-ын босгоор бага, дунд, өндөр гэж ангилагдана.</p>
+    </section>
+    <section class="card block">
+      <h2>Аргачлал</h2>
+      <p class="muted">5 үзүүлэлтийг стандартчилж, KNN регрессор (k=5, зайгаар жинлэсэн) ашиглан тухайн утгад хамгийн ойр түүхэн аймаг-жилүүдийн эрсдэлийн оноог нэгтгэдэг. Загварын чанарыг 80/20 хуваалтаар шалгасан.</p>
+      <div class="metricgrid" id="modelMetrics"></div>
+      <p class="small muted">Анхаар: KNN нь шалтгаан-үр дагаврыг биш, түүхэн ижил төстэй байдлыг хэмждэг. Оноог шийдвэр гаргалтын цорын ганц үндэслэл болгож болохгүй.</p>
+    </section>
+  </div>
+</section>
 
 <!-- ============ 4. ТУСЛАМЖ ============ -->
-<div class="page" id="page-help">
+<section class="page" id="page-help">
   <div class="pagehead">
-    <h1>Тусламж ба Тайлбар</h1>
-    <p>Системийг ашиглах заавар болон нэр томьёоны тайлбар.</p>
+    <span class="eyebrow">Заавар</span>
+    <h1>Тусламж ба тайлбар</h1>
+    <p>Системийг хэрхэн ашиглах, оноог хэрхэн унших, өгөгдөл хаанаас ирсэн талаар.</p>
   </div>
-  <section class="hsec">
-    <h2>Эрсдэлийн оноог хэрхэн унших вэ</h2>
-    <p>Оноо 0-ээс 100 хүртэл байна:</p>
-    <ul>
-      <li><b>0 – 35 (Бага эрсдэл):</b> Бэлчээрийн төлөв харьцангуй тогтвортой.</li>
-      <li><b>35 – 65 (Дунд эрсдэл):</b> Талхагдлын эрсдэл дунд зэрэг, анхаарах шаардлагатай.</li>
-      <li><b>65 – 100 (Өндөр эрсдэл):</b> Бэлчээр хүчтэй талхагдах эрсдэлтэй, арга хэмжээ авах хэрэгтэй.</li>
-    </ul>
+
+  <div class="twocol helpgrid">
+    <section class="hsec">
+      <h2>Эрсдэлийн оноог хэрхэн унших вэ</h2>
+      <div class="bandlist">
+        <div class="band low"><b>0–35</b><div><strong>Бага эрсдэл</strong><span>Бэлчээрийн төлөв харьцангуй тогтвортой. Жилийн хяналт хангалттай.</span></div></div>
+        <div class="band mid"><b>35–65</b><div><strong>Дунд эрсдэл</strong><span>Талхагдлын эрсдэл дунд зэрэг. Ачаалал, NDVI-г анхаарах шаардлагатай.</span></div></div>
+        <div class="band high"><b>65–100</b><div><strong>Өндөр эрсдэл</strong><span>Хүчтэй талхагдах эрсдэлтэй. Ачааллыг бууруулах, нөхөн сэргээх арга хэмжээ авна.</span></div></div>
+      </div>
+      <p class="small muted">Оноог 5 үзүүлэлтээс KNN загвараар тооцдог тул ижил аймгийн өөр өөр жилүүд өөр оноотой байж болно.</p>
+    </section>
+
+    <section class="hsec">
+      <h2>Загварын дэлгэрэнгүй</h2>
+      <div class="modelbox" id="modelBox"></div>
+      <p class="small muted" id="modelNote"></p>
+    </section>
+  </div>
+
+  <section class="hsec wide">
+    <h2>Газрын зургийн удирдлага</h2>
+    <div class="helpgrid3">
+      <div class="helpitem"><h3>Он сонгох</h3><p>«Он» сонголтоор 2010–2025 оны аль ч жилийн зургийг харна.</p></div>
+      <div class="helpitem"><h3>Онооны төрөл</h3><p>«Өгөгдлийн оноо» нь өгөгдлийн сан дахь оноо, «Загварын оноо» нь KNN-ийн leave-one-out таамаглал.</p></div>
+      <div class="helpitem"><h3>Томруулах</h3><p>+ / − товчоор томруулж, чирж зөөнө. ⟲ нь анхны хэмжээнд буцаана.</p></div>
+      <div class="helpitem"><h3>Аймаг хайх</h3><p>Хайлтын талбарт нэр бичиж аймгийг шууд сонгоно.</p></div>
+      <div class="helpitem"><h3>Дэлгэрэнгүй</h3><p>Аймаг дээр дарахад оноо, 5 үзүүлэлт, 2010–2025 оны түүх гарна.</p></div>
+      <div class="helpitem"><h3>Тооцоололд шилжих</h3><p>Сонгосон аймгийн тухайн жилийн утгыг маягт руу нэг товчоор шилжүүлнэ.</p></div>
+    </div>
   </section>
-</div>
+
+  <section class="hsec wide">
+    <h2>API</h2>
+    <div class="tablewrap">
+      <table class="apitable">
+        <thead><tr><th>Арга</th><th>Зам</th><th>Тайлбар</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET</code></td><td><code>/api/model-info</code></td><td>Загварын параметр, чанар, хүрээ, квантель</td></tr>
+          <tr><td><code>GET</code></td><td><code>/api/aimags</code></td><td>Аймгууд, жилүүд</td></tr>
+          <tr><td><code>POST</code></td><td><code>/api/predict</code></td><td>5 үзүүлэлтээр эрсдэлийн оноо, зөвлөмж</td></tr>
+          <tr><td><code>GET</code></td><td><code>/api/dataset</code></td><td>Бүх аймаг-жилийн оноо, үзүүлэлт</td></tr>
+          <tr><td><code>GET</code></td><td><code>/api/aimag/&lt;нэр&gt;</code></td><td>Аймгийн жилийн түүх</td></tr>
+          <tr><td><code>GET</code></td><td><code>/api/ranking?year=2025</code></td><td>Тухайн жилийн эрэмбэ</td></tr>
+          <tr><td><code>GET</code></td><td><code>/api/dataset.csv</code></td><td>Өгөгдлийг CSV-ээр татах</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">Локалаар ажиллуулах: <code>pip install flask flask-cors pandas scikit-learn openpyxl</code> дараа <code>python app.py</code> → <code>http://127.0.0.1:5000</code>.</p>
+  </section>
+
+  <section class="hsec wide">
+    <h2>Түгээмэл асуулт</h2>
+    <details class="faq"><summary>Оноо яагаад ижил аймгийн өөр жилүүдэд өөр байдаг вэ?</summary><p>Оноо нь тухайн жилийн малын тоо, NDVI, хур тунадас, температур, ачааллаас хамаардаг. Эдгээр нь жил бүр өөрчлөгддөг тул оноо ч өөрчлөгдөнө.</p></details>
+    <details class="faq"><summary>«Өгөгдлийн оноо» ба «Загварын оноо» ялгаатай юу?</summary><p>Өгөгдлийн оноо нь өгөгдлийн сан дахь Degradation_Risk_Score, харин загварын оноо нь тухайн мөрийг хөршөөс хасаж (leave-one-out) KNN-ээр таамагласан утга. Хоёрын зөрүү нь загварын алдааг харуулна.</p></details>
+    <details class="faq"><summary>Хүрээнээс гадуур утга оруулбал?</summary><p>Загвар ойролцоо түүхэн утгад тулгуурладаг тул үр дүн найдваргүй болно. Систем анхааруулга харуулна.</p></details>
+    <details class="faq"><summary>Мэдээлэл хэр шинэ вэ?</summary><p>Өгөгдөл 2010–2025 оныг хамарна. 2025 оны утга нь сүүлийн бэлэн жилийн үзүүлэлт юм.</p></details>
+  </section>
+</section>
 
 </main>
 
 <footer class="sitefoot">
-  <div><b>Бэлчээр AI</b> – Монголын бэлчээрийн талхагдлын эрсдэлийн судалгааны хэрэгсэл</div>
+  <div><b>Бэлчээр AI</b> — Монголын бэлчээрийн талхагдлын эрсдэлийн судалгааны хэрэгсэл</div>
+  <div class="footlinks">
+    <span>MODIS · ERA5 · CHIRPS · 1212.mn · FAO/WB</span>
+    <a href="/api/dataset.csv">CSV татах</a>
+  </div>
 </footer>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  // Цэс солих логик
-  const navButtons = document.querySelectorAll('nav button');
-  const pages = document.querySelectorAll('.page');
-
-  navButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      navButtons.forEach(b => b.removeAttribute('aria-current'));
-      pages.forEach(p => p.classList.remove('active'));
-      
-      btn.setAttribute('aria-current', 'page');
-      const targetPage = document.getElementById(`page-${btn.dataset.page}`);
-      if(targetPage) targetPage.classList.add('active');
-    });
-  });
-
-  // Аймаг сонгох өгөгдөл
-  const aimagData = {
-    "Архангай": { livestock: 4200000, ndvi: 0.38, temp: 0.8, precip: 310, rate: 1.1 },
-    "Баянхонгор": { livestock: 4100000, ndvi: 0.18, temp: 3.2, precip: 130, rate: 1.6 },
-    "Өмнөговь": { livestock: 2800000, ndvi: 0.12, temp: 5.4, precip: 95, rate: 1.9 },
-    "Төв": { livestock: 4800000, ndvi: 0.32, temp: 1.1, precip: 240, rate: 1.4 }
-  };
-
-  const fillSelect = document.getElementById('fillAimag');
-  Object.keys(aimagData).forEach(key => {
-    const opt = document.createElement('option');
-    opt.value = key;
-    opt.textContent = key;
-    fillSelect.appendChild(opt);
-  });
-
-  fillSelect.addEventListener('change', (e) => {
-    const selected = aimagData[e.target.value];
-    if (selected) {
-      document.getElementById('Total_Livestock').value = selected.livestock;
-      document.getElementById('NDVI').value = selected.ndvi;
-      document.getElementById('Temperature_C').value = selected.temp;
-      document.getElementById('Precipitation_mm').value = selected.precip;
-      document.getElementById('Stocking_Rate').value = selected.rate;
-    }
-  });
-
-  // Тооцоолол хийх логик (Pop-up alert ашиглахгүйгээр дэлгэц дээр шууд харуулах)
-  const form = document.getElementById('form');
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    const livestock = parseFloat(document.getElementById('Total_Livestock').value) || 0;
-    const ndvi = parseFloat(document.getElementById('NDVI').value) || 0.2;
-    const rate = parseFloat(document.getElementById('Stocking_Rate').value) || 1.0;
-    const precip = parseFloat(document.getElementById('Precipitation_mm').value) || 200;
-
-    let score = Math.round((rate * 30) + (livestock / 100000) - (ndvi * 40) - (precip / 20));
-    score = Math.max(10, Math.min(98, score));
-
-    // UI харуулах
-    document.getElementById('emptyMsg').style.display = 'none';
-    document.getElementById('result').style.display = 'block';
-
-    document.getElementById('ringNum').textContent = score;
-    document.getElementById('bannerBadge').textContent = score;
-
-    let levelText = "";
-    let bannerClass = "";
-    let reasons = [];
-
-    if (score > 65) {
-      levelText = "Өндөр эрсдэл";
-      bannerClass = "banner high";
-      reasons.push("Малын ачааллын коэффициент хэт өндөр байна.");
-      reasons.push("Ургамлын индекс (NDVI) бага буюу бэлчээрийн ногоон байдал хангалтгүй.");
-    } else if (score > 35) {
-      levelText = "Дунд эрсдэл";
-      bannerClass = "banner mid";
-      reasons.push("Малын ачаалал болон ургамлын төлөв байдал дунд зэрэг байна.");
-      reasons.push("Цаг уурын нөхцөл байдлыг анхаарах шаардлагатай.");
-    } else {
-      levelText = "Бага эрсдэл";
-      bannerClass = "banner low";
-      reasons.push("Ургамлын индекс (NDVI) сайн, хур тунадас хангалттай байна.");
-      reasons.push("Бэлчээрийн даац болон малын ачаалал зохистой түвшинд байна.");
-    }
-
-    const banner = document.getElementById('banner');
-    banner.className = bannerClass;
-    document.getElementById('bannerTitle').textContent = levelText;
-    document.getElementById('bannerSub').textContent = `Эрсдэлийн тооцоолсон индекс: ${score} / 100`;
-
-    // Дугуй график анимаци
-    const circumference = 364;
-    const offset = circumference - (score / 100) * circumference;
-    document.getElementById('ringArc').style.strokeDasharray = `${circumference - offset} ${offset}`;
-
-    // Хүчин зүйлс
-    const factorList = document.getElementById('factorList');
-    factorList.innerHTML = `
-      <div class="factor">
-        <div class="r"><span>Ачааллын коэффициент</span><span>${rate}</span></div>
-        <div class="bar"><i style="width:${Math.min(100, rate*40)}%;background:var(--primary)"></i></div>
-      </div>
-      <div class="factor">
-        <div class="r"><span>Ургамлын индекс (NDVI)</span><span>${ndvi}</span></div>
-        <div class="bar"><i style="width:${ndvi*100}%;background:var(--primary)"></i></div>
-      </div>
-      <div class="factor">
-        <div class="r"><span>Хур тунадас</span><span>${precip} мм</span></div>
-        <div class="bar"><i style="width:${Math.min(100, precip/4)}%;background:var(--primary)"></i></div>
-      </div>
-    `;
-
-    // Шалтгаан болон зөвлөмж
-    const findList = document.getElementById('findList');
-    findList.innerHTML = '';
-    reasons.forEach((r, idx) => {
-      const li = document.createElement('li');
-      li.innerHTML = `<i>${idx+1}</i> <span>${r}</span>`;
-      findList.appendChild(li);
-    });
-  });
-});
-</script>
+<script src="static/map-data.js"></script>
+<script src="static/app.js"></script>
 </body>
 </html>
