@@ -87,7 +87,6 @@ nav button[aria-current="page"]{background:var(--ink);color:var(--accent);border
 .cardhint{font:500 12px var(--mono);color:var(--muted);white-space:nowrap}
 .cardfoot{margin-top:12px;font-size:12.5px;color:var(--muted)}
 .grid2{display:grid;grid-template-columns:minmax(320px,410px) minmax(0,1fr);gap:24px;align-items:start}
-.twocol{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}
 .note{background:var(--mid-bg);border:var(--bw) solid var(--ink);border-left-width:7px;border-left-color:var(--mid);padding:12px 15px;border-radius:var(--r-sm);font-size:14px}
 .note + .note{margin-top:10px}
 .note.err{background:var(--high-bg);border-left-color:var(--high);margin:0 0 18px}
@@ -236,10 +235,6 @@ tbody tr:last-child td{border-bottom:0}
 .mapctl{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
 .ctl{display:flex;flex-direction:column;gap:3px;font-size:11px;font-weight:600;color:var(--muted)}
 .ctl select{padding:7px 10px;font-size:13.5px;border-width:2px}
-.seg{display:inline-flex;padding:3px;gap:2px;background:var(--surface);border:var(--bw) solid var(--ink);border-radius:10px;flex-wrap:wrap}
-.seg button{border:0;background:transparent;padding:6px 11px;border-radius:7px;cursor:pointer;font-weight:600;font-size:12.5px;color:var(--muted)}
-.seg button:hover{color:var(--ink);background:var(--surface-2)}
-.seg button[aria-pressed="true"]{background:var(--ink);color:var(--accent)}
 .zoom{display:flex;gap:5px}
 .zoom button{width:35px;height:35px;border-radius:8px;border:var(--bw) solid var(--ink);background:var(--surface);cursor:pointer;font-size:17px;font-weight:700;line-height:1;box-shadow:var(--shadow-sm)}
 .zoom button:hover{background:var(--surface-2);transform:translate(-1px,-1px)}
@@ -331,7 +326,6 @@ tbody tr:last-child td{border-bottom:0}
 .chartbox .ch{display:flex;justify-content:space-between;align-items:baseline;font-size:11.5px;color:var(--muted);margin-bottom:4px}
 .chartbox svg{width:100%;height:auto;display:block}
 .chartline{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
-.chartline.knn{stroke:var(--primary);stroke-width:1.6;stroke-dasharray:4 3}
 .chartdot{fill:var(--ink);stroke:var(--surface);stroke-width:1.4}
 .chartdot.sel{fill:var(--accent);stroke:var(--ink);stroke-width:2}
 .chartaxis{font:500 8.5px var(--mono);fill:var(--muted)}
@@ -362,28 +356,16 @@ tbody tr:last-child td{border-bottom:0}
 .delta.up{color:var(--high-ink)} .delta.down{color:var(--low-ink)}
 
 /* ---------- БАРИМТУУД ---------- */
+.factgroup{margin-top:28px}
+.factgroup:first-of-type{margin-top:4px}
+.factgroup .cardhead{margin-bottom:14px}
 .factgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
 .fact{background:var(--surface);border:var(--bw) solid var(--ink);border-radius:var(--r);padding:18px 20px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow-sm)}
 .fact .fbig{font:700 30px/1.1 var(--display);letter-spacing:-.03em;color:var(--primary)}
-.fact.good .fbig{color:var(--low)} .fact.bad .fbig{color:var(--high)}
+.fact.bad .fbig{color:var(--high)}
 .fact h3{font-size:14px}
 .fact p{font-size:12.5px;color:var(--muted);line-height:1.5}
-.trendcard{margin-top:22px}
-.trend{display:flex;align-items:flex-end;gap:6px;height:190px;padding:8px 2px 0;border-bottom:2px solid var(--ink);margin-top:22px}
-.trend .tb{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;position:relative;min-width:0}
-.trend .tb .col{width:100%;border:1.5px solid var(--ink);border-bottom:0;border-radius:4px 4px 0 0;min-height:4px;transition:transform .15s}
-.trend .tb:hover .col{transform:scaleX(1.08)}
-.trend .tb .yr{position:absolute;bottom:-19px;font:500 9.5px var(--mono);color:var(--muted)}
-.trend .tb .val{position:absolute;top:-17px;font:600 9.5px var(--mono);white-space:nowrap}
-.trendcard{padding-bottom:34px}
-.smalllegend{margin-top:14px;font-size:12px;color:var(--muted)}
-.metricgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
-.metricgrid div{border:1.5px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--surface-2)}
-.metricgrid small{display:block;font-size:10.5px;color:var(--muted);font-weight:600}
-.metricgrid b{font:700 17px var(--mono)}
-.srclist{margin:12px 0;padding-left:20px;font-size:13.5px}
-.srclist li{margin-top:5px}
-.twocol > .card{margin-top:0}
+.factsrc{margin-top:28px;font-size:12px;color:var(--muted);line-height:1.6;max-width:900px}
 
 /* ---------- ТУСЛАМЖ ---------- */
 .hsec{margin-top:34px;max-width:960px}
@@ -391,12 +373,6 @@ tbody tr:last-child td{border-bottom:0}
 .hsec.wide{max-width:none}
 .hsec h2{font-size:21px;margin-bottom:10px}
 .hsec > p{font-size:13.5px;color:var(--muted);margin-top:8px}
-.bandlist{display:grid;gap:9px;margin-top:12px}
-.band{display:flex;gap:14px;align-items:flex-start;border:2px solid var(--ink);border-radius:var(--r-sm);padding:12px 14px}
-.band.low{background:var(--low-bg)} .band.mid{background:var(--mid-bg)} .band.high{background:var(--high-bg)}
-.band > b{font:700 15px var(--mono);min-width:62px}
-.band div{display:flex;flex-direction:column;font-size:13px}
-.band span{color:rgba(18,32,26,.75);font-size:12.5px}
 .modelbox{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
 .modelbox div{border:1.5px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--surface-2)}
 .modelbox small{display:block;font-size:10.5px;color:var(--muted);font-weight:600}
@@ -405,10 +381,6 @@ tbody tr:last-child td{border-bottom:0}
 .helpitem{border:2px solid var(--ink);border-radius:var(--r-sm);padding:14px;background:var(--surface-2)}
 .helpitem h3{font-size:13.5px;margin-bottom:4px}
 .helpitem p{font-size:12.5px;color:var(--muted)}
-.apitable{font-size:12.5px}
-details.faq{background:var(--surface);border:var(--bw) solid var(--ink);border-radius:var(--r);padding:12px 16px;margin-top:10px}
-details.faq summary{cursor:pointer;font-weight:700;font-size:14px}
-details.faq p{margin:8px 0 0;font-size:13.5px;color:var(--muted)}
 
 /* ---------- ХӨЛ ---------- */
 .sitefoot{
@@ -438,8 +410,6 @@ details.faq p{margin:8px 0 0;font-size:13.5px;color:var(--muted)}
   .maphead{align-items:flex-start}
   .mapctl{width:100%}
   .ctl{flex:1}
-  .seg button{padding:6px 9px;font-size:12px}
-  .twocol{grid-template-columns:1fr}
 }
 @media (max-width:700px){
   .mapside{grid-template-columns:1fr}
@@ -447,8 +417,6 @@ details.faq p{margin:8px 0 0;font-size:13.5px;color:var(--muted)}
   .resgrid{grid-template-columns:1fr;justify-items:center}
   .scoremeta{width:100%}
   .minikpis{grid-template-columns:1fr 1fr}
-  .trend{overflow-x:auto;gap:3px}
-  .trend .tb{min-width:22px}
   .hint{font-size:12px}
 }
 @media (max-width:520px){
@@ -465,8 +433,6 @@ details.faq p{margin:8px 0 0;font-size:13.5px;color:var(--muted)}
   .resultactions{width:100%}
   .resultactions .btn{flex:1}
   .mapsearch input{width:110px}
-  .mapctl .seg{order:3;width:100%}
-  .seg button{flex:1}
   .legend{padding:12px 14px}
   .sitefoot{flex-direction:column}
 }
@@ -482,11 +448,6 @@ details.faq p{margin:8px 0 0;font-size:13.5px;color:var(--muted)}
 #mapZoom.zoomed .reglabel.tiny,#mapZoom.zoomed .regleader{opacity:1}
 .mapempty[hidden]{display:none}
 .reg{fill:#DFE7D4}
-.trend .tb .col{position:relative}
-.trend .tb .val{top:-16px;left:50%;transform:translateX(-50%);font-size:9px}
-.fact.low .fbig{color:var(--low)}
-.fact.mid .fbig{color:var(--mid)}
-.fact.high .fbig{color:var(--high)}
 .aimagtable tbody tr:focus-visible{outline:3px solid var(--primary);outline-offset:-3px}
 [hidden]{display:none !important}
 
@@ -505,13 +466,6 @@ details.faq p{margin:8px 0 0;font-size:13.5px;color:var(--muted)}
 .gband b{font:700 13px var(--mono)}
 .gband strong{font-size:13px}
 .gband span{font-size:11.5px;line-height:1.4;color:rgba(18,32,26,.75)}
-.guidesteps-title{font-size:13px;margin:18px 0 0;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.steps{display:grid;gap:8px;margin:10px 0 0;padding:0;list-style:none;counter-reset:step}
-.steps li{display:flex;gap:10px;align-items:center;font-size:12.5px;color:var(--muted)}
-.steps li b{
-  flex:none;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;
-  background:var(--surface-2);border:1.5px solid var(--ink);font:700 11px var(--mono);color:var(--ink);
-}
 @media (max-width:700px){.guidebands{grid-template-columns:1fr}}
 
 /* ---------- ЖИЖИГ ДЭЛГЭЦ ---------- */

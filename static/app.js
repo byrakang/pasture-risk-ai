@@ -45,9 +45,7 @@ const state = {
   latestYear: null,
   aimags: [],
   byAimag: new Map(),
-  nationalByYear: {},
   year: null,
-  metric: 'score',
   selected: null,
   preset: null,
   lastPredict: null,
@@ -112,7 +110,7 @@ function rowOf(aimag, year) {
   return state.byAimag.get(aimag)?.get(year) ?? null;
 }
 function valueOf(row) {
-  return state.metric === 'score' ? row.score : row.knn;
+  return row.score;
 }
 function rowsForYear(year) {
   return state.aimags.map((name) => rowOf(name, year)).filter(Boolean);
@@ -222,8 +220,6 @@ function initForm() {
       $('#mapYear').value = String(state.year);
       selectAimag(state.preset.aimag, false);
     }
-    state.metric = 'score';
-    syncMetricSeg();
     goTo('map');
     renderAll();
   });
@@ -642,10 +638,9 @@ function renderAll() {
 function renderMapLabels() {
   const sub = $('#mapSub');
   if (!state.year) return;
-  const val = state.metric === 'score' ? 'өгөгдлийн оноо' : 'загварын оноо';
-  sub.textContent = `${state.year} он · ${val} · 21 аймаг`;
+  sub.textContent = `${state.year} он · 21 аймаг`;
   $('#rankYear').textContent = `${state.year} · оноогоор`;
-  $('#tableYear').textContent = `${state.year} он · ${val}`;
+  $('#tableYear').textContent = `${state.year} он`;
 }
 
 function renderMap() {
@@ -723,7 +718,6 @@ function renderTable() {
         <td><b>${esc(r.aimag)}</b></td>
         <td class="n scorecell">${fmt1.format(r.score)}</td>
         <td>${levelBadge(r.score)}</td>
-        <td class="n">${fmt1.format(r.knn)}</td>
         <td class="n">${fmt2.format(r.NDVI)}</td>
         <td class="n">${fmt2.format(r.Stocking_Rate)}</td>
         <td class="n">${fmt0.format(r.Precipitation_mm)}</td>
@@ -748,7 +742,6 @@ function historyChart(name) {
   const y = (v) => pt + (1 - v / 100) * (H - pt - pb);
   const line = (pts) => pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join('');
   const actual = rows.map((r, i) => (r ? [x(i), y(r.score)] : null)).filter(Boolean);
-  const model = rows.map((r, i) => (r ? [x(i), y(r.knn)] : null)).filter(Boolean);
   const selIdx = years.indexOf(state.year);
 
   const grid = [0, 25, 50, 75, 100].map((v) => (
@@ -770,11 +763,10 @@ function historyChart(name) {
     <div class="chartbox">
       <div class="ch">
         <span>${state.years[0]}–${state.years[state.years.length - 1]} оны түүх</span>
-        <span><i class="sw" style="background:#12201A"></i>өгөгдөл <i class="sw" style="background:#2F5BEA"></i>загвар</span>
+        <span>оноо / 100</span>
       </div>
       <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(name)} аймгийн эрсдэлийн түүх">
         ${grid}${now}${axis}${ticks}
-        <path class="chartline knn" d="${line(model)}"></path>
         <path class="chartline" d="${line(actual)}"></path>
         ${dots}
       </svg>
@@ -844,7 +836,7 @@ function renderSide() {
       ${levelBadge(row.score)}
       <span class="delta ${dCls}" title="Өмнөх жилийн оноотой харьцуулсан">${dTxt}</span>
     </div>
-    <p class="sidesub">Улсын дундаж ${fmt1.format(mean)} · Загварын үнэлгээ ${fmt1.format(row.knn)}</p>
+    <p class="sidesub">Улсын дундаж ${fmt1.format(mean)}</p>
     <div class="metricbars">${bars}</div>
     ${historyChart(name)}
     <button type="button" class="btn primary block" id="useAimag">Энэ аймгийн утгаар тооцох</button>`;
@@ -861,59 +853,12 @@ function renderSide() {
 }
 
 /* ---------------------------------------------------------------- баримтууд */
-function renderFacts() {
-  if (!state.data) return;
-  const year = state.latestYear;
-  const rows = rowsForYear(year);
-  const vals = rows.map((r) => r.score);
-  const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
-  const sorted = [...rows].sort((a, b) => b.score - a.score);
-  const top = sorted[0];
-  const highCount = vals.filter((v) => v >= 65).length;
+function renderIntro() {
   const m = state.meta.metrics.unseen_aimag_cv;
-
-  $('#factGrid').innerHTML = `
-    <article class="fact ${levelKey(mean)}">
-      <div class="fbig">${fmt1.format(mean)}</div>
-      <h3>Улсын дундаж эрсдэл, ${year}</h3>
-      <p>21 аймгийн эрсдэлийн онооны дундаж. ${levelMeta(mean).mn} түвшинд байна.</p>
-    </article>
-    <article class="fact bad">
-      <div class="fbig">${highCount}<span style="font-size:18px;color:var(--muted)"> / 21</span></div>
-      <h3>Өндөр эрсдэлтэй аймаг</h3>
-      <p>${year} онд 65-аас дээш оноотой, яаралтай арга хэмжээ шаардлагатай аймгийн тоо.</p>
-    </article>
-    <article class="fact">
-      <div class="fbig" style="font-size:23px">${esc(top.aimag)}</div>
-      <h3>Хамгийн өндөр эрсдэл</h3>
-      <p>${year} оны хамгийн өндөр оноо — ${fmt1.format(top.score)} (${levelMeta(top.score).mn} эрсдэл).</p>
-    </article>
-    <article class="fact good">
-      <div class="fbig">${state.meta.n_samples}</div>
-      <h3>Ажиглалт</h3>
-      <p>${state.aimags.length} аймаг × ${state.years.length} жил. NDVI, уур амьсгал, мал, ачааллын нэгдсэн өгөгдөл.</p>
-    </article>`;
-
-  const byYear = state.nationalByYear;
-  const years = state.years;
-  const max = Math.max(...years.map((y) => byYear[y] ?? 0), 100);
-  $('#trendChart').innerHTML = years.map((y) => {
-    const v = byYear[y] ?? 0;
-    const h = Math.max(2, (v / max) * 100);
-    const c = levelMeta(v).color;
-    return `<div class="tb" title="${y}: ${fmt1.format(v)} оноо">
-        <div class="col" style="height:${h}%;background:${c}"><span class="val">${fmt1.format(v)}</span></div>
-        <span class="yr">${y}</span>
-      </div>`;
-  }).join('');
-
-  $('#modelMetrics').innerHTML = `
-    <div><small>Тестийн MAE</small><b>${fmt1.format(m.MAE)} оноо</b></div>
-    <div><small>Ангиллын нарийвчлал</small><b>${Math.round(m.class_accuracy * 100)}%</b></div>
-    <div><small>k (хөршийн тоо)</small><b>${state.meta.best_params.n_neighbors}</b></div>
-    <div><small>Ажиглалт</small><b>${state.meta.n_samples}</b></div>`;
-
   const labels = state.meta.feature_labels;
+  $('#modelChip').textContent = `KNN · MAE ${fmt1.format(m.MAE)}`;
+  $('#modelChip').classList.remove('busy');
+  $('#modelChip').setAttribute('title', 'Загварын дэлгэрэнгүйг харах');
   $('#modelBox').innerHTML = `
     <div><small>Алгоритм</small><b>KNN регрессор</b></div>
     <div><small>k</small><b>${state.meta.best_params.n_neighbors}</b></div>
@@ -922,19 +867,7 @@ function renderFacts() {
     <div><small>Ажиглалт</small><b>${state.meta.n_samples}</b></div>
     <div><small>Жил</small><b>${state.meta.years[0]}–${state.meta.years[1]}</b></div>
     <div style="grid-column:1/-1"><small>Шинж чанарууд</small><b>${Object.values(labels).map(esc).join(' · ')}</b></div>`;
-  $('#modelNote').textContent = `Загварыг өгөгдлийн 80%-д сургаж, 20%-д шалгасан. Leave-one-out үнэлгээг газрын зураг болон түүхэн харьцуулалтад ашиглана.`;
-}
-
-function renderIntro() {
-  const m = state.meta.metrics.unseen_aimag_cv;
-  $('#introStats').innerHTML = `
-    <div><b>${state.meta.n_samples}</b>ажиглалт</div>
-    <div><b>${state.meta.best_params.n_neighbors}</b>хөрш</div>
-    <div><b>${fmt1.format(m.MAE)}</b>тестийн MAE</div>
-    <div><b>${Math.round(m.class_accuracy * 100)}%</b>ангиллын нарийвчлал</div>`;
-  $('#modelChip').textContent = `KNN · MAE ${fmt1.format(m.MAE)}`;
-  $('#modelChip').classList.remove('busy');
-  $('#modelChip').setAttribute('title', 'Загварын дэлгэрэнгүйг харах');
+  $('#modelNote').textContent = `Загварыг өгөгдлийн 80%-д сургаж, 20%-д шалгасан. KNN нь шалтгаан-үр дагаврыг биш, түүхэн ижил төстэй байдлыг хэмждэг.`;
 }
 
 function fillSelects() {
@@ -955,20 +888,6 @@ function fillSelects() {
   });
 
   $('#aimagOptions').innerHTML = state.aimags.map((a) => `<option value="${esc(a)}"></option>`).join('');
-
-  $$('#metricSeg button').forEach((b) => {
-    b.addEventListener('click', () => {
-      state.metric = b.dataset.metric;
-      syncMetricSeg();
-      renderAll();
-    });
-  });
-}
-
-function syncMetricSeg() {
-  $$('#metricSeg button').forEach((b) => {
-    b.setAttribute('aria-pressed', String(b.dataset.metric === state.metric));
-  });
 }
 
 /* ---------------------------------------------------------------- эхлэл */
@@ -985,7 +904,6 @@ async function init() {
     state.years = data.years.slice().sort((a, b) => a - b);
     state.latestYear = data.latest_year;
     state.aimags = data.aimags.slice().sort((a, b) => a.localeCompare(b, 'mn'));
-    state.nationalByYear = data.national_mean_by_year;
     state.year = state.latestYear;
 
     data.rows.forEach((r) => {
@@ -997,7 +915,6 @@ async function init() {
     const defaultAimag = state.byAimag.has('Архангай') ? 'Архангай' : state.aimags[0];
     applyPreset(defaultAimag, state.latestYear);
     renderIntro();
-    renderFacts();
     renderAll();
     $('#mapEmpty').hidden = true;
 

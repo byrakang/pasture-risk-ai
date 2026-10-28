@@ -119,7 +119,6 @@
         <div>
           <h2>Загвар бэлэн</h2>
           <p class="muted">Зүүн талын маягтын утгыг оруулаад «Эрсдэл тооцох» дарна уу. Доор оноо, хүчин зүйлсийн нөлөө, хамгийн төстэй түүхэн жишээнүүд болон зөвлөмж гарна.</p>
-          <div class="introstats" id="introStats"></div>
         </div>
       </div>
 
@@ -133,12 +132,6 @@
           <div class="gband mid"><b>35–65</b><strong>Дунд</strong><span>Ачаалал, NDVI-г анхаарч хянана.</span></div>
           <div class="gband high"><b>65–100</b><strong>Өндөр</strong><span>Ачааллыг бууруулж, арга хэмжээ авна.</span></div>
         </div>
-        <h3 class="guidesteps-title">Загвар хэрхэн ажилладаг вэ</h3>
-        <ol class="steps">
-          <li><b>1</b><span>5 үзүүлэлтийг ижил масштабт стандартчилна.</span></li>
-          <li><b>2</b><span>Түүхэн 336 аймаг-жилээс хамгийн ойр 5 тохиолдлыг олно.</span></li>
-          <li><b>3</b><span>Тэдгээрийн оноог зайгаар жинлэн нэгтгэж оноо гаргана.</span></li>
-        </ol>
       </div>
 
       <div class="note err" id="predictError" hidden></div>
@@ -238,10 +231,6 @@
             <span>Он</span>
             <select id="mapYear"></select>
           </label>
-          <div class="seg" id="metricSeg" role="group" aria-label="Онооны төрөл">
-            <button type="button" data-metric="score" aria-pressed="true">Өгөгдлийн оноо</button>
-            <button type="button" data-metric="knn" aria-pressed="false">Загварын оноо</button>
-          </div>
           <div class="zoom">
             <button type="button" id="zoomOut" aria-label="Жижигрүүлэх">−</button>
             <button type="button" id="zoomIn" aria-label="Томруулах">+</button>
@@ -308,7 +297,7 @@
         <thead>
           <tr>
             <th class="n">#</th><th>Аймаг</th><th class="n">Оноо</th><th>Түвшин</th>
-            <th class="n">Загвар</th><th class="n">NDVI</th><th class="n">Ачаалал</th>
+            <th class="n">NDVI</th><th class="n">Ачаалал</th>
             <th class="n">Хур тунадас</th><th class="n">Өмнөх жил</th>
           </tr>
         </thead>
@@ -321,45 +310,64 @@
 <!-- ============ 3. БАРИМТУУД ============ -->
 <section class="page" id="page-facts">
   <div class="pagehead">
-    <span class="eyebrow">Өгөгдлийн тойм</span>
+    <span class="eyebrow">Дэлхий · Монгол</span>
     <h1>Бэлчээрийн тухай баримтууд</h1>
-    <p>Судалгааны өгөгдөл болон загварын үр дүнгээс гарсан гол тоо баримтууд.</p>
+    <p>Дэлхий болон Монголын бэлчээрийн талбай, мал, доройтлын албан ёсны үзүүлэлтүүд.</p>
   </div>
 
-  <div class="factgrid" id="factGrid"></div>
-
-  <section class="card block trendcard">
-    <div class="cardhead">
-      <h2>Улсын дундаж эрсдэл, 2010–2025</h2>
-      <span class="cardhint">21 аймгийн дундаж оноо</span>
-    </div>
-    <div class="trend" id="trendChart" role="img" aria-label="Улсын дундаж эрсдэлийн он жилийн график"></div>
-    <div class="legend smalllegend">
-      <span><i class="sw green"></i> Бага (0–35)</span>
-      <span><i class="sw amber"></i> Дунд (35–65)</span>
-      <span><i class="sw red"></i> Өндөр (65–100)</span>
+  <section class="factgroup">
+    <div class="cardhead"><h2>Дэлхийн бэлчээр</h2><span class="cardhint">FAO</span></div>
+    <div class="factgrid">
+      <article class="fact">
+        <div class="fbig">30%</div>
+        <h3>Хуурай газрын бэлчээр</h3>
+        <p>Дэлхийн мөсгүй хуурай газрын 30% нь бэлчээр, хээр.</p>
+      </article>
+      <article class="fact">
+        <div class="fbig">2 тэрбум</div>
+        <h3>Амьдралын эх үүсвэр</h3>
+        <p>Бэлчээр, мал аж ахуйгаас амьдралаа залгуулдаг хүний тоо.</p>
+      </article>
+      <article class="fact">
+        <div class="fbig">70%</div>
+        <h3>Малын тэжээл</h3>
+        <p>Дэлхийн мал аж ахуйн тэжээлийн 70% орчим бэлчээрээс гардаг.</p>
+      </article>
+      <article class="fact">
+        <div class="fbig">20%</div>
+        <h3>Хөрсний нүүрстөрөгч</h3>
+        <p>Дэлхийн хөрсний органик нүүрстөрөгчийн 20% бэлчээрийн хөрсөнд хуримтлагддаг.</p>
+      </article>
     </div>
   </section>
 
-  <div class="twocol">
-    <section class="card block">
-      <h2>Өгөгдлийн эх сурвалж</h2>
-      <ul class="srclist">
-        <li><b>Малын тоо</b> — 1212.mn, аймаг/жилээр, хонин толгойд шилжүүлсэн.</li>
-        <li><b>Уур амьсгал</b> — ERA5 (температур), CHIRPS (жилийн хур тунадас).</li>
-        <li><b>Ургамлын индекс</b> — MODIS NDVI, бэлчээрийн биомасс, доройтлын хувь.</li>
-        <li><b>Газар ашиглалт</b> — FAO & World Bank, бэлчээрийн талбай, ачааллын коэффициент.</li>
-        <li><b>Хилийн геометр</b> — geoBoundaries MNG ADM1 (OpenStreetMap, ODbL).</li>
-      </ul>
-      <p class="small muted">Эрсдэлийн оноо нь 0–100 хүртэлх индекс бөгөөд 35 ба 65-ын босгоор бага, дунд, өндөр гэж ангилагдана.</p>
-    </section>
-    <section class="card block">
-      <h2>Аргачлал</h2>
-      <p class="muted">5 үзүүлэлтийг стандартчилж, KNN регрессор (k=5, зайгаар жинлэсэн) ашиглан тухайн утгад хамгийн ойр түүхэн аймаг-жилүүдийн эрсдэлийн оноог нэгтгэдэг. Загварын чанарыг 80/20 хуваалтаар шалгасан.</p>
-      <div class="metricgrid" id="modelMetrics"></div>
-      <p class="small muted">Анхаар: KNN нь шалтгаан-үр дагаврыг биш, түүхэн ижил төстэй байдлыг хэмждэг. Оноог шийдвэр гаргалтын цорын ганц үндэслэл болгож болохгүй.</p>
-    </section>
-  </div>
+  <section class="factgroup">
+    <div class="cardhead"><h2>Монголын бэлчээр</h2><span class="cardhint">2025–2026</span></div>
+    <div class="factgrid">
+      <article class="fact">
+        <div class="fbig">110 сая га</div>
+        <h3>Бэлчээрийн талбай</h3>
+        <p>Нутаг дэвсгэрийн 70 орчим хувийг эзэлдэг.</p>
+      </article>
+      <article class="fact">
+        <div class="fbig">58.1 сая</div>
+        <h3>Малын тоо, 2025</h3>
+        <p>2025 оны эцсийн улсын тооллогоор.</p>
+      </article>
+      <article class="fact">
+        <div class="fbig">247.9 мянга</div>
+        <h3>Малчин өрх</h3>
+        <p>2025 оны эцсийн байдлаар.</p>
+      </article>
+      <article class="fact bad">
+        <div class="fbig">81.9%</div>
+        <h3>Доройтсон нутаг</h3>
+        <p>Нутаг дэвсгэр цөлжилт, газар доройтолд өртсөн.</p>
+      </article>
+    </div>
+  </section>
+
+  <p class="factsrc">Эх сурвалж: FAO — Global assessment of soil carbon in grasslands (2023), International Year of Rangelands and Pastoralists (2026); Үндэсний статистикийн хороо — 2025 оны мал, малчин өрхийн тооллого; Байгаль орчин, уур амьсгалын өөрчлөлтийн яам — Монгол орны цөлжилтийн атлас (2026).</p>
 </section>
 
 <!-- ============ 4. ТУСЛАМЖ ============ -->
@@ -367,32 +375,19 @@
   <div class="pagehead">
     <span class="eyebrow">Заавар</span>
     <h1>Тусламж ба тайлбар</h1>
-    <p>Системийг хэрхэн ашиглах, оноог хэрхэн унших, өгөгдөл хаанаас ирсэн талаар.</p>
+    <p>Загварын дэлгэрэнгүй мэдээлэл ба газрын зургийн удирдлага.</p>
   </div>
 
-  <div class="twocol helpgrid">
-    <section class="hsec">
-      <h2>Эрсдэлийн оноог хэрхэн унших вэ</h2>
-      <div class="bandlist">
-        <div class="band low"><b>0–35</b><div><strong>Бага эрсдэл</strong><span>Бэлчээрийн төлөв харьцангуй тогтвортой. Жилийн хяналт хангалттай.</span></div></div>
-        <div class="band mid"><b>35–65</b><div><strong>Дунд эрсдэл</strong><span>Талхагдлын эрсдэл дунд зэрэг. Ачаалал, NDVI-г анхаарах шаардлагатай.</span></div></div>
-        <div class="band high"><b>65–100</b><div><strong>Өндөр эрсдэл</strong><span>Хүчтэй талхагдах эрсдэлтэй. Ачааллыг бууруулах, нөхөн сэргээх арга хэмжээ авна.</span></div></div>
-      </div>
-      <p class="small muted">Оноог 5 үзүүлэлтээс KNN загвараар тооцдог тул ижил аймгийн өөр өөр жилүүд өөр оноотой байж болно.</p>
-    </section>
-
-    <section class="hsec">
-      <h2>Загварын дэлгэрэнгүй</h2>
-      <div class="modelbox" id="modelBox"></div>
-      <p class="small muted" id="modelNote"></p>
-    </section>
-  </div>
+  <section class="hsec">
+    <h2>Загварын дэлгэрэнгүй</h2>
+    <div class="modelbox" id="modelBox"></div>
+    <p class="small muted" id="modelNote"></p>
+  </section>
 
   <section class="hsec wide">
     <h2>Газрын зургийн удирдлага</h2>
     <div class="helpgrid3">
       <div class="helpitem"><h3>Он сонгох</h3><p>«Он» сонголтоор 2010–2025 оны аль ч жилийн зургийг харна.</p></div>
-      <div class="helpitem"><h3>Онооны төрөл</h3><p>«Өгөгдлийн оноо» нь өгөгдлийн сан дахь оноо, «Загварын оноо» нь KNN-ийн leave-one-out таамаглал.</p></div>
       <div class="helpitem"><h3>Томруулах</h3><p>+ / − товчоор томруулж, чирж зөөнө. ⟲ нь анхны хэмжээнд буцаана.</p></div>
       <div class="helpitem"><h3>Аймаг хайх</h3><p>Хайлтын талбарт нэр бичиж аймгийг шууд сонгоно.</p></div>
       <div class="helpitem"><h3>Дэлгэрэнгүй</h3><p>Аймаг дээр дарахад оноо, 5 үзүүлэлт, 2010–2025 оны түүх гарна.</p></div>
@@ -400,32 +395,6 @@
     </div>
   </section>
 
-  <section class="hsec wide">
-    <h2>API</h2>
-    <div class="tablewrap">
-      <table class="apitable">
-        <thead><tr><th>Арга</th><th>Зам</th><th>Тайлбар</th></tr></thead>
-        <tbody>
-          <tr><td><code>GET</code></td><td><code>/api/model-info</code></td><td>Загварын параметр, чанар, хүрээ, квантель</td></tr>
-          <tr><td><code>GET</code></td><td><code>/api/aimags</code></td><td>Аймгууд, жилүүд</td></tr>
-          <tr><td><code>POST</code></td><td><code>/api/predict</code></td><td>5 үзүүлэлтээр эрсдэлийн оноо, зөвлөмж</td></tr>
-          <tr><td><code>GET</code></td><td><code>/api/dataset</code></td><td>Бүх аймаг-жилийн оноо, үзүүлэлт</td></tr>
-          <tr><td><code>GET</code></td><td><code>/api/aimag/&lt;нэр&gt;</code></td><td>Аймгийн жилийн түүх</td></tr>
-          <tr><td><code>GET</code></td><td><code>/api/ranking?year=2025</code></td><td>Тухайн жилийн эрэмбэ</td></tr>
-          <tr><td><code>GET</code></td><td><code>/api/dataset.csv</code></td><td>Өгөгдлийг CSV-ээр татах</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p class="small muted">Локалаар ажиллуулах: <code>pip install flask flask-cors pandas scikit-learn openpyxl</code> дараа <code>python app.py</code> → <code>http://127.0.0.1:5000</code>.</p>
-  </section>
-
-  <section class="hsec wide">
-    <h2>Түгээмэл асуулт</h2>
-    <details class="faq"><summary>Оноо яагаад ижил аймгийн өөр жилүүдэд өөр байдаг вэ?</summary><p>Оноо нь тухайн жилийн малын тоо, NDVI, хур тунадас, температур, ачааллаас хамаардаг. Эдгээр нь жил бүр өөрчлөгддөг тул оноо ч өөрчлөгдөнө.</p></details>
-    <details class="faq"><summary>«Өгөгдлийн оноо» ба «Загварын оноо» ялгаатай юу?</summary><p>Өгөгдлийн оноо нь өгөгдлийн сан дахь Degradation_Risk_Score, харин загварын оноо нь тухайн мөрийг хөршөөс хасаж (leave-one-out) KNN-ээр таамагласан утга. Хоёрын зөрүү нь загварын алдааг харуулна.</p></details>
-    <details class="faq"><summary>Хүрээнээс гадуур утга оруулбал?</summary><p>Загвар ойролцоо түүхэн утгад тулгуурладаг тул үр дүн найдваргүй болно. Систем анхааруулга харуулна.</p></details>
-    <details class="faq"><summary>Мэдээлэл хэр шинэ вэ?</summary><p>Өгөгдөл 2010–2025 оныг хамарна. 2025 оны утга нь сүүлийн бэлэн жилийн үзүүлэлт юм.</p></details>
-  </section>
 </section>
 
 </main>
