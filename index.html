@@ -286,177 +286,39 @@ details.faq p{margin:8px 0 0}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}} 
 /*Гар утасны дэлгэцэд тохируулах */
-* {
-    box-sizing: border-box;
+MOBILE_CSS = """/* ===== Гар утасны дэлгэц ===== */
+img{max-width:100%;height:auto}
+@media (max-width:768px){
+  body{font-size:15px}
+  .top{padding:10px 12px;gap:8px}
+  nav{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+  nav button{white-space:nowrap;padding:9px 14px;min-height:40px}
+  .chip{display:none}
+  .page{padding:20px 12px 36px}
+  .card{padding:16px;box-shadow:var(--shadow-sm)}
+  .two{grid-template-columns:1fr}
+  .inwrap input,select,.toolbar input,#fillAimag{font-size:16px;min-height:44px}
+  .btn,.seg button,.zoom button{min-height:44px}
+  .kpis{width:100%}
+  .kpi{flex:1;min-width:140px}
+  .toolbar>div{flex:1 1 140px}
+  .toolbar input{min-width:0;width:100%}
+  .toolbar>div[style*="margin-left:auto"]{margin-left:0!important;flex-basis:100%}
+  .ring{width:140px;height:140px}
+  .ring b{font-size:32px}
+  .resgrid{padding:14px}
+  .factgrid{grid-template-columns:1fr}
+  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{font-size:13px}
+  th,td{padding:8px 6px}
+  .legend{gap:10px}
+  .ramp{width:140px}
+  .lbl{font-size:13px}
+  .intro{padding-right:16px}
+  .intro::before{display:none}
+  h1{font-size:22px}
 }
-img {
-    max-width:100%;
-    height:auto;
-}
-  
-@media screen and (max-width:768px) 
-    body {
-          margin:0;
-          pading:10px;
-  }
-  
-    h1 {
-        font-size: 24px;
-  }
-
-    h2 {
-        font-size: 20px;
-  }
-  
-    table { 
-           display: block;
-           max-width: 100%;
-           overflow-x: auto;
-  } 
-
-  input,
-  select,
-  textarea,
-  button {
-      max-width: 100%;
-  }
-}
-  
-</style>
-</head>
-<body>
-<a class="skip" href="#main">Үндсэн агуулга руу шилжих</a>
-<noscript><div class="fatal"><b>Энэ сайт ажиллахад JavaScript шаардлагатай.</b> Хөтчийнхөө тохиргоонд JavaScript-ийг идэвхжүүлнэ үү.</div></noscript>
-
-<header class="top">
-  <div class="brand">
-    <svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#1F7A52"/><path d="M11 29C11 19 18 13 29 11C28 22 22 29 14 29Z" fill="#E5EEE3"/><path d="M12 28C16 22 20 18 25 15" stroke="#1F7A52" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
-    Бэлчээр AI
-  </div>
-  <nav aria-label="Үндсэн цэс">
-    <button data-page="predict">Эрсдэл тооцох</button>
-    <button data-page="map">21 аймгийн зураг</button>
-    <button data-page="zones">Бэлчээрийн бүс</button>
-    <button data-page="facts">Баримтууд</button>
-    <button data-page="help">Тусламж</button>
-  </nav>
-  <button type="button" class="chip" id="modelChip" data-goto="help:accuracy" title="Оноо хэр нарийвчлалтай вэ? Дэлгэрэнгүй тайлбар">Ачаалж байна…</button>
-</header>
-<div class="fatal" id="fatal" role="alert" hidden>
-  <b>Сайтын өгөгдлийг ачаалж чадсангүй.</b>
-  <span>Интернэт холболтоо шалгаад хуудсыг дахин ачаална уу.</span>
-  <button class="btn" type="button" onclick="location.reload()">Дахин ачаалах</button>
-</div>
-<main id="main" tabindex="-1">
-
-<!-- ============ 1. ЭРСДЭЛ ТООЦОХ ============ -->
-<div class="page" id="page-predict">
-  <div class="pagehead">
-    <h1>Бэлчээрийн талхагдлын эрсдэлийн таамаглал</h1>
-    <p>Малын тоо, ургамлын индекс, цаг уурын үзүүлэлтээс аймгийн бэлчээрийн талхагдлын эрсдэлийг 0–100 оноогоор тооцно.</p>
-  </div>
-  <section class="card intro" id="introCard" aria-labelledby="introH">
-    <button class="introx" id="introClose" type="button" aria-label="Танилцуулгыг хаах">×</button>
-    <h2 id="introH">Энэ сайт юу хийдэг вэ?</h2>
-    <p>Монголын бэлчээр малын хэт ачаалал, ган гачиг, ургамлын хомсдолоос болж талхагдаж байна. Энэ сайт аймаг бүрийн <b>бэлчээрийн талхагдлын эрсдэлийг 0–100 оноогоор</b> тооцож, газрын зураг дээр харьцуулан харуулна.</p>
-    <ol class="steps">
-      <li><b>1. Утгаа оруулна.</b> Өөрийн аймгаа сонгож бөглөх, эсвэл тоогоо гараар бичнэ.</li>
-      <li><b>2. Оноогоо авна.</b> Бага, дунд, өндөр гэсэн түвшин болон шалтгааныг нь харна.</li>
-      <li><b>3. Харьцуулна.</b> «21 аймгийн зураг» хэсэгт бусад аймагтай жишиж үзнэ.</li>
-    </ol>
-    <p class="sub">Ойлгомжгүй үг (NDVI, ачааллын коэффициент г.м.) байвал <a href="#help" data-goto="help:terms">Тусламж</a> хэсгээс уншина уу.</p>
-  </section>
-  <div class="grid2">
-    <div class="card">
-      <h2>Орчин ба малын өгөгдөл</h2>
-      <p class="sub" style="margin:4px 0 0">Утгаа гараар оруулах эсвэл бүртгэлтэй аймгаар бөглөнө.</p>
-      <div class="field" style="margin-top:14px">
-        <label for="fillAimag">Аймгаараа бөглөх <small>сүүлийн жилийн бодит өгөгдлөөр</small></label>
-        <select id="fillAimag"></select>
-      </div>
-      <form id="form" novalidate>
-        <div class="field">
-          <label for="Total_Livestock">Нийт мал <small>хонин толгойд шилжүүлснээр</small></label>
-          <div class="inwrap"><input id="Total_Livestock" type="number" step="1" min="0" inputmode="numeric"><span>хонин толгой</span></div>
-        </div>
-        <div class="field">
-          <label for="NDVI">Ургамлын индекс (NDVI) <span class="pill" id="ndviPill">–</span></label>
-          <input type="range" id="NDVI_range" min="0" max="1" step="0.005" aria-label="NDVI гулсуур">
-          <div class="ends"><span>0.0 (нүцгэн хөрс)</span><span>1.0 (өтгөн ургамал)</span></div>
-          <div class="inwrap" style="margin-top:8px"><input id="NDVI" type="number" step="0.001" min="-1" max="1" inputmode="decimal"><span>NDVI</span></div>
-        </div>
-        <div class="two">
-          <div class="field">
-            <label for="Temperature_C">Жилийн дундаж хэм</label>
-            <div class="inwrap"><input id="Temperature_C" type="number" step="0.01" inputmode="decimal"><span>°C</span></div>
-          </div>
-          <div class="field">
-            <label for="Precipitation_mm">Жилийн хур тунадас</label>
-            <div class="inwrap"><input id="Precipitation_mm" type="number" step="0.1" min="0" inputmode="decimal"><span>мм</span></div>
-          </div>
-        </div>
-        <div class="field">
-          <label for="Stocking_Rate">Бэлчээрийн ачааллын коэффициент <small id="stockHint"></small></label>
-          <div class="inwrap"><input id="Stocking_Rate" type="number" step="0.01" min="0" inputmode="decimal"><span>коэф.</span></div>
-        </div>
-        <button class="btn primary block" type="submit" style="margin-top:22px">Эрсдэл тооцох</button>
-        <div style="display:flex;justify-content:space-between;margin-top:8px">
-          <span class="sub" id="latency"></span>
-          <button type="button" class="linkbtn" id="clearBtn">Цэвэрлэх</button>
-        </div>
-      </form>
-      <div class="errors" id="errors" role="alert"></div>
-    </div>
-
-    <div class="card" id="resultCard" aria-live="polite">
-      <div class="sub" id="emptyMsg">Утгаа оруулаад «Эрсдэл тооцох» товчийг дарна уу.</div>
-      <div id="result" style="display:none">
-        <div class="banner" id="banner">
-          <div class="badge" id="bannerBadge">3</div>
-          <div><h2 id="bannerTitle"></h2><div id="bannerSub"></div></div>
-        </div>
-
-        <div class="scalebox">
-          <div class="gauge" id="gauge"><i style="background:var(--low)"></i><i style="background:var(--mid)"></i><i style="background:var(--high)"></i><div class="marker" id="marker"></div></div>
-          <div class="scale3"><span id="s1"><b>Бага</b><small></small></span><span id="s2"><b>Дунд</b><small></small></span><span id="s3"><b>Өндөр</b><small></small></span></div>
-          <p class="sub" id="scoreNote" style="margin:8px 0 0"></p>
-        </div>
-
-        <div class="resgrid">
-          <div class="ring">
-            <svg viewBox="0 0 140 140" aria-hidden="true"><circle cx="70" cy="70" r="58" fill="none" stroke="#D3E0D0" stroke-width="13"/><circle id="ringArc" cx="70" cy="70" r="58" fill="none" stroke-width="13" stroke-linecap="round" stroke-dasharray="0 400"/></svg>
-            <div class="c"><b id="ringNum">0</b><span>эрсдлийн оноо</span></div>
-          </div>
-          <div class="factors">
-            <h3>Хүчин зүйлийн нөлөө</h3>
-            <div class="sub">Утгыг сургалтын өгөгдлийн медианаар сольсон үеийн оноон дахь өөрчлөлт</div>
-            <div id="factorList"></div>
-          </div>
-        </div>
-
-        <div class="find" id="find">
-          <h3>Дүгнэлт ба зөвлөмж</h3>
-          <ul id="findList"></ul>
-        </div>
-
-        <div id="warnBox" class="errors" style="margin-top:14px"></div>
-
-        <h3 style="margin-top:22px">Оноог юунд тулгуурлан тооцсон бэ?</h3>
-        <p class="sub" style="margin:2px 0 6px">Таны оруулсантай хамгийн төстэй өмнөх аймаг-жилүүд. Загвар эдгээрийн оноог харж таны оноог тооцдог (ойр байх тусам жин их).</p>
-        <div class="tablewrap"><table>
-          <thead><tr><th>Аймаг, жил</th><th class="n">Оноо</th><th class="n">Жин</th></tr></thead>
-          <tbody id="neighbors"></tbody>
-        </table></div>
-        <p class="sub" id="selfNote" style="margin-top:8px"></p>
-
-        <div class="actions">
-          <button class="btn" type="button" id="printBtn">Тайлан хэвлэх (PDF)</button>
-        </div>
-        <div class="foot" id="modelFoot"></div>
-      </div>
-    </div>
-  </div>
-</div>
+</style>"""
 
 <!-- ============ 2. ГАЗРЫН ЗУРАГ ============ -->
 <div class="page" id="page-map">
