@@ -118,7 +118,7 @@
         </div>
         <div>
           <h2>Загвар бэлэн</h2>
-          <p class="muted">Зүүн талын маягтын утгыг оруулаад «Эрсдэл тооцох» дарна уу. Доор оноо, хүчин зүйлсийн нөлөө, хамгийн төстэй түүхэн жишээнүүд болон зөвлөмж гарна.</p>
+          <p class="muted">Зүүн талын маягтын утгыг оруулаад «Эрсдэл тооцох» дарна уу. Доор оноо, хүчин зүйлсийн нөлөө, зөвлөмж, сайжруулах хувилбар болон хамгийн төстэй түүхэн жишээнүүд гарна.</p>
         </div>
       </div>
 
@@ -164,6 +164,7 @@
               <div class="mini"><small>Харьцуулалт</small><b id="percentileVal">—</b><span>түүхэн ажиглалт</span></div>
             </div>
             <p class="scorenote" id="scoreNote">—</p>
+            <p class="scoredelta" id="scoreDelta" hidden></p>
           </div>
         </div>
 
@@ -174,6 +175,23 @@
           </div>
           <div class="factors" id="factorList"></div>
           <div class="factorlegend"><span><i class="sw red"></i> эрсдэл нэмэгдүүлнэ</span><span><i class="sw green"></i> эрсдэл бууруулна</span></div>
+        </div>
+
+        <div id="warningsWrap"></div>
+
+        <div class="find" id="find">
+          <div class="cardhead"><h2>Шалтгаан ба зөвлөмж</h2><span class="cardhint">Оруулсан утгад үндэслэсэн</span></div>
+          <p class="findsummary" id="findSummary">—</p>
+          <ul id="findList"></ul>
+        </div>
+
+        <div class="card block scenariocard" id="scenarioCard" hidden>
+          <div class="cardhead">
+            <h2>Арга хэмжээний нөлөө</h2>
+            <span class="cardhint">Загвараар дахин тооцсон</span>
+          </div>
+          <p class="scenarionote" id="scenarioNote">Одоогийн утгаас нэг үзүүлэлтийг өөрчилбөл эрсдэлийн оноо хэр өөрчлөгдөхийг тооцов. «Турших» дарж бүрэн дүнг гаргуулна.</p>
+          <div class="scenlist" id="scenarioList"></div>
         </div>
 
         <div class="card block" id="neighborsCard">
@@ -188,13 +206,6 @@
             </table>
           </div>
           <p class="cardfoot">Оноо нь эдгээр тохиолдлын оноог зайгаар жинлэсэн дундажаар бодогдоно.</p>
-        </div>
-
-        <div id="warningsWrap"></div>
-
-        <div class="find" id="find">
-          <div class="cardhead"><h2>Шалтгаан ба зөвлөмж</h2><span class="cardhint">Оруулсан утгад үндэслэсэн</span></div>
-          <ul id="findList"></ul>
         </div>
 
         <div class="resultfoot">
@@ -218,6 +229,14 @@
   </div>
 
   <div class="kpis" id="mapKpis" aria-live="polite"></div>
+
+  <section class="trendcard" aria-labelledby="trendTitle">
+    <div class="trendhead">
+      <h2 id="trendTitle">Улсын дундаж оноо · он жилээр</h2>
+      <span class="cardhint" id="trendHint">—</span>
+    </div>
+    <div class="tstrip" id="trendStrip" role="group" aria-label="Он сонгох"></div>
+  </section>
 
   <div class="mapgrid">
     <section class="card mapcard">

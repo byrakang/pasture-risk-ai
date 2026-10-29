@@ -45,6 +45,7 @@ const state = {
   latestYear: null,
   aimags: [],
   byAimag: new Map(),
+  nationalByYear: {},
   year: null,
   selected: null,
   preset: null,
@@ -122,6 +123,19 @@ function meanOfYear(year) {
 }
 
 /* ---------------------------------------------------------------- цэс */
+const PAGES = ['predict', 'map', 'facts', 'help'];
+
+function syncUrl() {
+  if (!state.data) return;
+  const page = document.body.dataset.page || 'predict';
+  const p = new URLSearchParams();
+  if (page !== 'predict') p.set('page', page);
+  if (state.year && state.year !== state.latestYear) p.set('year', state.year);
+  if (page === 'map' && state.selected) p.set('aimag', state.selected);
+  const q = p.toString();
+  history.replaceState(null, '', `${location.pathname}${q ? `?${q}` : ''}`);
+}
+
 function goTo(page, scroll = true) {
   $$('.page').forEach((el) => el.classList.toggle('active', el.id === `page-${page}`));
   $$('nav button').forEach((b) => {
@@ -130,6 +144,11 @@ function goTo(page, scroll = true) {
   });
   if (scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
   document.body.dataset.page = page;
+  const active = $('nav button[aria-current="page"]');
+  if (active && window.matchMedia('(max-width: 700px)').matches) {
+    active.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+  syncUrl();
 }
 
 function initNav() {
@@ -143,6 +162,15 @@ function initNav() {
     goTo('help');
     setTimeout(() => $('#modelBox')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
   });
+
+  const nav = $('nav');
+  const cue = () => {
+    nav.classList.toggle('can-left', nav.scrollLeft > 2);
+    nav.classList.toggle('can-right', nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 2);
+  };
+  nav.addEventListener('scroll', cue, { passive: true });
+  window.addEventListener('resize', cue);
+  cue();
 }
 
 /* ---------------------------------------------------------------- маягт */
@@ -179,6 +207,7 @@ function initForm() {
   form.addEventListener('reset', () => {
     setTimeout(() => {
       state.preset = null;
+      state.lastPredict = null;
       $('#presetAimag').value = '';
       $('#presetYear').value = '';
       $('#presetYear').disabled = true;
@@ -287,9 +316,10 @@ async function runPrediction() {
   btn.textContent = 'Тооцож байна…';
 
   try {
+    const prevScore = state.lastPredict?.risk_score ?? null;
     const res = await api('/api/predict', { method: 'POST', body: JSON.stringify(values) });
     state.lastPredict = { ...res, preset: state.preset };
-    renderPrediction(res);
+    renderPrediction(res, prevScore);
     if (window.matchMedia('(max-width: 980px)').matches) {
       $('#predictResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -320,7 +350,7 @@ function animateNumber(el, to, decimals = 1) {
   requestAnimationFrame(tick);
 }
 
-function renderPrediction(res) {
+function renderPrediction(res, prevScore = null) {
   const score = res.risk_score;
   const level = LEVELS[res.level_key] || levelMeta(score);
 
@@ -333,7 +363,10 @@ function renderPrediction(res) {
   banner.className = `banner ${level.cls}`;
   $('#bannerBadge').textContent = Math.round(score);
   $('#bannerTitle').textContent = `${level.mn} эрсдэл`;
-  $('#bannerSub').textContent = `${level.mn} (${level.en}) · улсын дундаж ${fmt1.format(res.national_mean)} оноо`;
+  const dNat = score - res.national_mean;
+  $('#bannerSub').textContent = Math.abs(dNat) < 0.05
+    ? 'Улсын дундажтай ойролцоо'
+    : `Улсын дунджаас ${fmt1.format(Math.abs(dNat))} оноогоор ${dNat > 0 ? 'өндөр' : 'бага'}`;
   $('#percentileChip').textContent = `Түүхэн ${res.percentile}%`;
 
   animateNumber($('#ringNum'), score, 1);
@@ -347,9 +380,32 @@ function renderPrediction(res) {
   $('#percentileVal').textContent = `${res.percentile}%`;
   const top = res.factors[0];
   const sign = top.effect >= 0 ? '+' : '';
-  $('#scoreNote').innerHTML = top && Math.abs(top.effect) >= 1
-    ? `Хамгийн их нөлөөлж буй хүчин зүйл: <b>${esc(top.label)}</b> (медиантай харьцуулахад ${sign}${fmt1.format(top.effect)} оноо). Боломжит хүрээ нь хамгийн ойр ${res.k} түүхэн тохиолдлын тархалтаас тооцогдов.`
-    : `Оруулсан утгууд медиан утгуудтай ойролцоо байгаа тул хүчин зүйлсийн нөлөө бага байна. Боломжит хүрээ нь хамгийн ойр ${res.k} түүхэн тохиолдлын тархалтаас тооцогдов.`;
+  const notes = [];
+  notes.push(top && Math.abs(top.effect) >= 1
+    ? `Хамгийн их нөлөөлж буй хүчин зүйл: <b>${esc(top.label)}</b> (медиантай харьцуулахад ${sign}${fmt1.format(top.effect)} оноо, эрсдэлийг ${top.effect >= 0 ? 'нэмэгдүүлж' : 'бууруулж'} байна).`
+    : 'Оруулсан утгууд медиан утгуудтай ойролцоо байгаа тул хүчин зүйлсийн нөлөө бага байна.');
+  const origin = state.preset ? rowOf(state.preset.aimag, state.preset.year) : null;
+  if (origin) {
+    const d = score - origin.score;
+    if (Math.abs(d) < 0.05) {
+      notes.push(`Сонгосон ${esc(state.preset.aimag)} ${state.preset.year} оны бодит оноотой ойролцоо байна.`);
+    } else {
+      const cls = d > 0 ? 'up' : 'down';
+      notes.push(`Сонгосон ${esc(state.preset.aimag)} ${state.preset.year} оны бодит оноо ${fmt1.format(origin.score)} байсан; таны тооцоо <b class="${cls}">${fmt1.format(Math.abs(d))} оноогоор ${d > 0 ? 'өндөр' : 'бага'}</b> байна.`);
+    }
+  }
+  notes.push(`Боломжит хүрээ нь хамгийн ойр ${res.k} түүхэн тохиолдлын тархалтаас тооцогдов.`);
+  $('#scoreNote').innerHTML = notes.join(' ');
+
+  const dt = prevScore == null ? null : score - prevScore;
+  const de = $('#scoreDelta');
+  if (dt == null || Math.abs(dt) < 0.05) {
+    de.hidden = true;
+  } else {
+    de.hidden = false;
+    de.className = `scoredelta ${dt > 0 ? 'up' : 'down'}`;
+    de.textContent = `Өмнөх тооцоололтой харьцуулахад ${dt > 0 ? '+' : '−'}${fmt1.format(Math.abs(dt))} оноо (${fmt1.format(prevScore)} → ${fmt1.format(score)})`;
+  }
 
   const maxAbs = Math.max(0.1, ...res.factors.map((f) => Math.abs(f.effect)));
   $('#factorList').innerHTML = res.factors.map((f) => {
@@ -383,11 +439,48 @@ function renderPrediction(res) {
     ? `<div class="warnbox">${res.warnings.map((w) => `<div class="note"><b>Анхааруулга.</b> ${esc(w)}</div>`).join('')}</div>`
     : '';
 
-  $('#findList').innerHTML = res.recommendations.map((r, i) => `
-    <li>
-      <i>${i + 1}</i>
-      <div><span class="tag">${esc(r.tag)}</span><p>${esc(r.text)}</p></div>
-    </li>`).join('');
+  const boosts = res.factors.filter((f) => f.effect >= 1).slice(0, 2);
+  const shortLabel = (s) => esc(String(s).replace(/\s*\([^)]*\)\s*$/, ''));
+  $('#findSummary').innerHTML = boosts.length
+    ? `Эрсдэлд хамгийн их нөлөөлж буй хүчин зүйл: ${boosts.map((f) => `<b>${shortLabel(f.label)}</b>`).join(', ')}. Дараах арга хэмжээг тэргүүлэхийг зөвлөж байна.`
+    : 'Оруулсан утгууд түүхэн медианаас ихээхэн зөрүүгүй байна. Дараах хяналтын арга хэмжээг баримтална уу.';
+
+  $('#findList').innerHTML = res.recommendations.map((r, i) => {
+    const lead = i === 0 && r.level !== 'low';
+    return `
+    <li class="${lead ? 'lead' : ''}">
+      <i class="${esc(r.level || '')}">${i + 1}</i>
+      <div>
+        <span class="tag">${esc(r.tag)}</span>${lead ? '<span class="leadtag">Тэргүүлэх</span>' : ''}
+        <p>${esc(r.text)}</p>
+      </div>
+    </li>`;
+  }).join('');
+
+  const scenWrap = $('#scenarioCard');
+  if (res.scenarios?.length) {
+    scenWrap.hidden = false;
+    const mae = state.meta?.metrics?.unseen_aimag_cv?.MAE ?? 5;
+    const noise = Math.max(1, mae);
+    const bestKey = res.scenarios.find((s) => s.delta <= -noise)?.key;
+    $('#scenarioNote').innerHTML = `Одоогийн утгаас нэг үзүүлэлтийг өөрчилбөл эрсдэлийн оноо хэр өөрчлөгдөхийг тооцов. Загварын дундаж алдаа ${fmt1.format(mae)} оноо тул үүнээс бага зөрүүг «≈» гэж тэмдэглэв. «Турших» дарж бүрэн дүнг гаргуулна.`;
+    $('#scenarioList').innerHTML = res.scenarios.map((s) => {
+      const signif = Math.abs(s.delta) >= noise;
+      const cls = !signif ? 'flat' : s.delta < 0 ? 'down' : 'up';
+      const ds = !signif ? '≈' : s.delta < 0 ? '−' : '+';
+      return `<div class="scen${s.key === bestKey ? ' best' : ''}">
+        <div class="scenmain"><b>${esc(s.label)}${s.key === bestKey ? '<span class="besttag">Хамгийн үр дүнтэй</span>' : ''}</b><span>${esc(s.detail)}</span></div>
+        <div class="scenscore"><b class="${levelMeta(s.score).cls}">${fmt1.format(s.score)}</b><span class="dchip ${cls}">${ds}${fmt1.format(Math.abs(s.delta))}</span></div>
+        <button type="button" class="btn tiny scenbtn" data-scen="${esc(s.key)}">Турших</button>
+      </div>`;
+    }).join('');
+    $$('#scenarioList .scenbtn').forEach((b) => {
+      b.addEventListener('click', () => applyScenario(res, b.dataset.scen));
+    });
+  } else {
+    scenWrap.hidden = true;
+    $('#scenarioList').innerHTML = '';
+  }
 
   const meta = state.meta;
   if (meta) {
@@ -398,6 +491,20 @@ function renderPrediction(res) {
   const toMap = $('#toMapBtn');
   toMap.hidden = !res.preset;
   if (res.preset) toMap.textContent = `${res.preset.aimag} · ${res.preset.year} газрын зураг дээр`;
+}
+
+function applyScenario(res, key) {
+  const scen = res.scenarios?.find((s) => s.key === key);
+  if (!scen) return;
+  Object.entries(scen.apply).forEach(([feature, value]) => {
+    const num = $(`#${feature}`);
+    const range = $(`#${feature}_range`);
+    if (!num) return;
+    num.value = value;
+    if (range) range.value = clamp(value, Number(range.min), Number(range.max));
+    num.closest('.inwrap')?.classList.remove('invalid');
+  });
+  runPrediction();
 }
 
 /* ---------------------------------------------------------------- газрын зураг */
@@ -621,14 +728,24 @@ function hideTip() {
 function selectAimag(name, scroll = true) {
   state.selected = name;
   renderAll();
+  syncUrl();
   if (scroll && window.matchMedia('(max-width: 1180px)').matches) {
     $('#sidePanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 }
 
+function setYear(year) {
+  if (!state.years.includes(year)) return;
+  state.year = year;
+  $('#mapYear').value = String(year);
+  renderAll();
+  syncUrl();
+}
+
 function renderAll() {
   renderMap();
   renderKpis();
+  renderTrend();
   renderRank();
   renderTable();
   renderSide();
@@ -678,11 +795,44 @@ function renderKpis() {
   const low = sorted[sorted.length - 1];
   const highCount = vals.filter((v) => v >= 65).length;
   const l = levelMeta(mean);
+
+  const prevRows = rowsForYear(state.year - 1);
+  const prevMean = prevRows.length ? prevRows.reduce((s, r) => s + valueOf(r), 0) / prevRows.length : null;
+  const prevHigh = prevRows.length ? prevRows.filter((r) => valueOf(r) >= 65).length : null;
+  const dMean = prevMean === null ? null : mean - prevMean;
+  const dHigh = prevHigh === null ? null : highCount - prevHigh;
+  const cls = (d) => (d === null || Math.abs(d) < 0.05 ? 'flat' : d > 0 ? 'up' : 'down');
+  const meanDelta = dMean === null ? '' :
+    `<span class="kpidelta ${cls(dMean)}">${fmt1.format(dMean)} өмнөх жилээс</span>`;
+  const highDelta = dHigh === null ? '' :
+    `<span class="kpidelta ${cls(dHigh)}">${dHigh > 0 ? '+' : ''}${dHigh} аймаг өмнөх жилээс</span>`;
+
   $('#mapKpis').innerHTML = `
-    <div class="kpi"><small>Улсын дундаж</small><b class="${l.cls}">${fmt1.format(mean)}</b><span>${l.mn} эрсдэл · ${state.year} он</span></div>
-    <div class="kpi"><small>Өндөр эрсдэлтэй</small><b>${highCount}<span style="font-size:16px;color:var(--muted)"> / ${rows.length}</span></b><span>65-аас дээш оноо</span></div>
+    <div class="kpi"><small>Улсын дундаж</small><b class="${l.cls}">${fmt1.format(mean)}</b><span>${l.mn} эрсдэл · ${state.year} он</span>${meanDelta}</div>
+    <div class="kpi"><small>Өндөр эрсдэлтэй</small><b>${highCount}<span style="font-size:16px;color:var(--muted)"> / ${rows.length}</span></b><span>65-аас дээш оноо</span>${highDelta}</div>
     <div class="kpi"><small>Хамгийн өндөр</small><b class="high" style="font-size:22px">${esc(top.aimag)}</b><span>${fmt1.format(valueOf(top))} оноо</span></div>
     <div class="kpi"><small>Хамгийн бага</small><b class="low" style="font-size:22px">${esc(low.aimag)}</b><span>${fmt1.format(valueOf(low))} оноо</span></div>`;
+}
+
+function renderTrend() {
+  const box = $('#trendStrip');
+  if (!box) return;
+  const vals = state.years.map((y) => [y, state.nationalByYear[y] ?? meanOfYear(y)]);
+  const lo = Math.min(...vals.map((v) => v[1]));
+  const hi = Math.max(...vals.map((v) => v[1]));
+  const span = Math.max(1, hi - lo);
+  box.innerHTML = vals.map(([y, v]) => {
+    const h = 14 + ((v - lo) / span) * 58;
+    const on = y === state.year;
+    return `<button type="button" class="tbar${on ? ' sel' : ''}" data-year="${y}" title="${y} он: улсын дундаж ${fmt1.format(v)} оноо"
+      aria-label="${y} он, улсын дундаж ${fmt1.format(v)} оноо" aria-pressed="${on}">
+      <i style="height:${h}%;background:${riskColor(v)}"></i><span>${String(y).slice(2)}</span></button>`;
+  }).join('');
+  const cur = state.nationalByYear[state.year] ?? meanOfYear(state.year);
+  $('#trendHint').textContent = `${state.year} он · ${fmt1.format(cur)} оноо`;
+  $$('#trendStrip .tbar').forEach((b) => {
+    b.addEventListener('click', () => setYear(Number(b.dataset.year)));
+  });
 }
 
 function renderRank() {
@@ -882,15 +1032,26 @@ function fillSelects() {
   const mapYear = $('#mapYear');
   mapYear.innerHTML = state.years.slice().reverse()
     .map((y) => `<option value="${y}"${y === state.latestYear ? ' selected' : ''}>${y}</option>`).join('');
-  mapYear.addEventListener('change', (e) => {
-    state.year = Number(e.target.value);
-    renderAll();
-  });
+  mapYear.addEventListener('change', (e) => setYear(Number(e.target.value)));
 
   $('#aimagOptions').innerHTML = state.aimags.map((a) => `<option value="${esc(a)}"></option>`).join('');
 }
 
 /* ---------------------------------------------------------------- эхлэл */
+function applyUrlState() {
+  const q = new URLSearchParams(location.search);
+  const year = Number(q.get('year'));
+  if (state.years.includes(year) && year !== state.year) {
+    state.year = year;
+    $('#mapYear').value = String(year);
+    renderAll();
+  }
+  const aimag = q.get('aimag');
+  if (aimag && state.byAimag.has(aimag)) selectAimag(aimag, false);
+  const page = q.get('page');
+  if (PAGES.includes(page)) goTo(page, false);
+}
+
 async function init() {
   initNav();
   initForm();
@@ -905,6 +1066,7 @@ async function init() {
     state.latestYear = data.latest_year;
     state.aimags = data.aimags.slice().sort((a, b) => a.localeCompare(b, 'mn'));
     state.year = state.latestYear;
+    state.nationalByYear = data.national_mean_by_year ?? {};
 
     data.rows.forEach((r) => {
       if (!state.byAimag.has(r.aimag)) state.byAimag.set(r.aimag, new Map());
@@ -917,6 +1079,7 @@ async function init() {
     renderIntro();
     renderAll();
     $('#mapEmpty').hidden = true;
+    applyUrlState();
 
     // анхны зураг дээр хамгийн өндөр эрсдэлтэй аймгийг сонгохгүй, гэхдээ KPI-г харуулна
   } catch (err) {

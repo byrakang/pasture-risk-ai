@@ -369,7 +369,54 @@ def recommendations(values, score, factors):
         })
 
     items.sort(key=lambda r: r["priority"], reverse=True)
-    return [{"tag": r["tag"], "text": r["text"]} for r in items[:4]]
+    return [{
+        "tag": r["tag"],
+        "text": r["text"],
+        "level": "high" if r["priority"] >= 3.5 else "mid" if r["priority"] >= 2 else "low",
+    } for r in items[:4]]
+
+
+def improvement_scenarios(values, base_score):
+    """Мал, ачаалал, NDVI-г өөрчлөхөд эрсдэлийн оноо хэр өөрчлөгдөхийг тооцно."""
+    rows = []
+
+    def add(key, label, changed, detail):
+        alt = dict(values)
+        alt.update(changed)
+        xs = scaler.transform(pd.DataFrame([alt], columns=FEATURES))[0]
+        sc, _, _ = knn_score(xs)
+        sc = float(round(sc, 1))
+        rows.append({
+            "key": key,
+            "label": label,
+            "detail": detail,
+            "apply": {f: round(float(v), 3) for f, v in changed.items()},
+            "score": sc,
+            "delta": round(sc - float(base_score), 1),
+        })
+
+    rate = float(values["Stocking_Rate"])
+    if rate > 1.0:
+        add("stocking", "Ачааллыг даацтай тэнцүүлэх",
+            {"Stocking_Rate": 1.0},
+            f"Ачаалал {rate:.2f} → 1.00")
+
+    livestock = float(values["Total_Livestock"])
+    if livestock > 1_000_000:
+        cut = round(livestock * 0.9)
+        add("livestock", "Малын тоог 10% бууруулах",
+            {"Total_Livestock": cut},
+            f"{livestock:,.0f} → {cut:,.0f} толгой")
+
+    ndvi = float(values["NDVI"])
+    if ndvi < 0.5:
+        up = round(min(0.5, ndvi + 0.05), 3)
+        add("ndvi", "Бэлчээрийг амрааж NDVI-г нэмэх",
+            {"NDVI": up},
+            f"NDVI {ndvi:.3f} → {up:.3f}")
+
+    rows.sort(key=lambda r: r["delta"])
+    return rows
 
 
 def row_features(row):
@@ -438,6 +485,7 @@ def predict():
         warnings=range_warnings(values),
         factors=factors,
         recommendations=recommendations(values, score, factors),
+        scenarios=improvement_scenarios(values, score),
         input=values,
     )
 

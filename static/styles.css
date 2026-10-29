@@ -60,6 +60,9 @@ nav button{
 }
 nav button:hover{color:var(--ink);background:var(--surface-2)}
 nav button[aria-current="page"]{background:var(--ink);color:var(--accent);border-color:var(--ink)}
+nav.can-left{-webkit-mask-image:linear-gradient(90deg,transparent,#000 26px);mask-image:linear-gradient(90deg,transparent,#000 26px)}
+nav.can-right{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent)}
+nav.can-left.can-right{-webkit-mask-image:linear-gradient(90deg,transparent,#000 26px,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,transparent,#000 26px,#000 calc(100% - 26px),transparent)}
 .chip{
   margin-left:auto;display:inline-flex;align-items:center;gap:7px;
   font:500 12.5px var(--mono);padding:6px 12px;border-radius:99px;
@@ -186,6 +189,9 @@ select:disabled{opacity:.55;cursor:default}
 .mini b{display:block;font:700 18px/1.3 var(--mono);letter-spacing:-.03em}
 .mini span{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
 .scorenote{margin-top:12px;font-size:13.5px;color:var(--muted);line-height:1.55}
+.scorenote b.up{color:var(--high-ink)} .scorenote b.down{color:var(--low-ink)}
+.scoredelta{margin-top:8px;font-size:12.5px;font-weight:600}
+.scoredelta.up{color:var(--high-ink)} .scoredelta.down{color:var(--low-ink)}
 .factor{margin-top:14px}
 .factor:first-child{margin-top:0}
 .factor .frow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:13.5px;font-weight:600}
@@ -211,14 +217,40 @@ tbody tr:last-child td{border-bottom:0}
 .warnbox{margin-top:16px}
 .find{margin-top:20px;border:var(--bw) solid var(--ink);border-left-width:9px;border-left-color:var(--primary);background:var(--surface);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow)}
 .find ul{margin:0;padding:0;list-style:none}
+.findsummary{margin:0 0 15px;font-size:13px;color:var(--muted);line-height:1.55;max-width:82ch}
+.findsummary b{color:var(--ink)}
 .find li{display:flex;gap:12px;margin-top:14px}
 .find li:first-child{margin-top:0}
 .find li i{flex:none;width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font:700 12.5px var(--sans);font-style:normal;background:var(--surface-2);border:1.5px solid var(--ink)}
+.find li i.high{background:var(--high-bg);border-color:var(--high)}
+.find li i.mid{background:var(--mid-bg);border-color:var(--mid)}
+.find li i.low{background:var(--low-bg);border-color:var(--low)}
+.leadtag{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:99px;background:var(--accent);border:1.5px solid var(--ink);font:700 9.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
 .find li div{flex:1}
 .find li .tag{display:inline-block;font:600 10.5px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--primary);margin-bottom:1px}
 .find li p{font-size:13.5px;line-height:1.55}
 .resultfoot{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-top:18px;font-size:12px;color:var(--muted)}
 .resultactions{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ---------- САЙЖРУУЛАХ ХУВИЛБАР ---------- */
+.scenariocard{margin-top:20px}
+.scenarionote{margin:0 0 4px;font-size:12.5px;color:var(--muted);line-height:1.55;max-width:82ch}
+.scenlist{margin-top:4px}
+.scen{display:flex;align-items:center;gap:14px;padding:12px 2px;border-top:1px solid var(--line);flex-wrap:wrap}
+.scen:first-child{border-top:0}
+.scenmain{flex:1;min-width:200px}
+.scenmain b{display:block;font-size:14px;line-height:1.35}
+.besttag{display:inline-block;margin-left:8px;padding:1px 7px;border-radius:99px;background:var(--accent);border:1.5px solid var(--ink);font:700 9px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);vertical-align:1px}
+.scenmain span{display:block;margin-top:1px;font:500 12px var(--mono);color:var(--muted)}
+.scenscore{display:flex;align-items:baseline;gap:8px}
+.scenscore b{font:700 20px var(--display);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.scenscore b.low{color:var(--low)} .scenscore b.mid{color:var(--mid)} .scenscore b.high{color:var(--high)}
+.dchip{font:700 11px var(--sans);padding:2px 8px;border-radius:99px;font-variant-numeric:tabular-nums}
+.dchip.down{background:var(--low-bg);color:var(--low-ink)}
+.dchip.up{background:var(--high-bg);color:var(--high-ink)}
+.dchip.flat{background:var(--surface-2);color:var(--muted)}
+.scenbtn{flex:none}
+@media (max-width:520px){.scen .scenbtn{width:100%}}
 
 /* ---------- ГАЗРЫН ЗУРАГ ---------- */
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px}
@@ -227,6 +259,24 @@ tbody tr:last-child td{border-bottom:0}
 .kpi b{display:block;font:700 25px/1.2 var(--display);letter-spacing:-.03em;margin-top:2px}
 .kpi span{display:block;font-size:11.5px;color:var(--muted)}
 .kpi b.low{color:var(--low)} .kpi b.mid{color:var(--mid)} .kpi b.high{color:var(--high)}
+.kpi .kpidelta{display:inline-block;margin-top:7px;padding:2px 8px;border-radius:99px;font:700 10.5px var(--sans);letter-spacing:.01em}
+.kpidelta.up{background:var(--high-bg);color:var(--high-ink)}
+.kpidelta.down{background:var(--low-bg);color:var(--low-ink)}
+.kpidelta.flat{background:var(--surface-2);color:var(--muted)}
+
+/* ---------- УЛСЫН ЧИГ ХАНДЛАГА ---------- */
+.trendcard{padding:12px 16px 10px;margin-bottom:20px;background:var(--surface);border:var(--bw) solid var(--ink);border-radius:var(--r);box-shadow:var(--shadow-sm)}
+.trendhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.trendhead h2{font-size:13.5px}
+.tstrip{display:flex;align-items:flex-end;gap:clamp(2px,.7vw,6px);height:86px;margin-top:6px;border-bottom:2px solid var(--ink)}
+.tbar{flex:1 1 0;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;gap:3px;padding:0;background:none;border:0;cursor:pointer}
+.tbar i{display:block;width:100%;flex:0 0 auto;border:1.5px solid var(--ink);border-bottom:0;border-radius:3px 3px 0 0;transition:filter .15s}
+.tbar span{font:600 9.5px/1.2 var(--mono);color:var(--muted);text-align:center;padding:2px 0 3px;white-space:nowrap;overflow:hidden}
+.tbar:hover i{filter:brightness(1.07) saturate(1.1)}
+.tbar:hover span{color:var(--ink)}
+.tbar.sel i{outline:2.5px solid var(--ink);outline-offset:1px;filter:saturate(1.15)}
+.tbar.sel span{color:var(--ink);font-weight:700}
+.tbar:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
 .mapgrid{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:24px;align-items:start}
 .mapcard{padding:0;overflow:hidden}
 .maphead{display:flex;justify-content:space-between;gap:14px;align-items:flex-end;flex-wrap:wrap;padding:16px 20px 14px}
@@ -418,6 +468,13 @@ tbody tr:last-child td{border-bottom:0}
   .scoremeta{width:100%}
   .minikpis{grid-template-columns:1fr 1fr}
   .hint{font-size:12px}
+  .top{display:grid;grid-template-columns:1fr auto;column-gap:10px;row-gap:7px;padding:9px 14px}
+  .brand{grid-area:1/1}
+  .brand span{display:inline}
+  .chip{grid-area:1/2;justify-self:end;margin-left:0}
+  nav{grid-area:2/1/3/3;flex-wrap:nowrap;gap:4px;overflow-x:auto;scrollbar-width:none;margin:0 -14px;padding:0 26px;scroll-padding-inline:26px}
+  nav::-webkit-scrollbar{display:none}
+  nav button{flex:0 0 auto;padding:6px 11px}
 }
 @media (max-width:520px){
   .page{padding-top:24px}
@@ -426,6 +483,10 @@ tbody tr:last-child td{border-bottom:0}
   .two{grid-template-columns:1fr}
   .kpis{grid-template-columns:1fr 1fr;gap:10px}
   .kpi b{font-size:21px}
+  .tstrip{gap:1px;height:74px}
+  .tbar span{font-size:8.5px;padding:2px 0}
+  .tbar:nth-child(2n) span{visibility:hidden}
+  .tbar:nth-child(2n).sel span{visibility:visible}
   .banner{gap:12px}
   .banner .badge{width:46px;height:46px;font-size:18px}
   .minikpis{grid-template-columns:1fr}
