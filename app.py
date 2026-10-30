@@ -114,17 +114,45 @@ LABELS = {
     "Stocking_Rate": "Ачааллын коэффициент",
 }
 
+LABELS_EN = {
+    "Total_Livestock": "Total livestock (sheep units)",
+    "Precipitation_mm": "Annual precipitation (mm)",
+    "Temperature_C": "Mean annual temperature (°C)",
+    "NDVI": "Vegetation index (NDVI)",
+    "Stocking_Rate": "Stocking rate",
+}
+
+AIMAG_EN = {
+    "Архангай": "Arkhangai", "Баян-Өлгий": "Bayan-Ölgii", "Баянхонгор": "Bayankhongor",
+    "Булган": "Bulgan", "Говь-Алтай": "Govi-Altai", "Говьсүмбэр": "Govisümber",
+    "Дархан-Уул": "Darkhan-Uul", "Дорноговь": "Dornogovi", "Дорнод": "Dornod",
+    "Дундговь": "Dundgovi", "Завхан": "Zavkhan", "Орхон": "Orkhon",
+    "Сэлэнгэ": "Selenge", "Сүхбаатар": "Sükhbaatar", "Төв": "Töv", "Увс": "Uvs",
+    "Ховд": "Khovd", "Хэнтий": "Khentii", "Хөвсгөл": "Khövsgöl",
+    "Өвөрхангай": "Övörkhangai", "Өмнөговь": "Ömnögovi",
+}
+
+
+def req_lang():
+    value = (request.args.get("lang") or "").lower()
+    return "en" if value.startswith("en") else "mn"
+
+
+def labels_for(lang):
+    return LABELS_EN if lang == "en" else LABELS
+
 QUANTILES = {
     f: {p: float(df[f].quantile(p / 100)) for p in (10, 25, 50, 75, 90)} for f in FEATURES
 }
 
 # ----------------------------------------------------------------- Туслахууд
-def level_of(score: float) -> str:
+def level_of(score: float, lang: str = "mn") -> str:
+    en = lang == "en"
     if score < LOW_MAX:
-        return "Бага (Low)"
+        return "Low" if en else "Бага (Low)"
     if score < MEDIUM_MAX:
-        return "Дунд (Medium)"
-    return "Өндөр (High)"
+        return "Medium" if en else "Дунд (Medium)"
+    return "High" if en else "Өндөр (High)"
 
 
 def level_key(score: float) -> str:
@@ -179,27 +207,28 @@ NATIONAL_MEAN_BY_YEAR = (
 )
 
 
-def parse_features(payload):
+def parse_features(payload, lang="mn"):
     """JSON-оос шинж чанаруудыг шалгаж гаргана. (values, errors) буцаана."""
+    en = lang == "en"
     values, errors = {}, []
     for f in FEATURES:
         if f not in payload:
-            errors.append(f"'{f}' талбар дутуу байна")
+            errors.append(f"'{f}' is required" if en else f"'{f}' талбар дутуу байна")
             continue
         try:
             v = float(payload[f])
         except (TypeError, ValueError):
-            errors.append(f"'{f}' тоон утга байх ёстой")
+            errors.append(f"'{f}' must be a number" if en else f"'{f}' тоон утга байх ёстой")
             continue
         if not np.isfinite(v):
-            errors.append(f"'{f}' хүчинтэй тоо биш байна")
+            errors.append(f"'{f}' is not a valid number" if en else f"'{f}' хүчинтэй тоо биш байна")
             continue
         values[f] = v
     for f in ("Total_Livestock", "Precipitation_mm", "Stocking_Rate"):
         if f in values and values[f] < 0:
-            errors.append(f"'{f}' сөрөг байж болохгүй")
+            errors.append(f"'{f}' cannot be negative" if en else f"'{f}' сөрөг байж болохгүй")
     if "NDVI" in values and not (-1 <= values["NDVI"] <= 1):
-        errors.append("'NDVI' -1..1 хооронд байх ёстой")
+        errors.append("'NDVI' must be between -1 and 1" if en else "'NDVI' -1..1 хооронд байх ёстой")
     return values, errors
 
 
@@ -209,49 +238,63 @@ def _fmt_num(v):
     return f"{v:,.2f}".rstrip("0").rstrip(".")
 
 
-def range_warnings(values):
+def range_warnings(values, lang="mn"):
     """Сургалтын өгөгдлийн хүрээнээс гарсан утгыг анхааруулна."""
     warnings = []
+    labels = labels_for(lang)
     for f, v in values.items():
         lo, hi = META["feature_ranges"][f]
         if v < lo or v > hi:
-            warnings.append(
-                f"{LABELS[f]}: {_fmt_num(v)} нь сургалтын хүрээнээс "
-                f"({_fmt_num(lo)} – {_fmt_num(hi)}) гадуур. "
-                "KNN хүрээнээс гадуур таамаглахдаа хамгийн ойрын мэдэгдэж буй утгад "
-                "тулгуурладаг тул үр дүн найдвар муутай."
-            )
+            if lang == "en":
+                warnings.append(
+                    f"{labels[f]}: {_fmt_num(v)} is outside the training range "
+                    f"({_fmt_num(lo)} – {_fmt_num(hi)}). Outside its training range, "
+                    "KNN relies on the nearest known values, so the result is less reliable."
+                )
+            else:
+                warnings.append(
+                    f"{labels[f]}: {_fmt_num(v)} нь сургалтын хүрээнээс "
+                    f"({_fmt_num(lo)} – {_fmt_num(hi)}) гадуур. "
+                    "KNN хүрээнээс гадуур таамаглахдаа хамгийн ойрын мэдэгдэж буй утгад "
+                    "тулгуурладаг тул үр дүн найдвар муутай."
+                )
     return warnings
 
 
 MEDIANS = df[FEATURES].median().to_dict()
 
 
-def factor_effects(values, base_score):
+def factor_effects(values, base_score, lang="mn"):
     """Шинж чанар бүрийг медианаар сольж оноо хэрхэн өөрчлөгдөхийг хэмжинэ."""
+    labels = labels_for(lang)
     out = []
     for f in FEATURES:
         alt = dict(values)
         alt[f] = MEDIANS[f]
         xs = scaler.transform(pd.DataFrame([alt], columns=FEATURES))[0]
         alt_score, _, _ = knn_score(xs)
-        out.append({"feature": f, "label": LABELS[f], "value": round(values[f], 3),
+        out.append({"feature": f, "label": labels[f], "value": round(values[f], 3),
                     "median": round(float(MEDIANS[f]), 3),
                     "effect": round(base_score - alt_score, 1)})
     return sorted(out, key=lambda r: abs(r["effect"]), reverse=True)
 
 
-def recommendations(values, score, factors):
+def recommendations(values, score, factors, lang="mn"):
     """Утга ба эрсдэлийн түвшинд тулгуурлан арга хэмжээний зөвлөмж буцаана."""
     q = QUANTILES
+    en = lang == "en"
     items = []
 
     rate = values["Stocking_Rate"]
     if rate >= q["Stocking_Rate"][75]:
         items.append({
-            "tag": "Малын ачаалал",
+            "tag": "Livestock pressure" if en else "Малын ачаалал",
             "priority": 3 + (rate - q["Stocking_Rate"][75]),
             "text": (
+                f"Stocking rate {rate:.2f} is above the top 25% of the study aimags "
+                f"({q['Stocking_Rate'][75]:.2f}). Reduce herd size, rotate grazing and "
+                "free up reserve pasture to lower the pressure."
+            ) if en else (
                 f"Ачааллын коэффициент {rate:.2f} нь судалгааны аймгуудын дээд 25%-иас "
                 f"({q['Stocking_Rate'][75]:.2f}) өндөр байна. Малын тоог бууруулах, "
                 "бэлчээрийг ээлжлэн ашиглах, нөөц бэлчээр гаргах замаар ачааллыг "
@@ -260,9 +303,12 @@ def recommendations(values, score, factors):
         })
     elif rate < q["Stocking_Rate"][25]:
         items.append({
-            "tag": "Малын ачаалал",
+            "tag": "Livestock pressure" if en else "Малын ачаалал",
             "priority": 0.4,
             "text": (
+                f"Stocking rate {rate:.2f} is relatively low. Maintain the current herd "
+                "size and keep monitoring pasture recovery."
+            ) if en else (
                 f"Ачааллын коэффициент {rate:.2f} харьцангуй бага байна. Одоогийн "
                 "малын тоог хадгалах, бэлчээрийн нөхөн сэргэлтийг хянах нь зүйтэй."
             ),
@@ -271,9 +317,13 @@ def recommendations(values, score, factors):
     ndvi = values["NDVI"]
     if ndvi <= q["NDVI"][25]:
         items.append({
-            "tag": "Ургамлын төлөв",
+            "tag": "Vegetation state" if en else "Ургамлын төлөв",
             "priority": 3 + (q["NDVI"][25] - ndvi) * 10,
             "text": (
+                f"NDVI {ndvi:.3f} sits at the lower 25% threshold ({q['NDVI'][25]:.3f}). "
+                "Rest the pasture for 1–2 years, set protection limits and plan "
+                "restoration measures."
+            ) if en else (
                 f"NDVI {ndvi:.3f} нь доод 25%-ийн хязгаарт ({q['NDVI'][25]:.3f}) байна. "
                 "Бэлчээрийг 1–2 жил амраах, хамгаалалтын хязгаарлалт тогтоох, "
                 "нөхөн сэргээх арга хэмжээ төлөвлөх нь зүйтэй."
@@ -283,9 +333,13 @@ def recommendations(values, score, factors):
     precip = values["Precipitation_mm"]
     if precip <= q["Precipitation_mm"][25]:
         items.append({
-            "tag": "Ган",
+            "tag": "Drought" if en else "Ган",
             "priority": 3 + (q["Precipitation_mm"][25] - precip) / 100,
             "text": (
+                f"Annual precipitation {precip:.0f} mm is below the lower 25% "
+                f"({q['Precipitation_mm'][25]:.0f} mm). Build hay and feed reserves, "
+                "upgrade water points and activate early drought warning."
+            ) if en else (
                 f"Жилийн хур тунадас {precip:.0f} мм нь доод 25%-иас "
                 f"({q['Precipitation_mm'][25]:.0f} мм) бага байна. Өвс, тэжээлийн нөөц "
                 "бүрдүүлэх, усан хангамжийн цэгийг шинэчлэх, гангийн эрт анхааруулга "
@@ -294,9 +348,12 @@ def recommendations(values, score, factors):
         })
     elif precip >= q["Precipitation_mm"][75]:
         items.append({
-            "tag": "Хур тунадас",
+            "tag": "Precipitation" if en else "Хур тунадас",
             "priority": 0.5,
             "text": (
+                f"Precipitation {precip:.0f} mm is relatively good. Still, prevent "
+                "overgrazing and manage stocking during the green season."
+            ) if en else (
                 f"Хур тунадас {precip:.0f} мм харьцангуй сайн байна. Гэхдээ хэт "
                 "бэлчээрлэлтээс сэргийлж, ногоон улирлын ачааллыг зохицуулах нь чухал."
             ),
@@ -305,9 +362,13 @@ def recommendations(values, score, factors):
     temp = values["Temperature_C"]
     if temp >= q["Temperature_C"][75]:
         items.append({
-            "tag": "Уур амьсгал",
+            "tag": "Climate" if en else "Уур амьсгал",
             "priority": 2 + (temp - q["Temperature_C"][75]) / 3,
             "text": (
+                f"Mean temperature {temp:.1f}°C is above the upper 25% "
+                f"({q['Temperature_C'][75]:.1f}°C). Evaporation rises and moisture "
+                "declines, so prioritize water sources and shaded pastures."
+            ) if en else (
                 f"Агаарын дундаж температур {temp:.1f}°C нь дээд 25%-иас "
                 f"({q['Temperature_C'][75]:.1f}°C) өндөр байна. Ууршилт нэмэгдэж "
                 "чийг хомсдох тул усны эх, сүүдэртэй бэлчээрийг тэргүүлэх нь зүйтэй."
@@ -317,9 +378,13 @@ def recommendations(values, score, factors):
     livestock = values["Total_Livestock"]
     if livestock >= q["Total_Livestock"][75]:
         items.append({
-            "tag": "Малын бүтэц",
+            "tag": "Herd structure" if en else "Малын бүтэц",
             "priority": 1.5 + (livestock - q["Total_Livestock"][75]) / 5_000_000,
             "text": (
+                f"Total livestock {livestock:,.0f} sheep units falls in the top 25%. "
+                "Align herd structure and numbers with carrying capacity and stop "
+                "rapid growth."
+            ) if en else (
                 f"Нийт мал {livestock:,.0f} хонин толгой нь дээд 25%-д багтаж байна. "
                 "Малын бүтэц, тоог бэлчээрийн даацад нийцүүлж, эрчимтэй өсөлтийг "
                 "зогсоох шаардлагатай."
@@ -329,9 +394,13 @@ def recommendations(values, score, factors):
     top = factors[0]
     if top["effect"] >= 1.5:
         items.append({
-            "tag": "Гол нөлөө",
+            "tag": "Main driver" if en else "Гол нөлөө",
             "priority": 4 + top["effect"] / 10,
             "text": (
+                f"The factor raising the score most is “{top['label']}” "
+                f"(+{top['effect']:.1f} pts vs median). Moving it closer to the median "
+                f"would lower the risk score by about {top['effect']:.1f} points."
+            ) if en else (
                 f"Оноог хамгийн их өсгөж буй хүчин зүйл нь «{top['label']}» "
                 f"(медианаас +{top['effect']:.1f} оноо). Энэ үзүүлэлтийг медиан "
                 f"түвшинд ойртуулбал эрсдэлийн оноо ойролцоогоор "
@@ -341,18 +410,24 @@ def recommendations(values, score, factors):
 
     if score >= MEDIUM_MAX:
         items.append({
-            "tag": "Хяналт",
+            "tag": "Monitoring" if en else "Хяналт",
             "priority": 1.8,
             "text": (
+                "The area is in the high-risk band. Monitor pasture quarterly and "
+                "prepare reserve pasture and feed contingency plans."
+            ) if en else (
                 "Өндөр эрсдэлийн бүсэд байна. Бэлчээрийн мониторингийг улирал бүр "
                 "хийж, нөөц бэлчээр, тэжээлийн нөөцийн төлөвлөгөөг бэлтгэх хэрэгтэй."
             ),
         })
     elif score >= LOW_MAX:
         items.append({
-            "tag": "Хяналт",
+            "tag": "Monitoring" if en else "Хяналт",
             "priority": 1.8,
             "text": (
+                "Risk is moderate. Review NDVI, precipitation and stocking quarterly, "
+                "and adjust grazing pressure early if risk rises."
+            ) if en else (
                 "Дунд эрсдэлтэй байна. NDVI, хур тунадас, ачааллын үзүүлэлтийг "
                 "улирал тутам хянаж, эрсдэл нэмэгдэхэд бэлчээрийн ачааллыг "
                 "эрт зохицуулах нь зүйтэй."
@@ -360,9 +435,12 @@ def recommendations(values, score, factors):
         })
     else:
         items.append({
-            "tag": "Хяналт",
+            "tag": "Monitoring" if en else "Хяналт",
             "priority": 0.2,
             "text": (
+                "Risk is low under current conditions. Continue annual monitoring and "
+                "watch seasonal NDVI changes."
+            ) if en else (
                 "Одоогийн үзүүлэлтээр эрсдэл бага байна. Жилийн хяналт, NDVI-ийн "
                 "улирлын өөрчлөлтийг үргэлжлүүлэн ажиглах нь зүйтэй."
             ),
@@ -376,8 +454,9 @@ def recommendations(values, score, factors):
     } for r in items[:4]]
 
 
-def improvement_scenarios(values, base_score):
+def improvement_scenarios(values, base_score, lang="mn"):
     """Мал, ачаалал, NDVI-г өөрчлөхөд эрсдэлийн оноо хэр өөрчлөгдөхийг тооцно."""
+    en = lang == "en"
     rows = []
 
     def add(key, label, changed, detail):
@@ -397,21 +476,21 @@ def improvement_scenarios(values, base_score):
 
     rate = float(values["Stocking_Rate"])
     if rate > 1.0:
-        add("stocking", "Ачааллыг даацтай тэнцүүлэх",
+        add("stocking", "Bring stocking rate to carrying capacity" if en else "Ачааллыг даацтай тэнцүүлэх",
             {"Stocking_Rate": 1.0},
-            f"Ачаалал {rate:.2f} → 1.00")
+            f"Stocking {rate:.2f} → 1.00" if en else f"Ачаалал {rate:.2f} → 1.00")
 
     livestock = float(values["Total_Livestock"])
     if livestock > 1_000_000:
         cut = round(livestock * 0.9)
-        add("livestock", "Малын тоог 10% бууруулах",
+        add("livestock", "Reduce livestock by 10%" if en else "Малын тоог 10% бууруулах",
             {"Total_Livestock": cut},
-            f"{livestock:,.0f} → {cut:,.0f} толгой")
+            f"{livestock:,.0f} → {cut:,.0f} head" if en else f"{livestock:,.0f} → {cut:,.0f} толгой")
 
     ndvi = float(values["NDVI"])
     if ndvi < 0.5:
         up = round(min(0.5, ndvi + 0.05), 3)
-        add("ndvi", "Бэлчээрийг амрааж NDVI-г нэмэх",
+        add("ndvi", "Rest pasture and raise NDVI" if en else "Бэлчээрийг амрааж NDVI-г нэмэх",
             {"NDVI": up},
             f"NDVI {ndvi:.3f} → {up:.3f}")
 
@@ -441,7 +520,7 @@ def model_info():
     return jsonify(
         algorithm="K-Nearest Neighbors (Regressor, distance-weighted)",
         features=FEATURES,
-        feature_labels=LABELS,
+        feature_labels=labels_for(req_lang()),
         quantiles=QUANTILES,
         **{k: META[k] for k in ("best_params", "metrics", "n_samples", "years",
                                  "feature_ranges", "thresholds")},
@@ -450,7 +529,7 @@ def model_info():
 
 @app.get("/api/aimags")
 def aimags():
-    return jsonify(aimags=AIMAGS, years=YEARS, latest_year=LATEST_YEAR)
+    return jsonify(aimags=AIMAGS, aimag_names=AIMAG_EN, years=YEARS, latest_year=LATEST_YEAR)
 
 
 @app.post("/api/predict")
@@ -460,10 +539,11 @@ def predict():
     {"Total_Livestock": 3200000, "Precipitation_mm": 120, "Temperature_C": -3,
      "NDVI": 0.33, "Stocking_Rate": 1.2}
     """
+    lang = req_lang()
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
-        return jsonify(error="JSON body шаардлагатай"), 400
-    values, errors = parse_features(payload)
+        return jsonify(error="JSON body is required" if lang == "en" else "JSON body шаардлагатай"), 400
+    values, errors = parse_features(payload, lang)
     if errors:
         return jsonify(errors=errors), 422
 
@@ -471,21 +551,21 @@ def predict():
     score, spread, neighbors = knn_score(x_scaled, with_neighbors=True)
     pct = float((Y < score).mean() * 100)
     lo, hi = max(0.0, score - spread), min(100.0, score + spread)
-    factors = factor_effects(values, score)
+    factors = factor_effects(values, score, lang)
 
     return jsonify(
         risk_score=round(score, 1),
-        risk_level=level_of(score),
+        risk_level=level_of(score, lang),
         level_key=level_key(score),
         range=[round(lo, 1), round(hi, 1)],
         percentile=round(pct),
         k=knn.n_neighbors,
         national_mean=round(float(Y.mean()), 1),
         neighbors=neighbors,
-        warnings=range_warnings(values),
+        warnings=range_warnings(values, lang),
         factors=factors,
-        recommendations=recommendations(values, score, factors),
-        scenarios=improvement_scenarios(values, score),
+        recommendations=recommendations(values, score, factors, lang),
+        scenarios=improvement_scenarios(values, score, lang),
         input=values,
     )
 
@@ -493,17 +573,18 @@ def predict():
 @app.get("/api/dataset")
 def dataset():
     """Бүх аймаг-жилийн өгөгдөл. score = өгөгдлийн оноо, knn = leave-one-out таамаглал."""
+    lang = req_lang()
     rows = [
         {"aimag": str(r["Аймаг"]), "year": int(r["Жил"]),
          "score": round(float(ACTUAL[i]), 1),
          "knn": round(float(LOO_SCORE[i]), 1),
-         "level": level_of(float(ACTUAL[i])),
+         "level": level_of(float(ACTUAL[i]), lang),
          "level_key": level_key(float(ACTUAL[i])),
          **row_features(r)}
         for i, r in df.iterrows()
     ]
     return jsonify(rows=rows, thresholds=META["thresholds"], years=YEARS,
-                   aimags=AIMAGS, latest_year=LATEST_YEAR,
+                   aimags=AIMAGS, aimag_names=AIMAG_EN, latest_year=LATEST_YEAR,
                    national_mean_by_year=NATIONAL_MEAN_BY_YEAR)
 
 
@@ -522,16 +603,18 @@ def dataset_csv():
 @app.get("/api/aimag/<name>")
 def aimag_history(name):
     """Аймгийн жил бүрийн бодит оноо болон загварын leave-one-out таамаглал."""
+    lang = req_lang()
     sub = df[df["Аймаг"] == name]
     if sub.empty:
-        return jsonify(error=f"'{name}' аймаг олдсонгүй"), 404
+        msg = f"Aimag '{name}' not found" if lang == "en" else f"'{name}' аймаг олдсонгүй"
+        return jsonify(error=msg), 404
     rows = []
     for i in sub.index:
         rows.append(
             {
                 "year": int(df.at[i, "Жил"]),
                 "actual_score": round(float(ACTUAL[i]), 1),
-                "actual_level": level_of(float(ACTUAL[i])),
+                "actual_level": level_of(float(ACTUAL[i]), lang),
                 "knn_estimate": round(float(LOO_SCORE[i]), 1),
                 **row_features(df.loc[i]),
             }
@@ -542,10 +625,12 @@ def aimag_history(name):
 @app.get("/api/ranking")
 def ranking():
     """?year=2025 - тухайн жилийн аймгуудыг эрсдэлээр эрэмбэлнэ (default: сүүлийн жил)."""
+    lang = req_lang()
     year = request.args.get("year", type=int, default=LATEST_YEAR)
     sub = df[df["Жил"] == year]
     if sub.empty:
-        return jsonify(error=f"{year} оны өгөгдөл байхгүй"), 404
+        msg = f"No data for {year}" if lang == "en" else f"{year} оны өгөгдөл байхгүй"
+        return jsonify(error=msg), 404
     out = []
     for i in sub.index:
         out.append(
@@ -553,8 +638,8 @@ def ranking():
                 "aimag": str(df.at[i, "Аймаг"]),
                 "actual_score": round(float(ACTUAL[i]), 1),
                 "knn_estimate": round(float(LOO_SCORE[i]), 1),
-                "knn_level": level_of(float(LOO_SCORE[i])),
-                "actual_level": level_of(float(ACTUAL[i])),
+                "knn_level": level_of(float(LOO_SCORE[i]), lang),
+                "actual_level": level_of(float(ACTUAL[i]), lang),
             }
         )
     out.sort(key=lambda r: r["knn_estimate"], reverse=True)

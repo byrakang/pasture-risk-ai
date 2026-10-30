@@ -31,14 +31,15 @@ const LABEL_SHIFT = {
   'Сэлэнгэ': { dx: 33, dy: 0 },
 };
 const METRICS = [
-  ['Total_Livestock', 'Нийт мал', (v) => `${fmt0.format(v)} толгой`],
-  ['NDVI', 'NDVI', (v) => fmt2.format(v)],
-  ['Precipitation_mm', 'Хур тунадас', (v) => `${fmt0.format(v)} мм`],
-  ['Temperature_C', 'Температур', (v) => `${fmt1.format(v)} °C`],
-  ['Stocking_Rate', 'Ачаалал', (v) => fmt2.format(v)],
+  ['Total_Livestock', ['Нийт мал', 'Total livestock'], (v) => `${fmt0.format(v)} ${L('толгой', 'head')}`],
+  ['NDVI', ['NDVI', 'NDVI'], (v) => fmt2.format(v)],
+  ['Precipitation_mm', ['Хур тунадас', 'Precipitation'], (v) => `${fmt0.format(v)} ${L('мм', 'mm')}`],
+  ['Temperature_C', ['Температур', 'Temperature'], (v) => `${fmt1.format(v)} °C`],
+  ['Stocking_Rate', ['Ачаалал', 'Stocking'], (v) => fmt2.format(v)],
 ];
 
 const state = {
+  lang: 'mn',
   meta: null,
   data: null,
   years: [],
@@ -52,6 +53,15 @@ const state = {
   lastPredict: null,
   view: { k: 1, x: 0, y: 0 },
   mapReady: false,
+};
+
+const L = (mn, en) => (state.lang === 'en' ? en : mn);
+const aimagName = (name) => (state.lang === 'en' ? (window.I18N?.aimag(name) ?? name) : name);
+const predictLabel = () => L('Эрсдэл тооцох', 'Calculate risk');
+const ordinal = (n) => {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return `${n}${s[(v - 20) % 10] || s[v] || s[0]}`;
 };
 
 /* ---------------------------------------------------------------- туслах */
@@ -69,7 +79,7 @@ function levelKey(v) {
 function levelMeta(v) { return LEVELS[levelKey(v)]; }
 function levelBadge(v) {
   const l = levelMeta(v);
-  return `<span class="lvl ${l.cls}">${l.mn}</span>`;
+  return `<span class="lvl ${l.cls}">${l[state.lang]}</span>`;
 }
 
 function riskColor(v) {
@@ -87,7 +97,9 @@ function riskColor(v) {
 }
 
 async function api(path, options) {
-  const res = await fetch(path, {
+  const sep = path.includes('?') ? '&' : '?';
+  const url = state.lang === 'en' ? `${path}${sep}lang=en` : path;
+  const res = await fetch(url, {
     headers: { Accept: 'application/json', ...(options?.body ? { 'Content-Type': 'application/json' } : {}) },
     ...options,
   });
@@ -130,6 +142,7 @@ function syncUrl() {
   const page = document.body.dataset.page || 'predict';
   const p = new URLSearchParams();
   if (page !== 'predict') p.set('page', page);
+  if (state.lang === 'en') p.set('lang', 'en');
   if (state.year && state.year !== state.latestYear) p.set('year', state.year);
   if (page === 'map' && state.selected) p.set('aimag', state.selected);
   const q = p.toString();
@@ -161,6 +174,10 @@ function initNav() {
   $('#modelChip').addEventListener('click', () => {
     goTo('help');
     setTimeout(() => $('#modelBox')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+  });
+
+  $$('.langswitch button').forEach((b) => {
+    b.addEventListener('click', () => setLanguage(b.dataset.lang));
   });
 
   const nav = $('nav');
@@ -211,7 +228,7 @@ function initForm() {
       $('#presetAimag').value = '';
       $('#presetYear').value = '';
       $('#presetYear').disabled = true;
-      $('#presetHint').innerHTML = 'Аймаг, жил сонговол тухайн жилийн бодит үзүүлэлтүүд талбарт орно.';
+      $('#presetHint').innerHTML = L('Аймаг, жил сонговол тухайн жилийн бодит үзүүлэлтүүд талбарт орно.', "Choose an aimag and year to load that year's actual indicators into the form.");
       $('#toMapBtn').hidden = true;
       pairs.forEach(([numId, rangeId]) => {
         $(`#${rangeId}`).value = $(`#${numId}`).value;
@@ -271,6 +288,19 @@ function setFieldValues(values) {
   });
 }
 
+function renderPresetHint() {
+  const el = $('#presetHint');
+  if (!state.preset) {
+    el.innerHTML = L('Аймаг, жил сонговол тухайн жилийн бодит үзүүлэлтүүд талбарт орно.', "Choose an aimag and year to load that year's actual indicators into the form.");
+    return;
+  }
+  const { aimag, year } = state.preset;
+  el.innerHTML = L(
+    `<b>${esc(aimag)} · ${year}</b> оны бодит өгөгдөл талбарт орлоо. Утгыг өөрчилж дахин тооцож болно.`,
+    `<b>${esc(aimagName(aimag))} · ${year}</b> actual data loaded into the form. You can change the values and recalculate.`,
+  );
+}
+
 function applyPreset(name, year) {
   const row = rowOf(name, year);
   if (!row) return;
@@ -279,7 +309,7 @@ function applyPreset(name, year) {
   $('#presetAimag').value = name;
   $('#presetYear').disabled = false;
   $('#presetYear').value = String(year);
-  $('#presetHint').innerHTML = `<b>${esc(name)} · ${year}</b> оны бодит өгөгдөл талбарт орлоо. Утгыг өөрчилж дахин тооцож болно.`;
+  renderPresetHint();
 }
 
 function collectValues() {
@@ -299,37 +329,36 @@ function collectValues() {
   return { values, missing };
 }
 
-async function runPrediction() {
+async function runPrediction(scroll = true) {
   const { values, missing } = collectValues();
   const errBox = $('#predictError');
   if (missing.length) {
     errBox.hidden = false;
-    errBox.innerHTML = 'Бүх талбарыг зөв тоон утгаар бөглөнө үү.';
+    errBox.innerHTML = L('Бүх талбарыг зөв тоон утгаар бөглөнө үү.', 'Please fill every field with a valid number.');
     return;
   }
   errBox.hidden = true;
 
   const btn = $('#predictBtn');
-  const original = btn.innerHTML;
   btn.disabled = true;
   btn.classList.add('is-loading');
-  btn.textContent = 'Тооцож байна…';
+  btn.textContent = L('Тооцож байна…', 'Calculating…');
 
   try {
     const prevScore = state.lastPredict?.risk_score ?? null;
     const res = await api('/api/predict', { method: 'POST', body: JSON.stringify(values) });
     state.lastPredict = { ...res, preset: state.preset };
     renderPrediction(res, prevScore);
-    if (window.matchMedia('(max-width: 980px)').matches) {
+    if (scroll && window.matchMedia('(max-width: 980px)').matches) {
       $('#predictResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   } catch (err) {
     errBox.hidden = false;
-    errBox.innerHTML = `<b>Тооцоолол амжилтгүй.</b> ${esc(err.message)}`;
+    errBox.innerHTML = `<b>${L('Тооцоолол амжилтгүй.', 'Calculation failed.')}</b> ${esc(err.message)}`;
   } finally {
     btn.disabled = false;
     btn.classList.remove('is-loading');
-    btn.innerHTML = original;
+    btn.textContent = predictLabel();
   }
 }
 
@@ -362,12 +391,15 @@ function renderPrediction(res, prevScore = null) {
   const banner = $('#banner');
   banner.className = `banner ${level.cls}`;
   $('#bannerBadge').textContent = Math.round(score);
-  $('#bannerTitle').textContent = `${level.mn} эрсдэл`;
+  $('#bannerTitle').textContent = L(`${level.mn} эрсдэл`, `${level.en} risk`);
   const dNat = score - res.national_mean;
   $('#bannerSub').textContent = Math.abs(dNat) < 0.05
-    ? 'Улсын дундажтай ойролцоо'
-    : `Улсын дунджаас ${fmt1.format(Math.abs(dNat))} оноогоор ${dNat > 0 ? 'өндөр' : 'бага'}`;
-  $('#percentileChip').textContent = `Түүхэн ${res.percentile}%`;
+    ? L('Улсын дундажтай ойролцоо', 'Close to the national average')
+    : L(
+      `Улсын дунджаас ${fmt1.format(Math.abs(dNat))} оноогоор ${dNat > 0 ? 'өндөр' : 'бага'}`,
+      `${fmt1.format(Math.abs(dNat))} pts ${dNat > 0 ? 'above' : 'below'} the national average`,
+    );
+  $('#percentileChip').textContent = L(`Түүхэн ${res.percentile}%`, `${ordinal(res.percentile)} percentile`);
 
   animateNumber($('#ringNum'), score, 1);
   const arc = $('#ringArc');
@@ -382,19 +414,31 @@ function renderPrediction(res, prevScore = null) {
   const sign = top.effect >= 0 ? '+' : '';
   const notes = [];
   notes.push(top && Math.abs(top.effect) >= 1
-    ? `Хамгийн их нөлөөлж буй хүчин зүйл: <b>${esc(top.label)}</b> (медиантай харьцуулахад ${sign}${fmt1.format(top.effect)} оноо, эрсдэлийг ${top.effect >= 0 ? 'нэмэгдүүлж' : 'бууруулж'} байна).`
-    : 'Оруулсан утгууд медиан утгуудтай ойролцоо байгаа тул хүчин зүйлсийн нөлөө бага байна.');
+    ? L(
+      `Хамгийн их нөлөөлж буй хүчин зүйл: <b>${esc(top.label)}</b> (медиантай харьцуулахад ${sign}${fmt1.format(top.effect)} оноо, эрсдэлийг ${top.effect >= 0 ? 'нэмэгдүүлж' : 'бууруулж'} байна).`,
+      `Largest factor: <b>${esc(top.label)}</b> (${sign}${fmt1.format(top.effect)} pts vs median, ${top.effect >= 0 ? 'raising' : 'lowering'} the risk).`,
+    )
+    : L('Оруулсан утгууд медиан утгуудтай ойролцоо байгаа тул хүчин зүйлсийн нөлөө бага байна.', 'The inputs are close to the medians, so factor effects are small.'));
   const origin = state.preset ? rowOf(state.preset.aimag, state.preset.year) : null;
   if (origin) {
     const d = score - origin.score;
     if (Math.abs(d) < 0.05) {
-      notes.push(`Сонгосон ${esc(state.preset.aimag)} ${state.preset.year} оны бодит оноотой ойролцоо байна.`);
+      notes.push(L(
+        `Сонгосон ${esc(state.preset.aimag)} ${state.preset.year} оны бодит оноотой ойролцоо байна.`,
+        `Close to the actual ${esc(aimagName(state.preset.aimag))} ${state.preset.year} score.`,
+      ));
     } else {
       const cls = d > 0 ? 'up' : 'down';
-      notes.push(`Сонгосон ${esc(state.preset.aimag)} ${state.preset.year} оны бодит оноо ${fmt1.format(origin.score)} байсан; таны тооцоо <b class="${cls}">${fmt1.format(Math.abs(d))} оноогоор ${d > 0 ? 'өндөр' : 'бага'}</b> байна.`);
+      notes.push(L(
+        `Сонгосон ${esc(state.preset.aimag)} ${state.preset.year} оны бодит оноо ${fmt1.format(origin.score)} байсан; таны тооцоо <b class="${cls}">${fmt1.format(Math.abs(d))} оноогоор ${d > 0 ? 'өндөр' : 'бага'}</b> байна.`,
+        `The actual ${esc(aimagName(state.preset.aimag))} ${state.preset.year} score was ${fmt1.format(origin.score)}; your calculation is <b class="${cls}">${fmt1.format(Math.abs(d))} pts ${d > 0 ? 'higher' : 'lower'}</b>.`,
+      ));
     }
   }
-  notes.push(`Боломжит хүрээ нь хамгийн ойр ${res.k} түүхэн тохиолдлын тархалтаас тооцогдов.`);
+  notes.push(L(
+    `Боломжит хүрээ нь хамгийн ойр ${res.k} түүхэн тохиолдлын тархалтаас тооцогдов.`,
+    `The likely range comes from the spread of the ${res.k} nearest historical cases.`,
+  ));
   $('#scoreNote').innerHTML = notes.join(' ');
 
   const dt = prevScore == null ? null : score - prevScore;
@@ -404,7 +448,10 @@ function renderPrediction(res, prevScore = null) {
   } else {
     de.hidden = false;
     de.className = `scoredelta ${dt > 0 ? 'up' : 'down'}`;
-    de.textContent = `Өмнөх тооцоололтой харьцуулахад ${dt > 0 ? '+' : '−'}${fmt1.format(Math.abs(dt))} оноо (${fmt1.format(prevScore)} → ${fmt1.format(score)})`;
+    de.textContent = L(
+      `Өмнөх тооцоололтой харьцуулахад ${dt > 0 ? '+' : '−'}${fmt1.format(Math.abs(dt))} оноо (${fmt1.format(prevScore)} → ${fmt1.format(score)})`,
+      `Compared with the previous calculation ${dt > 0 ? '+' : '−'}${fmt1.format(Math.abs(dt))} pts (${fmt1.format(prevScore)} → ${fmt1.format(score)})`,
+    );
   }
 
   const maxAbs = Math.max(0.1, ...res.factors.map((f) => Math.abs(f.effect)));
@@ -415,19 +462,19 @@ function renderPrediction(res, prevScore = null) {
       <div class="factor">
         <div class="frow">
           <span>${esc(f.label)}</span>
-          <span class="fv">${formatFeature(f.feature, f.value)} · медиан ${formatFeature(f.feature, f.median)}</span>
+          <span class="fv">${formatFeature(f.feature, f.value)} · ${L('медиан', 'median')} ${formatFeature(f.feature, f.median)}</span>
           <span class="fe ${pos ? 'pos' : 'neg'}">${pos ? '+' : ''}${fmt1.format(f.effect)}</span>
         </div>
-        <div class="bar" title="${esc(f.label)}: ${pos ? '+' : ''}${fmt1.format(f.effect)} оноо">
+        <div class="bar" title="${esc(f.label)}: ${pos ? '+' : ''}${fmt1.format(f.effect)} ${L('оноо', 'pts')}">
           <i class="${pos ? 'pos' : 'neg'}" style="width:${width}%"></i>
         </div>
       </div>`;
   }).join('');
 
-  $('#neighborsHint').textContent = `k = ${res.k} · зайгаар жинлэсэн`;
+  $('#neighborsHint').textContent = `k = ${res.k} · ${L('зайгаар жинлэсэн', 'distance-weighted')}`;
   $('#neighborRows').innerHTML = res.neighbors.map((n) => `
     <tr>
-      <td>${esc(n.aimag)}</td>
+      <td>${esc(aimagName(n.aimag))}</td>
       <td class="n">${n.year}</td>
       <td class="n"><span class="lvl ${levelKey(n.risk_score).cls}" style="font-family:var(--mono)">${fmt1.format(n.risk_score)}</span></td>
       <td class="n">${fmt2.format(n.distance)}</td>
@@ -436,14 +483,17 @@ function renderPrediction(res, prevScore = null) {
 
   const warnWrap = $('#warningsWrap');
   warnWrap.innerHTML = res.warnings?.length
-    ? `<div class="warnbox">${res.warnings.map((w) => `<div class="note"><b>Анхааруулга.</b> ${esc(w)}</div>`).join('')}</div>`
+    ? `<div class="warnbox">${res.warnings.map((w) => `<div class="note"><b>${L('Анхааруулга', 'Warning')}.</b> ${esc(w)}</div>`).join('')}</div>`
     : '';
 
   const boosts = res.factors.filter((f) => f.effect >= 1).slice(0, 2);
   const shortLabel = (s) => esc(String(s).replace(/\s*\([^)]*\)\s*$/, ''));
   $('#findSummary').innerHTML = boosts.length
-    ? `Эрсдэлд хамгийн их нөлөөлж буй хүчин зүйл: ${boosts.map((f) => `<b>${shortLabel(f.label)}</b>`).join(', ')}. Дараах арга хэмжээг тэргүүлэхийг зөвлөж байна.`
-    : 'Оруулсан утгууд түүхэн медианаас ихээхэн зөрүүгүй байна. Дараах хяналтын арга хэмжээг баримтална уу.';
+    ? L(
+      `Эрсдэлд хамгийн их нөлөөлж буй хүчин зүйл: ${boosts.map((f) => `<b>${shortLabel(f.label)}</b>`).join(', ')}. Дараах арга хэмжээг тэргүүлэхийг зөвлөж байна.`,
+      `Largest drivers: ${boosts.map((f) => `<b>${shortLabel(f.label)}</b>`).join(', ')}. Prioritise the measures below.`,
+    )
+    : L('Оруулсан утгууд түүхэн медианаас ихээхэн зөрүүгүй байна. Дараах хяналтын арга хэмжээг баримтална уу.', 'The inputs are not far from the historical medians. Follow the monitoring measures below.');
 
   $('#findList').innerHTML = res.recommendations.map((r, i) => {
     const lead = i === 0 && r.level !== 'low';
@@ -451,7 +501,7 @@ function renderPrediction(res, prevScore = null) {
     <li class="${lead ? 'lead' : ''}">
       <i class="${esc(r.level || '')}">${i + 1}</i>
       <div>
-        <span class="tag">${esc(r.tag)}</span>${lead ? '<span class="leadtag">Тэргүүлэх</span>' : ''}
+        <span class="tag">${esc(r.tag)}</span>${lead ? `<span class="leadtag">${L('Тэргүүлэх', 'Priority')}</span>` : ''}
         <p>${esc(r.text)}</p>
       </div>
     </li>`;
@@ -463,15 +513,18 @@ function renderPrediction(res, prevScore = null) {
     const mae = state.meta?.metrics?.unseen_aimag_cv?.MAE ?? 5;
     const noise = Math.max(1, mae);
     const bestKey = res.scenarios.find((s) => s.delta <= -noise)?.key;
-    $('#scenarioNote').innerHTML = `Одоогийн утгаас нэг үзүүлэлтийг өөрчилбөл эрсдэлийн оноо хэр өөрчлөгдөхийг тооцов. Загварын дундаж алдаа ${fmt1.format(mae)} оноо тул үүнээс бага зөрүүг «≈» гэж тэмдэглэв. «Турших» дарж бүрэн дүнг гаргуулна.`;
+    $('#scenarioNote').innerHTML = L(
+      `Одоогийн утгаас нэг үзүүлэлтийг өөрчилбөл эрсдэлийн оноо хэр өөрчлөгдөхийг тооцов. Загварын дундаж алдаа ${fmt1.format(mae)} оноо тул үүнээс бага зөрүүг «≈» гэж тэмдэглэв. «Турших» дарж бүрэн дүнг гаргуулна.`,
+      `This shows how the score changes when one indicator is altered. The model's mean error is ${fmt1.format(mae)} pts, so smaller differences are marked «≈». Press «Apply» to load the full result.`,
+    );
     $('#scenarioList').innerHTML = res.scenarios.map((s) => {
       const signif = Math.abs(s.delta) >= noise;
       const cls = !signif ? 'flat' : s.delta < 0 ? 'down' : 'up';
       const ds = !signif ? '≈' : s.delta < 0 ? '−' : '+';
       return `<div class="scen${s.key === bestKey ? ' best' : ''}">
-        <div class="scenmain"><b>${esc(s.label)}${s.key === bestKey ? '<span class="besttag">Хамгийн үр дүнтэй</span>' : ''}</b><span>${esc(s.detail)}</span></div>
+        <div class="scenmain"><b>${esc(s.label)}${s.key === bestKey ? `<span class="besttag">${L('Хамгийн үр дүнтэй', 'Best result')}</span>` : ''}</b><span>${esc(s.detail)}</span></div>
         <div class="scenscore"><b class="${levelMeta(s.score).cls}">${fmt1.format(s.score)}</b><span class="dchip ${cls}">${ds}${fmt1.format(Math.abs(s.delta))}</span></div>
-        <button type="button" class="btn tiny scenbtn" data-scen="${esc(s.key)}">Турших</button>
+        <button type="button" class="btn tiny scenbtn" data-scen="${esc(s.key)}">${L('Турших', 'Apply')}</button>
       </div>`;
     }).join('');
     $$('#scenarioList .scenbtn').forEach((b) => {
@@ -485,12 +538,20 @@ function renderPrediction(res, prevScore = null) {
   const meta = state.meta;
   if (meta) {
     const m = meta.metrics.unseen_aimag_cv;
-    $('#modelFoot').textContent = `Загвар: KNN · k=${res.k} · 20% тестийн MAE ${fmt1.format(m.MAE)} · ангиллын нарийвчлал ${Math.round(m.class_accuracy * 100)}% · ${meta.n_samples} ажиглалт`;
+    $('#modelFoot').textContent = L(
+      `Загвар: KNN · k=${res.k} · 20% тестийн MAE ${fmt1.format(m.MAE)} · ангиллын нарийвчлал ${Math.round(m.class_accuracy * 100)}% · ${meta.n_samples} ажиглалт`,
+      `Model: KNN · k=${res.k} · 20% test MAE ${fmt1.format(m.MAE)} · class accuracy ${Math.round(m.class_accuracy * 100)}% · ${meta.n_samples} observations`,
+    );
   }
 
   const toMap = $('#toMapBtn');
   toMap.hidden = !res.preset;
-  if (res.preset) toMap.textContent = `${res.preset.aimag} · ${res.preset.year} газрын зураг дээр`;
+  if (res.preset) {
+    toMap.textContent = L(
+      `${res.preset.aimag} · ${res.preset.year} газрын зураг дээр`,
+      `${aimagName(res.preset.aimag)} · ${res.preset.year} on the map`,
+    );
+  }
 }
 
 function applyScenario(res, key) {
@@ -511,7 +572,7 @@ function applyScenario(res, key) {
 function buildMap() {
   const svg = $('#mapSvg');
   if (!window.MN_MAP) {
-    $('#mapEmpty').textContent = 'Газрын зургийн өгөгдөл ачаалагдсангүй.';
+    $('#mapEmpty').textContent = L('Газрын зургийн өгөгдөл ачаалагдсангүй.', 'Map data could not be loaded.');
     return false;
   }
   svg.innerHTML = `
@@ -536,7 +597,7 @@ function buildMap() {
     p.setAttribute('class', 'reg');
     p.setAttribute('tabindex', '0');
     p.setAttribute('role', 'button');
-    p.setAttribute('aria-label', a.name);
+    p.setAttribute('aria-label', aimagName(a.name));
     p.addEventListener('pointerenter', (e) => showTip(e, a.name));
     p.addEventListener('pointermove', moveTip);
     p.addEventListener('pointerleave', hideTip);
@@ -558,7 +619,7 @@ function buildMap() {
     t.setAttribute('x', a.cx);
     t.setAttribute('y', a.cy);
     t.setAttribute('class', 'reglabel');
-    t.textContent = a.name;
+    t.textContent = aimagName(a.name);
     t.dataset.name = a.name;
     const shift = LABEL_SHIFT[a.name];
     if (shift) {
@@ -663,19 +724,21 @@ function initMapControls(box) {
   box.addEventListener('pointerleave', (e) => { if (drag) pup(e); });
 
   const search = $('#mapSearch');
+  const matches = (a, q) => a.name.toLowerCase().includes(q)
+    || aimagName(a.name).toLowerCase().includes(q);
   search.addEventListener('input', () => {
     const q = search.value.trim().toLowerCase();
     $$('#mapShapes .reg').forEach((p) => {
-      p.classList.toggle('dim', Boolean(q) && !p.dataset.name.toLowerCase().includes(q));
+      p.classList.toggle('dim', Boolean(q) && !matches({ name: p.dataset.name }, q));
     });
   });
   search.addEventListener('change', () => {
     const q = search.value.trim().toLowerCase();
-    const hit = MN_MAP.aimags.find((a) => a.name.toLowerCase() === q)
-      || MN_MAP.aimags.find((a) => a.name.toLowerCase().startsWith(q));
+    const hit = MN_MAP.aimags.find((a) => a.name.toLowerCase() === q || aimagName(a.name).toLowerCase() === q)
+      || MN_MAP.aimags.find((a) => a.name.toLowerCase().startsWith(q) || aimagName(a.name).toLowerCase().startsWith(q));
     if (hit) {
       selectAimag(hit.name);
-      search.value = hit.name;
+      search.value = aimagName(hit.name);
       $$('#mapShapes .reg').forEach((p) => p.classList.remove('dim'));
     }
   });
@@ -683,10 +746,10 @@ function initMapControls(box) {
     if (e.key !== 'Enter') return;
     e.preventDefault();
     const q = search.value.trim().toLowerCase();
-    const hit = MN_MAP.aimags.find((a) => a.name.toLowerCase().includes(q));
+    const hit = MN_MAP.aimags.find((a) => matches(a, q));
     if (hit) {
       selectAimag(hit.name);
-      search.value = hit.name;
+      search.value = aimagName(hit.name);
       $$('#mapShapes .reg').forEach((p) => p.classList.remove('dim'));
       search.blur();
     }
@@ -701,12 +764,13 @@ function showTipAt(a) {
 function showTip(e, name) {
   const row = rowOf(name, state.year);
   const tip = $('#mapTip');
+  const shown = esc(aimagName(name));
   if (!row) {
-    tip.innerHTML = `<b>${esc(name)}</b><div class="tiprow"><span class="tiplvl">Өгөгдөл байхгүй</span></div>`;
+    tip.innerHTML = `<b>${shown}</b><div class="tiprow"><span class="tiplvl">${L('Өгөгдөл байхгүй', 'No data')}</span></div>`;
   } else {
     const v = valueOf(row);
     const l = levelMeta(v);
-    tip.innerHTML = `<b>${esc(name)}</b><div class="tiprow"><strong>${fmt1.format(v)}</strong><span class="tiplvl">оноо · ${l.mn}</span></div>`;
+    tip.innerHTML = `<b>${shown}</b><div class="tiprow"><strong>${fmt1.format(v)}</strong><span class="tiplvl">${L('оноо', 'pts')} · ${l[state.lang]}</span></div>`;
   }
   tip.style.display = 'block';
   moveTip(e);
@@ -755,9 +819,12 @@ function renderAll() {
 function renderMapLabels() {
   const sub = $('#mapSub');
   if (!state.year) return;
-  sub.textContent = `${state.year} он · 21 аймаг`;
-  $('#rankYear').textContent = `${state.year} · оноогоор`;
-  $('#tableYear').textContent = `${state.year} он`;
+  sub.textContent = L(`${state.year} он · 21 аймаг`, `${state.year} · 21 aimags`);
+  $('#rankYear').textContent = L(`${state.year} · оноогоор`, `${state.year} · by score`);
+  $('#tableYear').textContent = L(`${state.year} он`, `${state.year}`);
+  $$('#mapLabels .reglabel').forEach((t) => {
+    t.textContent = aimagName(t.dataset.name);
+  });
 }
 
 function renderMap() {
@@ -769,14 +836,17 @@ function renderMap() {
       p.classList.add('nodata');
       p.style.removeProperty('fill');
       p.classList.remove('sel');
-      p.setAttribute('aria-label', `${p.dataset.name} — өгөгдөл байхгүй`);
+      p.setAttribute('aria-label', L(`${p.dataset.name} — өгөгдөл байхгүй`, `${aimagName(p.dataset.name)} — no data`));
       return;
     }
     const v = valueOf(row);
     p.style.fill = riskColor(v);
     p.classList.remove('nodata');
     p.classList.toggle('sel', state.selected === p.dataset.name);
-    p.setAttribute('aria-label', `${p.dataset.name}: ${fmt1.format(v)} оноо, ${levelMeta(v).mn} эрсдэл`);
+    p.setAttribute('aria-label', L(
+      `${p.dataset.name}: ${fmt1.format(v)} оноо, ${levelMeta(v).mn} эрсдэл`,
+      `${aimagName(p.dataset.name)}: ${fmt1.format(v)} pts, ${levelMeta(v).en} risk`,
+    ));
   });
   const sel = $('#mapShapes .reg.sel');
   if (sel) $('#mapShapes').appendChild(sel);
@@ -802,16 +872,17 @@ function renderKpis() {
   const dMean = prevMean === null ? null : mean - prevMean;
   const dHigh = prevHigh === null ? null : highCount - prevHigh;
   const cls = (d) => (d === null || Math.abs(d) < 0.05 ? 'flat' : d > 0 ? 'up' : 'down');
+  const signed = (d) => `${d > 0 ? '+' : ''}${fmt1.format(d)}`;
   const meanDelta = dMean === null ? '' :
-    `<span class="kpidelta ${cls(dMean)}">${fmt1.format(dMean)} өмнөх жилээс</span>`;
+    `<span class="kpidelta ${cls(dMean)}">${L(`${signed(dMean)} өмнөх жилээс`, `${signed(dMean)} vs previous year`)}</span>`;
   const highDelta = dHigh === null ? '' :
-    `<span class="kpidelta ${cls(dHigh)}">${dHigh > 0 ? '+' : ''}${dHigh} аймаг өмнөх жилээс</span>`;
+    `<span class="kpidelta ${cls(dHigh)}">${L(`${dHigh > 0 ? '+' : ''}${dHigh} аймаг өмнөх жилээс`, `${dHigh > 0 ? '+' : ''}${dHigh} aimags vs previous year`)}</span>`;
 
   $('#mapKpis').innerHTML = `
-    <div class="kpi"><small>Улсын дундаж</small><b class="${l.cls}">${fmt1.format(mean)}</b><span>${l.mn} эрсдэл · ${state.year} он</span>${meanDelta}</div>
-    <div class="kpi"><small>Өндөр эрсдэлтэй</small><b>${highCount}<span style="font-size:16px;color:var(--muted)"> / ${rows.length}</span></b><span>65-аас дээш оноо</span>${highDelta}</div>
-    <div class="kpi"><small>Хамгийн өндөр</small><b class="high" style="font-size:22px">${esc(top.aimag)}</b><span>${fmt1.format(valueOf(top))} оноо</span></div>
-    <div class="kpi"><small>Хамгийн бага</small><b class="low" style="font-size:22px">${esc(low.aimag)}</b><span>${fmt1.format(valueOf(low))} оноо</span></div>`;
+    <div class="kpi"><small>${L('Улсын дундаж', 'National average')}</small><b class="${l.cls}">${fmt1.format(mean)}</b><span>${L(`${l.mn} эрсдэл · ${state.year} он`, `${l.en} risk · ${state.year}`)}</span>${meanDelta}</div>
+    <div class="kpi"><small>${L('Өндөр эрсдэлтэй', 'High risk')}</small><b>${highCount}<span style="font-size:16px;color:var(--muted)"> / ${rows.length}</span></b><span>${L('65-аас дээш оноо', 'scores above 65')}</span>${highDelta}</div>
+    <div class="kpi"><small>${L('Хамгийн өндөр', 'Highest')}</small><b class="high" style="font-size:22px">${esc(aimagName(top.aimag))}</b><span>${L(`${fmt1.format(valueOf(top))} оноо`, `${fmt1.format(valueOf(top))} pts`)}</span></div>
+    <div class="kpi"><small>${L('Хамгийн бага', 'Lowest')}</small><b class="low" style="font-size:22px">${esc(aimagName(low.aimag))}</b><span>${L(`${fmt1.format(valueOf(low))} оноо`, `${fmt1.format(valueOf(low))} pts`)}</span></div>`;
 }
 
 function renderTrend() {
@@ -824,12 +895,12 @@ function renderTrend() {
   box.innerHTML = vals.map(([y, v]) => {
     const h = 14 + ((v - lo) / span) * 58;
     const on = y === state.year;
-    return `<button type="button" class="tbar${on ? ' sel' : ''}" data-year="${y}" title="${y} он: улсын дундаж ${fmt1.format(v)} оноо"
-      aria-label="${y} он, улсын дундаж ${fmt1.format(v)} оноо" aria-pressed="${on}">
+    return `<button type="button" class="tbar${on ? ' sel' : ''}" data-year="${y}" title="${L(`${y} он: улсын дундаж ${fmt1.format(v)} оноо`, `${y}: national average ${fmt1.format(v)} pts`)}"
+      aria-label="${L(`${y} он, улсын дундаж ${fmt1.format(v)} оноо`, `${y}, national average ${fmt1.format(v)} pts`)}" aria-pressed="${on}">
       <i style="height:${h}%;background:${riskColor(v)}"></i><span>${String(y).slice(2)}</span></button>`;
   }).join('');
   const cur = state.nationalByYear[state.year] ?? meanOfYear(state.year);
-  $('#trendHint').textContent = `${state.year} он · ${fmt1.format(cur)} оноо`;
+  $('#trendHint').textContent = L(`${state.year} он · ${fmt1.format(cur)} оноо`, `${state.year} · ${fmt1.format(cur)} pts`);
   $$('#trendStrip .tbar').forEach((b) => {
     b.addEventListener('click', () => setYear(Number(b.dataset.year)));
   });
@@ -841,11 +912,11 @@ function renderRank() {
   $('#rankList').innerHTML = shown.map((r, i) => `
     <button type="button" class="rankrow ${state.selected === r.aimag ? 'sel' : ''}" data-name="${esc(r.aimag)}">
       <span class="rk">${i + 1}</span>
-      <span class="nm">${esc(r.aimag)}</span>
+      <span class="nm">${esc(aimagName(r.aimag))}</span>
       <span class="sc">${fmt1.format(valueOf(r))}</span>
       <span class="track"><i style="width:${clamp(valueOf(r), 2, 100)}%;background:${riskColor(valueOf(r))}"></i></span>
     </button>`).join('') + (rows.length > shown.length
-      ? `<button type="button" class="rankmore" id="rankMore">Бүх ${rows.length} аймгийг хүснэгтээс харах ↓</button>`
+      ? `<button type="button" class="rankmore" id="rankMore">${L(`Бүх ${rows.length} аймгийг хүснэгтээс харах ↓`, `See all ${rows.length} aimags in the table ↓`)}</button>`
       : '');
   $$('#rankList .rankrow').forEach((b) => {
     b.addEventListener('click', () => selectAimag(b.dataset.name));
@@ -863,9 +934,9 @@ function renderTable() {
     const dTxt = d === null ? '—' : `${d > 0 ? '+' : ''}${fmt1.format(d)}`;
     const dCls = d === null || Math.abs(d) < 0.05 ? '' : d > 0 ? 'up' : 'down';
     return `
-      <tr tabindex="0" data-name="${esc(r.aimag)}" class="${state.selected === r.aimag ? 'sel' : ''}" aria-label="${esc(r.aimag)}, ${fmt1.format(r.score)} оноо">
+      <tr tabindex="0" data-name="${esc(r.aimag)}" class="${state.selected === r.aimag ? 'sel' : ''}" aria-label="${L(`${esc(r.aimag)}, ${fmt1.format(r.score)} оноо`, `${esc(aimagName(r.aimag))}, ${fmt1.format(r.score)} pts`)}">
         <td class="n">${i + 1}</td>
-        <td><b>${esc(r.aimag)}</b></td>
+        <td><b>${esc(aimagName(r.aimag))}</b></td>
         <td class="n scorecell">${fmt1.format(r.score)}</td>
         <td>${levelBadge(r.score)}</td>
         <td class="n">${fmt2.format(r.NDVI)}</td>
@@ -904,7 +975,7 @@ function historyChart(name) {
     .map((i) => `<text class="chartaxis" x="${x(i)}" y="${H - 6}" text-anchor="middle">${years[i]}</text>`).join('');
   const dots = rows.map((r, i) => {
     if (!r) return '';
-    return `<circle class="chartdot ${i === selIdx ? 'sel' : ''}" cx="${x(i)}" cy="${y(r.score)}" r="${i === selIdx ? 3.4 : 1.8}"><title>${years[i]}: ${fmt1.format(r.score)} оноо</title></circle>`;
+    return `<circle class="chartdot ${i === selIdx ? 'sel' : ''}" cx="${x(i)}" cy="${y(r.score)}" r="${i === selIdx ? 3.4 : 1.8}"><title>${years[i]}: ${fmt1.format(r.score)} ${L('оноо', 'pts')}</title></circle>`;
   }).join('');
   const now = selIdx >= 0 && rows[selIdx]
     ? `<line class="chartnow" x1="${x(selIdx)}" y1="${pt}" x2="${x(selIdx)}" y2="${H - pb}"></line>` : '';
@@ -912,10 +983,10 @@ function historyChart(name) {
   return `
     <div class="chartbox">
       <div class="ch">
-        <span>${state.years[0]}–${state.years[state.years.length - 1]} оны түүх</span>
-        <span>оноо / 100</span>
+        <span>${L(`${state.years[0]}–${state.years[state.years.length - 1]} оны түүх`, `${state.years[0]}–${state.years[state.years.length - 1]} history`)}</span>
+        <span>${L('оноо / 100', 'score / 100')}</span>
       </div>
-      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(name)} аймгийн эрсдэлийн түүх">
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${L(`${esc(name)} аймгийн эрсдэлийн түүх`, `Risk history of ${esc(aimagName(name))}`)}">
         ${grid}${now}${axis}${ticks}
         <path class="chartline" d="${line(actual)}"></path>
         ${dots}
@@ -935,12 +1006,12 @@ function renderSide() {
     const l = levelMeta(mean);
     panel.innerHTML = `
       <div class="sideintro">
-        <h2>Аймаг сонгоно уу</h2>
-        <p class="muted">Зураг дээрх аймаг дээр дарж эсвэл доорх жагсаалтаас сонгож, тухайн жилийн үзүүлэлт, 2010–2025 оны түүхийг харна уу.</p>
+        <h2>${L('Аймаг сонгоно уу', 'Select an aimag')}</h2>
+        <p class="muted">${L('Зураг дээрх аймаг дээр дарж эсвэл баруун жагсаалтаас сонгож, жилийн үзүүлэлт, түүхийг харна уу.', 'Click an aimag on the map or pick one from the list on the right to see yearly indicators and history.')}</p>
         <div class="introstats">
-          <div><span>${state.year} оны дундаж</span><b style="color:${l.color}">${fmt1.format(mean)}</b></div>
-          <div><span>Ажиглалт</span><b>${state.data?.rows.length ?? 0}</b></div>
-          <div><span>Хамрах жил</span><b>${state.years.length}</b></div>
+          <div><span>${L(`${state.year} оны дундаж`, `${state.year} average`)}</span><b style="color:${l.color}">${fmt1.format(mean)}</b></div>
+          <div><span>${L('Ажиглалт', 'Observations')}</span><b>${state.data?.rows.length ?? 0}</b></div>
+          <div><span>${L('Хамрах жил', 'Years covered')}</span><b>${state.years.length}</b></div>
         </div>
       </div>`;
     return;
@@ -949,10 +1020,10 @@ function renderSide() {
   if (!row) {
     panel.innerHTML = `
       <div class="sidehead">
-        <div><h2>${esc(name)}</h2><p class="sub">${state.year} он</p></div>
-        <button type="button" class="iconbtn" id="clearSel" aria-label="Сонголтыг цэвэрлэх">×</button>
+        <div><h2>${esc(aimagName(name))}</h2><p class="sub">${L(`${state.year} он`, `${state.year}`)}</p></div>
+        <button type="button" class="iconbtn" id="clearSel" aria-label="${esc(L('Сонголтыг цэвэрлэх', 'Clear selection'))}">×</button>
       </div>
-      <p class="note" style="margin-top:14px">Энэ нутаг дэвсгэрийн хувьд өгөгдлийн санд бэлчээрийн үзүүлэлт байхгүй тул эрсдэл тооцогдоогүй.</p>`;
+      <p class="note" style="margin-top:14px">${L('Энэ нутаг дэвсгэрийн хувьд өгөгдлийн санд бэлчээрийн үзүүлэлт байхгүй тул эрсдэл тооцогдоогүй.', 'No pasture indicators exist for this area in the dataset, so no risk was calculated.')}</p>`;
     $('#clearSel').addEventListener('click', () => { state.selected = null; renderAll(); });
     return;
   }
@@ -971,25 +1042,25 @@ function renderSide() {
     const w = clamp(((row[key] - lo) / (hi - lo || 1)) * 100, 3, 100);
     return `
       <div class="mbar">
-        <div class="t"><span>${label}</span><span>${fmt(row[key])}</span></div>
+        <div class="t"><span>${L(label[0], label[1])}</span><span>${fmt(row[key])}</span></div>
         <div class="track"><i style="width:${w}%"></i></div>
       </div>`;
   }).join('');
 
   panel.innerHTML = `
     <div class="sidehead">
-      <div><h2>${esc(name)}</h2><p class="sub">${state.year} он · ${rank}-р байр / ${rows.length}</p></div>
-      <button type="button" class="iconbtn" id="clearSel" aria-label="Сонголтыг цэвэрлэх">×</button>
+      <div><h2>${esc(aimagName(name))}</h2><p class="sub">${L(`${state.year} он · ${rank}-р байр / ${rows.length}`, `${state.year} · rank ${rank} / ${rows.length}`)}</p></div>
+      <button type="button" class="iconbtn" id="clearSel" aria-label="${esc(L('Сонголтыг цэвэрлэх', 'Clear selection'))}">×</button>
     </div>
     <div class="sidescore">
       <b style="color:${l.color}">${fmt1.format(row.score)}</b>
       ${levelBadge(row.score)}
-      <span class="delta ${dCls}" title="Өмнөх жилийн оноотой харьцуулсан">${dTxt}</span>
+      <span class="delta ${dCls}" title="${esc(L('Өмнөх жилийн оноотой харьцуулсан', 'Compared with the previous year'))}">${dTxt}</span>
     </div>
-    <p class="sidesub">Улсын дундаж ${fmt1.format(mean)}</p>
+    <p class="sidesub">${L(`Улсын дундаж ${fmt1.format(mean)}`, `National average ${fmt1.format(mean)}`)}</p>
     <div class="metricbars">${bars}</div>
     ${historyChart(name)}
-    <button type="button" class="btn primary block" id="useAimag">Энэ аймгийн утгаар тооцох</button>`;
+    <button type="button" class="btn primary block" id="useAimag">${L('Энэ аймгийн утгаар тооцох', "Score this aimag's values")}</button>`;
 
   $('#clearSel').addEventListener('click', () => { state.selected = null; renderAll(); });
   $('#useAimag').addEventListener('click', () => {
@@ -1008,33 +1079,39 @@ function renderIntro() {
   const labels = state.meta.feature_labels;
   $('#modelChip').textContent = `KNN · MAE ${fmt1.format(m.MAE)}`;
   $('#modelChip').classList.remove('busy');
-  $('#modelChip').setAttribute('title', 'Загварын дэлгэрэнгүйг харах');
+  $('#modelChip').setAttribute('title', L('Загварын дэлгэрэнгүйг харах', 'View model details'));
   $('#modelBox').innerHTML = `
-    <div><small>Алгоритм</small><b>KNN регрессор</b></div>
+    <div><small>${L('Алгоритм', 'Algorithm')}</small><b>${L('KNN регрессор', 'KNN regressor')}</b></div>
     <div><small>k</small><b>${state.meta.best_params.n_neighbors}</b></div>
     <div><small>MAE</small><b>${fmt1.format(m.MAE)}</b></div>
-    <div><small>Нарийвчлал</small><b>${Math.round(m.class_accuracy * 100)}%</b></div>
-    <div><small>Ажиглалт</small><b>${state.meta.n_samples}</b></div>
-    <div><small>Жил</small><b>${state.meta.years[0]}–${state.meta.years[1]}</b></div>
-    <div style="grid-column:1/-1"><small>Шинж чанарууд</small><b>${Object.values(labels).map(esc).join(' · ')}</b></div>`;
-  $('#modelNote').textContent = `Загварыг өгөгдлийн 80%-д сургаж, 20%-д шалгасан. KNN нь шалтгаан-үр дагаврыг биш, түүхэн ижил төстэй байдлыг хэмждэг.`;
+    <div><small>${L('Нарийвчлал', 'Accuracy')}</small><b>${Math.round(m.class_accuracy * 100)}%</b></div>
+    <div><small>${L('Ажиглалт', 'Observations')}</small><b>${state.meta.n_samples}</b></div>
+    <div><small>${L('Жил', 'Years')}</small><b>${state.meta.years[0]}–${state.meta.years[1]}</b></div>
+    <div style="grid-column:1/-1"><small>${L('Шинж чанарууд', 'Features')}</small><b>${Object.values(labels).map(esc).join(' · ')}</b></div>`;
+  $('#modelNote').textContent = L(
+    'Загварыг өгөгдлийн 80%-д сургаж, 20%-д шалгасан. KNN нь шалтгаан-үр дагаврыг биш, түүхэн ижил төстэй байдлыг хэмждэг.',
+    'The model was trained on 80% of the data and validated on 20%. KNN measures historical similarity, not causation.',
+  );
 }
 
 function fillSelects() {
   const aimagSel = $('#presetAimag');
-  aimagSel.innerHTML = '<option value="">Аймаг сонгох…</option>'
-    + state.aimags.map((a) => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
+  aimagSel.innerHTML = `<option value="">${L('Аймаг сонгох…', 'Select aimag…')}</option>`
+    + state.aimags.map((a) => `<option value="${esc(a)}">${esc(aimagName(a))}</option>`).join('');
+  if (state.preset) aimagSel.value = state.preset.aimag;
 
   const yearSel = $('#presetYear');
   yearSel.innerHTML = state.years.slice().reverse()
     .map((y) => `<option value="${y}"${y === state.latestYear ? ' selected' : ''}>${y}</option>`).join('');
+  if (state.preset) yearSel.value = String(state.preset.year);
 
   const mapYear = $('#mapYear');
   mapYear.innerHTML = state.years.slice().reverse()
     .map((y) => `<option value="${y}"${y === state.latestYear ? ' selected' : ''}>${y}</option>`).join('');
-  mapYear.addEventListener('change', (e) => setYear(Number(e.target.value)));
+  if (state.year) mapYear.value = String(state.year);
+  mapYear.onchange = (e) => setYear(Number(e.target.value));
 
-  $('#aimagOptions').innerHTML = state.aimags.map((a) => `<option value="${esc(a)}"></option>`).join('');
+  $('#aimagOptions').innerHTML = state.aimags.map((a) => `<option value="${esc(aimagName(a))}"></option>`).join('');
 }
 
 /* ---------------------------------------------------------------- эхлэл */
@@ -1052,7 +1129,57 @@ function applyUrlState() {
   if (PAGES.includes(page)) goTo(page, false);
 }
 
+function initialLang() {
+  const fromUrl = new URLSearchParams(location.search).get('lang');
+  if (fromUrl === 'en' || fromUrl === 'mn') return fromUrl;
+  try {
+    return localStorage.getItem('belcheer-lang') === 'en' ? 'en' : 'mn';
+  } catch {
+    return 'mn';
+  }
+}
+
+function setLangUi(lang) {
+  $$('.langswitch button').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.lang === lang));
+  });
+}
+
+async function setLanguage(lang) {
+  const next = lang === 'en' ? 'en' : 'mn';
+  if (next === state.lang) return;
+  state.lang = next;
+  window.I18N.setLang(next);
+  try { localStorage.setItem('belcheer-lang', next); } catch { /* private mode */ }
+  setLangUi(next);
+  window.I18N.apply();
+
+  if (!state.data) { syncUrl(); return; }
+
+  try {
+    const [meta, data] = await Promise.all([api('/api/model-info'), api('/api/dataset')]);
+    state.meta = meta;
+    state.data = data;
+  } catch { /* keep the data already loaded */ }
+
+  fillSelects();
+  renderIntro();
+  renderAll();
+  renderPresetHint();
+  $('#predictBtn').textContent = predictLabel();
+  if (!$('#predictResult').hidden) {
+    state.lastPredict = null;
+    await runPrediction(false);
+  }
+  syncUrl();
+}
+
 async function init() {
+  state.lang = initialLang();
+  window.I18N.setLang(state.lang);
+  setLangUi(state.lang);
+  window.I18N.apply();
+
   initNav();
   initForm();
   buildMap();
@@ -1064,7 +1191,7 @@ async function init() {
     state.data = data;
     state.years = data.years.slice().sort((a, b) => a - b);
     state.latestYear = data.latest_year;
-    state.aimags = data.aimags.slice().sort((a, b) => a.localeCompare(b, 'mn'));
+    state.aimags = data.aimags.slice().sort((a, b) => aimagName(a).localeCompare(aimagName(b)));
     state.year = state.latestYear;
     state.nationalByYear = data.national_mean_by_year ?? {};
 
@@ -1085,13 +1212,16 @@ async function init() {
   } catch (err) {
     const box = $('#apiError');
     box.hidden = false;
-    box.innerHTML = `<b>Өгөгдөл ачаалагдсангүй.</b> ${esc(err.message)}. Терминалд <code>python app.py</code> ажиллуулаад <code>http://127.0.0.1:5000</code> хаягаар нээнэ үү.`;
+    box.innerHTML = L(
+      `<b>Өгөгдөл ачаалагдсангүй.</b> ${esc(err.message)}. Терминалд <code>python app.py</code> ажиллуулаад <code>http://127.0.0.1:5000</code> хаягаар нээнэ үү.`,
+      `<b>Data could not be loaded.</b> ${esc(err.message)}. Run <code>python app.py</code> in the terminal and open <code>http://127.0.0.1:5000</code>.`,
+    );
     const chip = $('#modelChip');
-    chip.textContent = 'Загвар ачаалагдсангүй';
+    chip.textContent = L('Загвар ачаалагдсангүй', 'Model not loaded');
     chip.classList.remove('busy');
     chip.classList.add('bad');
     $('#predictBtn').disabled = true;
-    $('#mapEmpty').textContent = 'Газрын зургийн өгөгдөл ачаалагдсангүй.';
+    $('#mapEmpty').textContent = L('Газрын зургийн өгөгдөл ачаалагдсангүй.', 'Map data could not be loaded.');
     $('#mapEmpty').hidden = false;
   }
 }
