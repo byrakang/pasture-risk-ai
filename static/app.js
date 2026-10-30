@@ -111,14 +111,6 @@ async function api(path, options) {
   return body;
 }
 
-function formatFeature(key, v) {
-  if (key === 'Total_Livestock') return fmt0.format(v);
-  if (key === 'Precipitation_mm') return fmt0.format(v);
-  if (key === 'Temperature_C') return fmt1.format(v);
-  if (key === 'NDVI') return fmt2.format(v);
-  return fmt2.format(v);
-}
-
 function rowOf(aimag, year) {
   return state.byAimag.get(aimag)?.get(year) ?? null;
 }
@@ -410,15 +402,7 @@ function renderPrediction(res, prevScore = null) {
   $('#rangeVal').textContent = `${fmt1.format(res.range[0])}–${fmt1.format(res.range[1])}`;
   $('#natMeanVal').textContent = fmt1.format(res.national_mean);
   $('#percentileVal').textContent = `${res.percentile}%`;
-  const top = res.factors[0];
-  const sign = top.effect >= 0 ? '+' : '';
   const notes = [];
-  notes.push(top && Math.abs(top.effect) >= 1
-    ? L(
-      `Хамгийн их нөлөөлж буй хүчин зүйл: <b>${esc(top.label)}</b> (медиантай харьцуулахад ${sign}${fmt1.format(top.effect)} оноо, эрсдэлийг ${top.effect >= 0 ? 'нэмэгдүүлж' : 'бууруулж'} байна).`,
-      `Largest factor: <b>${esc(top.label)}</b> (${sign}${fmt1.format(top.effect)} pts vs median, ${top.effect >= 0 ? 'raising' : 'lowering'} the risk).`,
-    )
-    : L('Оруулсан утгууд медиан утгуудтай ойролцоо байгаа тул хүчин зүйлсийн нөлөө бага байна.', 'The inputs are close to the medians, so factor effects are small.'));
   const origin = state.preset ? rowOf(state.preset.aimag, state.preset.year) : null;
   if (origin) {
     const d = score - origin.score;
@@ -453,23 +437,6 @@ function renderPrediction(res, prevScore = null) {
       `Compared with the previous calculation ${dt > 0 ? '+' : '−'}${fmt1.format(Math.abs(dt))} pts (${fmt1.format(prevScore)} → ${fmt1.format(score)})`,
     );
   }
-
-  const maxAbs = Math.max(0.1, ...res.factors.map((f) => Math.abs(f.effect)));
-  $('#factorList').innerHTML = res.factors.map((f) => {
-    const pos = f.effect >= 0;
-    const width = Math.max(2, (Math.abs(f.effect) / maxAbs) * 100);
-    return `
-      <div class="factor">
-        <div class="frow">
-          <span>${esc(f.label)}</span>
-          <span class="fv">${formatFeature(f.feature, f.value)} · ${L('медиан', 'median')} ${formatFeature(f.feature, f.median)}</span>
-          <span class="fe ${pos ? 'pos' : 'neg'}">${pos ? '+' : ''}${fmt1.format(f.effect)}</span>
-        </div>
-        <div class="bar" title="${esc(f.label)}: ${pos ? '+' : ''}${fmt1.format(f.effect)} ${L('оноо', 'pts')}">
-          <i class="${pos ? 'pos' : 'neg'}" style="width:${width}%"></i>
-        </div>
-      </div>`;
-  }).join('');
 
   $('#neighborsHint').textContent = `k = ${res.k} · ${L('зайгаар жинлэсэн', 'distance-weighted')}`;
   $('#neighborRows').innerHTML = res.neighbors.map((n) => `
@@ -509,8 +476,8 @@ function renderPrediction(res, prevScore = null) {
       `Why the score is <b>${fmt1.format(score)}</b>: ${causeTitles}.`,
     );
 
-  $('#causeList').innerHTML = causes.map((c) => `
-    <li>
+  $('#causeList').innerHTML = causes.map((c, i) => `
+    <li style="--i:${i}">
       <span class="cdot ${esc(c.level)}" aria-hidden="true"></span>
       <div class="cbody">
         <div class="crow"><b>${esc(c.title)}</b>${c.metric ? `<span class="cmetric">${esc(c.metric)}</span>` : ''}</div>
@@ -540,7 +507,7 @@ function renderPrediction(res, prevScore = null) {
       ? `<span class="aimp" title="${esc(impactNote)}">${L(`−${fmt1.format(Math.abs(r.impact))} оноо`, `−${fmt1.format(Math.abs(r.impact))} pts`)}</span>`
       : '';
     return `
-    <li>
+    <li style="--i:${i}">
       <span class="anum">${i + 1}</span>
       <div class="abody">
         <div class="arow"><span class="atag">${esc(r.tag)}</span>${chip}</div>
@@ -559,11 +526,11 @@ function renderPrediction(res, prevScore = null) {
       `Одоогийн утгаас нэг үзүүлэлтийг өөрчилбөл эрсдэлийн оноо хэр өөрчлөгдөхийг тооцов. Загварын дундаж алдаа ${fmt1.format(mae)} оноо тул үүнээс бага зөрүүг «≈» гэж тэмдэглэв. «Турших» дарж бүрэн дүнг гаргуулна.`,
       `This shows how the score changes when one indicator is altered. The model's mean error is ${fmt1.format(mae)} pts, so smaller differences are marked «≈». Press «Apply» to load the full result.`,
     );
-    $('#scenarioList').innerHTML = res.scenarios.map((s) => {
+    $('#scenarioList').innerHTML = res.scenarios.map((s, i) => {
       const signif = Math.abs(s.delta) >= noise;
       const cls = !signif ? 'flat' : s.delta < 0 ? 'down' : 'up';
       const ds = !signif ? '≈' : s.delta < 0 ? '−' : '+';
-      return `<div class="scen${s.key === bestKey ? ' best' : ''}">
+      return `<div class="scen${s.key === bestKey ? ' best' : ''}" style="--i:${i}">
         <div class="scenmain"><b>${esc(s.label)}${s.key === bestKey ? `<span class="besttag">${L('Хамгийн үр дүнтэй', 'Best result')}</span>` : ''}</b><span>${esc(s.detail)}</span></div>
         <div class="scenscore"><b class="${levelMeta(s.score).cls}">${fmt1.format(s.score)}</b><span class="dchip ${cls}">${ds}${fmt1.format(Math.abs(s.delta))}</span></div>
         <button type="button" class="btn tiny scenbtn" data-scen="${esc(s.key)}">${L('Турших', 'Apply')}</button>
