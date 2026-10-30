@@ -279,179 +279,278 @@ def factor_effects(values, base_score, lang="mn"):
     return sorted(out, key=lambda r: abs(r["effect"]), reverse=True)
 
 
-def recommendations(values, score, factors, lang="mn"):
-    """Утга ба эрсдэлийн түвшинд тулгуурлан арга хэмжээний зөвлөмж буцаана."""
-    q = QUANTILES
+BAD_WHEN_HIGH = {"Total_Livestock", "Temperature_C", "Stocking_Rate"}
+
+
+def _share(feature, value):
+    """Тухайн утгаас судалгааны аймаг-жилүүдийн хэдэн хувь нь илүү сайн байгааг буцаана (0–100)."""
+    col = df[feature]
+    if feature in BAD_WHEN_HIGH:
+        return float((col < value).mean() * 100)
+    return float((col > value).mean() * 100)
+
+
+def causes_of(values, score, lang="mn"):
+    """Оруулсан утгаас эрсдэлийг өсгөж буй шалтгааныг энгийн хэлээр, хүчтэйгээр нь эрэмбэлж буцаана."""
     en = lang == "en"
-    items = []
+    rate = float(values["Stocking_Rate"])
+    herd = float(values["Total_Livestock"])
+    ndvi = float(values["NDVI"])
+    rain = float(values["Precipitation_mm"])
+    temp = float(values["Temperature_C"])
+    found = []
 
-    rate = values["Stocking_Rate"]
-    if rate >= q["Stocking_Rate"][75]:
-        items.append({
-            "tag": "Livestock pressure" if en else "Малын ачаалал",
-            "priority": 3 + (rate - q["Stocking_Rate"][75]),
-            "text": (
-                f"Stocking rate {rate:.2f} is above the top 25% of the study aimags "
-                f"({q['Stocking_Rate'][75]:.2f}). Reduce herd size, rotate grazing and "
-                "free up reserve pasture to lower the pressure."
-            ) if en else (
-                f"Ачааллын коэффициент {rate:.2f} нь судалгааны аймгуудын дээд 25%-иас "
-                f"({q['Stocking_Rate'][75]:.2f}) өндөр байна. Малын тоог бууруулах, "
-                "бэлчээрийг ээлжлэн ашиглах, нөөц бэлчээр гаргах замаар ачааллыг "
-                "бууруулах шаардлагатай."
-            ),
-        })
-    elif rate < q["Stocking_Rate"][25]:
-        items.append({
-            "tag": "Livestock pressure" if en else "Малын ачаалал",
-            "priority": 0.4,
-            "text": (
-                f"Stocking rate {rate:.2f} is relatively low. Maintain the current herd "
-                "size and keep monitoring pasture recovery."
-            ) if en else (
-                f"Ачааллын коэффициент {rate:.2f} харьцангуй бага байна. Одоогийн "
-                "малын тоог хадгалах, бэлчээрийн нөхөн сэргэлтийг хянах нь зүйтэй."
-            ),
+    def add(key, title, text, metric, share, high_bad=True):
+        if high_bad:
+            compare = (f"Higher than {share:.0f}% of aimag-years" if en
+                       else f"Аймгуудын {share:.0f}%-иас өндөр")
+        else:
+            compare = (f"Lower than {share:.0f}% of aimag-years" if en
+                       else f"Аймгуудын {share:.0f}%-иас бага")
+        found.append({
+            "key": key,
+            "level": "high" if share >= 70 else "mid",
+            "title": title,
+            "text": text,
+            "metric": metric,
+            "share": round(share),
+            "compare": compare,
         })
 
-    ndvi = values["NDVI"]
-    if ndvi <= q["NDVI"][25]:
-        items.append({
-            "tag": "Vegetation state" if en else "Ургамлын төлөв",
-            "priority": 3 + (q["NDVI"][25] - ndvi) * 10,
-            "text": (
-                f"NDVI {ndvi:.3f} sits at the lower 25% threshold ({q['NDVI'][25]:.3f}). "
-                "Rest the pasture for 1–2 years, set protection limits and plan "
-                "restoration measures."
-            ) if en else (
-                f"NDVI {ndvi:.3f} нь доод 25%-ийн хязгаарт ({q['NDVI'][25]:.3f}) байна. "
-                "Бэлчээрийг 1–2 жил амраах, хамгаалалтын хязгаарлалт тогтоох, "
-                "нөхөн сэргээх арга хэмжээ төлөвлөх нь зүйтэй."
-            ),
+    n = _share("Stocking_Rate", rate)
+    if n >= 58:
+        excess = max(0.0, (rate - 1) * 100)
+        add(
+            "stocking",
+            "Малын ачаалал өндөр" if not en else "Heavy grazing pressure",
+            (f"Ачааллын коэффициент {rate:.2f}. Бэлчээрийн даац 1.0 тул даацаас "
+             f"{excess:.0f}%-иар илүү мал идэж байна. Өвс нөхөн ургахаас өмнө мал "
+             "идчихдэг тул бэлчээр жилээс жилд шингэдэг.") if not en else (
+                f"The stocking rate is {rate:.2f}. The pasture can carry 1.0, so there are "
+                f"about {excess:.0f}% more animals than it can support. They eat the grass "
+                "before it can regrow, so the pasture thins out year by year."),
+            f"{rate:.2f}",
+            n,
+        )
+
+    n = _share("Total_Livestock", herd)
+    if n >= 58:
+        add(
+            "livestock",
+            "Малын тоо олон" if not en else "Large herd",
+            (f"Нийт {herd:,.0f} хонин толгой. Судалгааны аймгуудын {n:.0f}% нь үүнээс "
+             "цөөн малтай. Олон мал нэг газрын өвсийг идэх тул бэлчээр хурдан элэгддэг.")
+            if not en else (
+                f"{herd:,.0f} sheep units in total. {n:.0f}% of the studied aimag-years "
+                "have fewer animals. Many mouths on the same grass wear the pasture out "
+                "quickly."),
+            f"{herd:,.0f}",
+            n,
+        )
+
+    n = _share("NDVI", ndvi)
+    if n >= 58:
+        add(
+            "ndvi",
+            "Ургамал шингэн" if not en else "Sparse vegetation",
+            (f"Ургамлын индекс {ndvi:.2f}. Аймгуудын {n:.0f}% нь ургамал илүү сайн "
+             "(ногоон) газартай. Ургамал багатай үед хөрс салхинд хийсэж, нөхөн "
+             "сэргэхэд олон жил ордог.") if not en else (
+                f"The vegetation index is {ndvi:.2f}. In {n:.0f}% of aimag-years the "
+                "plants are greener. Bare soil dries out, blows away in the wind and "
+                "takes years to recover."),
+            f"{ndvi:.2f}",
+            n,
+            high_bad=False,
+        )
+
+    n = _share("Precipitation_mm", rain)
+    if n >= 58:
+        add(
+            "precipitation",
+            "Хур тунадас бага" if not en else "Low rainfall",
+            (f"Жилд ердөө {rain:.0f} мм хур тунадас. Аймгуудын {n:.0f}% нь илүү их хур "
+             "тунадас авдаг. Чийг багатай тул өвс намхан ургаж, мал идэх өвс цөөнө.")
+            if not en else (
+                f"Only {rain:.0f} mm of rain a year. {n:.0f}% of aimag-years get more "
+                "rain. With little moisture the grass grows short, so animals find less "
+                "to eat."),
+            f"{rain:.0f} мм" if not en else f"{rain:.0f} mm",
+            n,
+            high_bad=False,
+        )
+
+    n = _share("Temperature_C", temp)
+    if n >= 58:
+        add(
+            "temperature",
+            "Халуун жил" if not en else "Hot year",
+            (f"Жилийн дундаж температур {temp:.1f}°C. Аймгуудын {n:.0f}%-иас дулаан. "
+             "Халуунд чийг хурдан хатдаг тул өвс хурдан хатаж, ургамал цөөнө.")
+            if not en else (
+                f"The mean temperature is {temp:.1f}°C, warmer than in {n:.0f}% of "
+                "aimag-years. Heat dries the soil quickly, so grass withers and there is "
+                "less to graze."),
+            f"{temp:.1f}°C",
+            n,
+        )
+
+    if not found:
+        if score < LOW_MAX:
+            title = "Эрсдэл бага" if not en else "Low risk"
+            text = ("Мал, ачаалал, ургамал, хур тунадас, температур — таван үзүүлэлт "
+                    "бүгд 21 аймгийн дунджаас муу биш байна. Иймд эрсдэл бага гарсан."
+                    if not en else
+                    "Livestock, stocking, vegetation, rainfall and temperature are all no "
+                    "worse than the average of the 21 aimags, so the risk comes out low.")
+        else:
+            title = "Аль нэг үзүүлэлт эрс муу биш" if not en else "No single value stands out"
+            text = ("Оруулсан утгуудын аль нь ч 21 аймгийн дунджаас эрс муу биш. Гэхдээ "
+                    f"хэд хэдэн үзүүлэлт бага зэрэг муу нийлээд оноог {score:.1f} "
+                    "хүргэсэн.") if not en else (
+                "No single value is far worse than the average of the 21 aimags. Still, "
+                "several values are slightly unfavourable and together they lift the "
+                f"score to {score:.1f}.")
+        return [{
+            "key": "normal",
+            "level": "low" if score < LOW_MAX else "mid",
+            "title": title,
+            "text": text,
+            "metric": "",
+            "share": 0,
+            "compare": "",
+        }]
+
+    found.sort(key=lambda c: c["share"], reverse=True)
+    keys = {c["key"] for c in found}
+    if "stocking" in keys and "livestock" in keys:
+        found = [c for c in found if c["key"] != "livestock"]
+    return found[:3]
+
+
+def recommendations(values, score, causes, scenarios, lang="mn"):
+    """Шалтгаан бүрд тохирох, малчинд ойлгомжтой арга хэмжээ буцаана."""
+    en = lang == "en"
+    by_key = {s["key"]: s for s in scenarios}
+    rate = float(values["Stocking_Rate"])
+    herd = float(values["Total_Livestock"])
+
+    def delta(key):
+        return by_key[key]["delta"] if key in by_key else None
+
+    actions = []
+    for c in causes:
+        key = c["key"]
+        if key == "stocking" and rate > 1:
+            keep = int(round(herd / rate / 1000.0)) * 1000
+            heads = int(herd - keep)
+            actions.append({
+                "tag": "Ease grazing pressure" if en else "Ачааллыг бууруулах",
+                "level": c["level"],
+                "impact": delta("stocking"),
+                "text": (f"Cut the herd by about {heads:,} head (leaving {keep:,}) so the "
+                         "stocking rate returns to 1.0, and split the pasture into 2–3 "
+                         "paddocks and graze them in turn.") if en else (
+                    f"Малаа ойролцоогоор {heads:,} толгойгоор цөөлж {keep:,} толгой үлдээвэл "
+                    "ачаалал 1.0 болж, бэлчээр нөхөн сэргэх боломжтой. Бэлчээрээ 2–3 "
+                    "хэсэгт хувааж ээлжлэн бэлчээрлүүл."),
+            })
+        elif key == "livestock":
+            cut = int(round(herd * 0.1 / 1000.0)) * 1000
+            actions.append({
+                "tag": "Adjust herd size" if en else "Малын тоог тохируулах",
+                "level": c["level"],
+                "impact": delta("livestock"),
+                "text": (f"Try cutting the herd by about 10% (≈{cut:,} head). Fewer animals "
+                         "on the same pasture means each one fattens better and the grass "
+                         "can recover.") if en else (
+                    f"Малын тоог 10 орчим хувиар (≈{cut:,} толгой) цөөлж үзээрэй. Нэг "
+                    "бэлчээрт ноогдох мал багасах тул үлдсэн мал илүү таргалана, "
+                    "бэлчээр нөхөн сэргэнэ."),
+            })
+        elif key == "ndvi":
+            actions.append({
+                "tag": "Rest the pasture" if en else "Бэлчээр амраах",
+                "level": c["level"],
+                "impact": delta("ndvi"),
+                "text": ("Rest your worst pasture for 1–2 years and do not cut the grass "
+                         "there. Keep animals off the recovering area and mark it as "
+                         "protected.") if en else (
+                    "Хамгийн муу бэлчээрээ 1–2 жил амрааж, өвсийг нь хадаж авахгүй байх. "
+                    "Нөхөн сэргэж буй талбайд мал оруулахгүй, хамгаалалт тогтоо."),
+            })
+        elif key == "precipitation":
+            actions.append({
+                "tag": "Hay and feed reserve" if en else "Өвс, тэжээлийн нөөц",
+                "level": c["level"],
+                "impact": None,
+                "text": ("Build hay and feed reserves early. Repair water points and "
+                         "shorten the walk to water. Have a plan to move animals to "
+                         "reserve pasture if drought hits.") if en else (
+                    "Өвс, тэжээлийн нөөцөө урьдчилан бүрдүүл. Усны цэгээ засаж, мал "
+                    "услах замыг богиносго. Ган болбол малаа нөөц бэлчээрт гаргах "
+                    "төлөвлөгөөтэй бай."),
+            })
+        elif key == "temperature":
+            actions.append({
+                "tag": "Protect from heat" if en else "Халуунаас хамгаалах",
+                "level": c["level"],
+                "impact": None,
+                "text": ("Graze animals early in the morning and in the evening, and let "
+                         "them rest in shade during the hot part of the day. Prioritise "
+                         "water and shaded pasture.") if en else (
+                    "Малаа өглөө эрт, орой бэлчээрлүүлж, өдрийн халуунд сүүдэртэй газарт "
+                    "амраа. Усны эх, сүүдэртэй бэлчээрийг тэргүүл."),
+            })
+        if len(actions) == 3:
+            break
+
+    if not actions and score >= LOW_MAX:
+        actions.append({
+            "tag": "Be prepared" if en else "Урьдчилан сэргийлэх",
+            "level": "mid",
+            "impact": None,
+            "text": ("Be ready to move animals to reserve pasture and to use stored hay "
+                     "if one indicator suddenly worsens.") if en else (
+                "Нэг үзүүлэлт гэнэт муудах үед малаа нөөц бэлчээрт шилжүүлэх, өвс "
+                "тэжээл нөөцлөх бэлэн байлга."),
         })
 
-    precip = values["Precipitation_mm"]
-    if precip <= q["Precipitation_mm"][25]:
-        items.append({
-            "tag": "Drought" if en else "Ган",
-            "priority": 3 + (q["Precipitation_mm"][25] - precip) / 100,
-            "text": (
-                f"Annual precipitation {precip:.0f} mm is below the lower 25% "
-                f"({q['Precipitation_mm'][25]:.0f} mm). Build hay and feed reserves, "
-                "upgrade water points and activate early drought warning."
-            ) if en else (
-                f"Жилийн хур тунадас {precip:.0f} мм нь доод 25%-иас "
-                f"({q['Precipitation_mm'][25]:.0f} мм) бага байна. Өвс, тэжээлийн нөөц "
-                "бүрдүүлэх, усан хангамжийн цэгийг шинэчлэх, гангийн эрт анхааруулга "
-                "хяналтыг идэвхжүүлэх хэрэгтэй."
-            ),
-        })
-    elif precip >= q["Precipitation_mm"][75]:
-        items.append({
-            "tag": "Precipitation" if en else "Хур тунадас",
-            "priority": 0.5,
-            "text": (
-                f"Precipitation {precip:.0f} mm is relatively good. Still, prevent "
-                "overgrazing and manage stocking during the green season."
-            ) if en else (
-                f"Хур тунадас {precip:.0f} мм харьцангуй сайн байна. Гэхдээ хэт "
-                "бэлчээрлэлтээс сэргийлж, ногоон улирлын ачааллыг зохицуулах нь чухал."
-            ),
-        })
-
-    temp = values["Temperature_C"]
-    if temp >= q["Temperature_C"][75]:
-        items.append({
-            "tag": "Climate" if en else "Уур амьсгал",
-            "priority": 2 + (temp - q["Temperature_C"][75]) / 3,
-            "text": (
-                f"Mean temperature {temp:.1f}°C is above the upper 25% "
-                f"({q['Temperature_C'][75]:.1f}°C). Evaporation rises and moisture "
-                "declines, so prioritize water sources and shaded pastures."
-            ) if en else (
-                f"Агаарын дундаж температур {temp:.1f}°C нь дээд 25%-иас "
-                f"({q['Temperature_C'][75]:.1f}°C) өндөр байна. Ууршилт нэмэгдэж "
-                "чийг хомсдох тул усны эх, сүүдэртэй бэлчээрийг тэргүүлэх нь зүйтэй."
-            ),
-        })
-
-    livestock = values["Total_Livestock"]
-    if livestock >= q["Total_Livestock"][75]:
-        items.append({
-            "tag": "Herd structure" if en else "Малын бүтэц",
-            "priority": 1.5 + (livestock - q["Total_Livestock"][75]) / 5_000_000,
-            "text": (
-                f"Total livestock {livestock:,.0f} sheep units falls in the top 25%. "
-                "Align herd structure and numbers with carrying capacity and stop "
-                "rapid growth."
-            ) if en else (
-                f"Нийт мал {livestock:,.0f} хонин толгой нь дээд 25%-д багтаж байна. "
-                "Малын бүтэц, тоог бэлчээрийн даацад нийцүүлж, эрчимтэй өсөлтийг "
-                "зогсоох шаардлагатай."
-            ),
-        })
-
-    top = factors[0]
-    if top["effect"] >= 1.5:
-        items.append({
-            "tag": "Main driver" if en else "Гол нөлөө",
-            "priority": 4 + top["effect"] / 10,
-            "text": (
-                f"The factor raising the score most is “{top['label']}” "
-                f"(+{top['effect']:.1f} pts vs median). Moving it closer to the median "
-                f"would lower the risk score by about {top['effect']:.1f} points."
-            ) if en else (
-                f"Оноог хамгийн их өсгөж буй хүчин зүйл нь «{top['label']}» "
-                f"(медианаас +{top['effect']:.1f} оноо). Энэ үзүүлэлтийг медиан "
-                f"түвшинд ойртуулбал эрсдэлийн оноо ойролцоогоор "
-                f"{top['effect']:.1f} нэгжээр буурна."
-            ),
-        })
+    noise = max(1.0, TEST_MAE)
+    actions.sort(
+        key=lambda a: (0, a["impact"])
+        if isinstance(a["impact"], (int, float)) and a["impact"] <= -noise
+        else (1, 0)
+    )
 
     if score >= MEDIUM_MAX:
-        items.append({
-            "tag": "Monitoring" if en else "Хяналт",
-            "priority": 1.8,
-            "text": (
-                "The area is in the high-risk band. Monitor pasture quarterly and "
-                "prepare reserve pasture and feed contingency plans."
-            ) if en else (
-                "Өндөр эрсдэлийн бүсэд байна. Бэлчээрийн мониторингийг улирал бүр "
-                "хийж, нөөц бэлчээр, тэжээлийн нөөцийн төлөвлөгөөг бэлтгэх хэрэгтэй."
-            ),
-        })
+        mon = {
+            "level": "high",
+            "text": ("This is high risk. Update your pasture data every month and have "
+                     "reserve pasture and feed plans ready.") if en else (
+                "Өндөр эрсдэлтэй байна. Сар бүр бэлчээрийн өгөгдлөө шинэчилж, нөөц "
+                "бэлчээр, тэжээлийн төлөвлөгөөг бэлтгэ."),
+        }
     elif score >= LOW_MAX:
-        items.append({
-            "tag": "Monitoring" if en else "Хяналт",
-            "priority": 1.8,
-            "text": (
-                "Risk is moderate. Review NDVI, precipitation and stocking quarterly, "
-                "and adjust grazing pressure early if risk rises."
-            ) if en else (
-                "Дунд эрсдэлтэй байна. NDVI, хур тунадас, ачааллын үзүүлэлтийг "
-                "улирал тутам хянаж, эрсдэл нэмэгдэхэд бэлчээрийн ачааллыг "
-                "эрт зохицуулах нь зүйтэй."
-            ),
-        })
+        mon = {
+            "level": "mid",
+            "text": ("This is medium risk. Check NDVI, rainfall and stocking every "
+                     "season, and act before it gets worse.") if en else (
+                "Дунд эрсдэлтэй байна. Улирал тутам NDVI, хур тунадас, ачааллаа "
+                "хянаж, муудахын өмнө арга хэмжээ ав."),
+        }
     else:
-        items.append({
-            "tag": "Monitoring" if en else "Хяналт",
-            "priority": 0.2,
-            "text": (
-                "Risk is low under current conditions. Continue annual monitoring and "
-                "watch seasonal NDVI changes."
-            ) if en else (
-                "Одоогийн үзүүлэлтээр эрсдэл бага байна. Жилийн хяналт, NDVI-ийн "
-                "улирлын өөрчлөлтийг үргэлжлүүлэн ажиглах нь зүйтэй."
-            ),
-        })
-
-    items.sort(key=lambda r: r["priority"], reverse=True)
-    return [{
-        "tag": r["tag"],
-        "text": r["text"],
-        "level": "high" if r["priority"] >= 3.5 else "mid" if r["priority"] >= 2 else "low",
-    } for r in items[:4]]
+        mon = {
+            "level": "low",
+            "text": ("Risk is low. Review once a year and watch how NDVI changes. Keep "
+                     "doing what you are doing.") if en else (
+                "Эрсдэл бага байна. Жилд нэг удаа хянаж, NDVI-ийн өөрчлөлтийг ажигла. "
+                "Одоогийн арга барилаа үргэлжлүүл."),
+        }
+    mon["tag"] = "Monitoring" if en else "Хяналт"
+    mon["impact"] = None
+    actions.append(mon)
+    return actions[:4]
 
 
 def improvement_scenarios(values, base_score, lang="mn"):
@@ -475,12 +574,14 @@ def improvement_scenarios(values, base_score, lang="mn"):
         })
 
     rate = float(values["Stocking_Rate"])
-    if rate > 1.0:
-        add("stocking", "Bring stocking rate to carrying capacity" if en else "Ачааллыг даацтай тэнцүүлэх",
-            {"Stocking_Rate": 1.0},
-            f"Stocking {rate:.2f} → 1.00" if en else f"Ачаалал {rate:.2f} → 1.00")
-
     livestock = float(values["Total_Livestock"])
+    if rate > 1.0:
+        keep = int(round(livestock / rate / 1000.0)) * 1000
+        add("stocking", "Bring stocking rate to carrying capacity" if en else "Ачааллыг даацтай тэнцүүлэх",
+            {"Stocking_Rate": 1.0, "Total_Livestock": keep},
+            (f"Stocking {rate:.2f} → 1.00, herd {livestock:,.0f} → {keep:,.0f} head" if en
+             else f"Ачаалал {rate:.2f} → 1.00, мал {livestock:,.0f} → {keep:,.0f} толгой"))
+
     if livestock > 1_000_000:
         cut = round(livestock * 0.9)
         add("livestock", "Reduce livestock by 10%" if en else "Малын тоог 10% бууруулах",
@@ -552,6 +653,8 @@ def predict():
     pct = float((Y < score).mean() * 100)
     lo, hi = max(0.0, score - spread), min(100.0, score + spread)
     factors = factor_effects(values, score, lang)
+    causes = causes_of(values, score, lang)
+    scenarios = improvement_scenarios(values, score, lang)
 
     return jsonify(
         risk_score=round(score, 1),
@@ -564,8 +667,9 @@ def predict():
         neighbors=neighbors,
         warnings=range_warnings(values, lang),
         factors=factors,
-        recommendations=recommendations(values, score, factors, lang),
-        scenarios=improvement_scenarios(values, score, lang),
+        causes=causes,
+        recommendations=recommendations(values, score, causes, scenarios, lang),
+        scenarios=scenarios,
         input=values,
     )
 

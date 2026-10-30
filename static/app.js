@@ -486,22 +486,64 @@ function renderPrediction(res, prevScore = null) {
     ? `<div class="warnbox">${res.warnings.map((w) => `<div class="note"><b>${L('Анхааруулга', 'Warning')}.</b> ${esc(w)}</div>`).join('')}</div>`
     : '';
 
-  const boosts = res.factors.filter((f) => f.effect >= 1).slice(0, 2);
-  const shortLabel = (s) => esc(String(s).replace(/\s*\([^)]*\)\s*$/, ''));
-  $('#findSummary').innerHTML = boosts.length
+  const causes = res.causes || [];
+  const causeNormal = !causes.length || causes[0].key === 'normal';
+  const causesCard = $('#causesCard');
+  causesCard.classList.remove('level-high', 'level-mid', 'level-low');
+  causesCard.classList.add(`level-${res.level_key}`);
+  const causeTitles = causes.slice(0, 2)
+    .map((c, i) => {
+      const title = i ? c.title.charAt(0).toLowerCase() + c.title.slice(1) : c.title;
+      return `<b>${esc(title)}</b>`;
+    })
+    .join(L(', ', ' and '));
+  const levelMn = res.level_key === 'high' ? 'өндөр' : res.level_key === 'mid' ? 'дунд' : 'бага';
+  const levelEn = res.level_key === 'high' ? 'high' : res.level_key === 'mid' ? 'medium' : 'low';
+  $('#causesSummary').innerHTML = causeNormal
     ? L(
-      `Эрсдэлд хамгийн их нөлөөлж буй хүчин зүйл: ${boosts.map((f) => `<b>${shortLabel(f.label)}</b>`).join(', ')}. Дараах арга хэмжээг тэргүүлэхийг зөвлөж байна.`,
-      `Largest drivers: ${boosts.map((f) => `<b>${shortLabel(f.label)}</b>`).join(', ')}. Prioritise the measures below.`,
+      `Оноо <b>${fmt1.format(score)}</b> — ${levelMn} эрсдэл. Гол шалтгаан тодроогүй.`,
+      `Score <b>${fmt1.format(score)}</b> — ${levelEn} risk. No single cause stands out.`,
     )
-    : L('Оруулсан утгууд түүхэн медианаас ихээхэн зөрүүгүй байна. Дараах хяналтын арга хэмжээг баримтална уу.', 'The inputs are not far from the historical medians. Follow the monitoring measures below.');
+    : L(
+      `Оноо <b>${fmt1.format(score)}</b> болсон гол шалтгаан: ${causeTitles}.`,
+      `Why the score is <b>${fmt1.format(score)}</b>: ${causeTitles}.`,
+    );
 
-  $('#findList').innerHTML = res.recommendations.map((r, i) => {
-    const lead = i === 0 && r.level !== 'low';
+  $('#causeList').innerHTML = causes.map((c) => `
+    <li>
+      <span class="cdot ${esc(c.level)}" aria-hidden="true"></span>
+      <div class="cbody">
+        <div class="crow"><b>${esc(c.title)}</b>${c.metric ? `<span class="cmetric">${esc(c.metric)}</span>` : ''}</div>
+        <p>${esc(c.text)}</p>
+        ${c.key === 'normal' ? '' : `
+        <div class="cbar"><i class="${esc(c.level)}" style="width:${Math.max(5, Math.min(100, c.share))}%"></i></div>
+        <span class="ccmp">${esc(c.compare)}</span>`}
+      </div>
+    </li>`).join('');
+
+  const advice = res.recommendations || [];
+  const noise = Math.max(1, state.meta?.metrics?.unseen_aimag_cv?.MAE ?? 5);
+  $('#adviceSummary').innerHTML = causeNormal
+    ? (res.level_key === 'low'
+      ? L('Эрсдэл бага байна. Дараах зүйлсийг үргэлжлүүлээрэй.', 'Risk is low. Keep doing the following.')
+      : L('Нэг үзүүлэлт эрс муу биш ч бэлэн байх нь чухал. Дараах алхмуудыг баримтал.', 'No single value is far off, but it pays to be prepared. Follow these steps.'))
+    : res.level_key === 'high'
+      ? L('Эрсдэл өндөр байна. Дараах алхмуудыг дарааллаар нь хийвэл оноо буурна.', 'Risk is high. Doing these steps in order will lower the score.')
+      : L('Эрсдэл дунд байна. Дараах алхмуудыг хийвэл оноо буурч, цаашид муудахаас сэргийлнэ.', 'Risk is medium. These steps will lower the score and help keep it from getting worse.');
+  const impactNote = L(
+    'Зөвхөн энэ алхмыг хийсэн тохиолдолд загвараар тооцсон онооны бууралт',
+    'Model estimate of the score drop if only this step is taken',
+  );
+  $('#adviceList').innerHTML = advice.map((r, i) => {
+    const gain = typeof r.impact === 'number' && r.impact <= -noise;
+    const chip = gain
+      ? `<span class="aimp" title="${esc(impactNote)}">${L(`−${fmt1.format(Math.abs(r.impact))} оноо`, `−${fmt1.format(Math.abs(r.impact))} pts`)}</span>`
+      : '';
     return `
-    <li class="${lead ? 'lead' : ''}">
-      <i class="${esc(r.level || '')}">${i + 1}</i>
-      <div>
-        <span class="tag">${esc(r.tag)}</span>${lead ? `<span class="leadtag">${L('Тэргүүлэх', 'Priority')}</span>` : ''}
+    <li>
+      <span class="anum">${i + 1}</span>
+      <div class="abody">
+        <div class="arow"><span class="atag">${esc(r.tag)}</span>${chip}</div>
         <p>${esc(r.text)}</p>
       </div>
     </li>`;
