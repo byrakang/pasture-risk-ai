@@ -172,7 +172,7 @@ function initNav() {
     b.addEventListener('click', () => setLanguage(b.dataset.lang));
   });
 
-  const nav = $('nav');
+  const nav = $('.top nav');
   const cue = () => {
     nav.classList.toggle('can-left', nav.scrollLeft > 2);
     nav.classList.toggle('can-right', nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 2);
@@ -180,6 +180,17 @@ function initNav() {
   nav.addEventListener('scroll', cue, { passive: true });
   window.addEventListener('resize', cue);
   cue();
+}
+
+function initToTop() {
+  const btn = $('#toTop');
+  const toggle = () => { btn.hidden = window.scrollY < 700; };
+  window.addEventListener('scroll', toggle, { passive: true });
+  toggle();
+  btn.addEventListener('click', () => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  });
 }
 
 /* ---------------------------------------------------------------- маягт */
@@ -1191,6 +1202,7 @@ async function init() {
 
   initNav();
   initForm();
+  initToTop();
   buildMap();
 
   $('#modelChip').classList.add('busy');

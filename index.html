@@ -47,7 +47,7 @@
   <section class="pintro" id="pastureIntro">
     <div class="pintrohead">
       <h2>Бэлчээр ба бэлчээрийн доройтол</h2>
-      <span class="pintrohint">Товч тайлбар</span>
+      <button type="button" class="linkbtn pintrolink" data-page="facts">Баримтууд үзэх →</button>
     </div>
     <div class="pintrogrid">
       <article class="pintroitem" style="--i:0">
@@ -366,7 +366,13 @@
     <p>Дэлхий болон Монголын бэлчээрийн талбай, мал, доройтлын 20+20 үзүүлэлт.</p>
   </div>
 
-  <section class="factgroup">
+  <nav class="factnav" aria-label="Баримтын хэсгүүд">
+    <a class="factjump" href="#facts-world"><span>Дэлхий</span><b>20</b></a>
+    <a class="factjump" href="#facts-mongolia"><span>Монгол</span><b>20</b></a>
+    <a class="factjump" href="#facts-sources"><span>Эх сурвалж</span><b>↧</b></a>
+  </nav>
+
+  <section class="factgroup" id="facts-world">
     <div class="cardhead"><h2>Дэлхийн бэлчээр</h2><span class="cardhint">FAO · UNCCD · 20</span></div>
     <div class="factgrid">
       <article class="fact">
@@ -472,7 +478,7 @@
     </div>
   </section>
 
-  <section class="factgroup">
+  <section class="factgroup" id="facts-mongolia">
     <div class="cardhead"><h2>Монголын бэлчээр</h2><span class="cardhint">ҮСХ · Манай загвар · 20</span></div>
     <div class="factgrid">
       <article class="fact">
@@ -578,7 +584,7 @@
     </div>
   </section>
 
-  <p class="factsrc">Эх сурвалж: FAO — Global assessment of soil carbon in grasslands (2023), The State of the World's Land and Water Resources, International Year of Rangelands and Pastoralists (2026); UNCCD — Global Land Outlook (2022), Global Land Degradation Information System; UN Decade on Ecosystem Restoration (2030 зорилт); ELD Initiative — эдийн засгийн үнэлгээ; IPCC — 1.5°C тусгай тайлан; Үндэсний статистикийн хороо — 2025 оны мал, малчин өрхийн тооллого; Байгаль орчин, уур амьсгалын өөрчлөлтийн яам — Монгол орны цөлжилтийн атлас (2026), бэлчээрийн хэт ачааллын үнэлгээ. «Манай загвар» гэсэн үзүүлэлтүүд нь MODIS NDVI, ERA5, CHIRPS болон 1212.mn-ийн өгөгдлөөр тооцсон KNN загварын үр дүн.</p>
+  <p class="factsrc" id="facts-sources">Эх сурвалж: FAO — Global assessment of soil carbon in grasslands (2023), The State of the World's Land and Water Resources, International Year of Rangelands and Pastoralists (2026); UNCCD — Global Land Outlook (2022), Global Land Degradation Information System; UN Decade on Ecosystem Restoration (2030 зорилт); ELD Initiative — эдийн засгийн үнэлгээ; IPCC — 1.5°C тусгай тайлан; Үндэсний статистикийн хороо — 2025 оны мал, малчин өрхийн тооллого; Байгаль орчин, уур амьсгалын өөрчлөлтийн яам — Монгол орны цөлжилтийн атлас (2026), бэлчээрийн хэт ачааллын үнэлгээ. «Манай загвар» гэсэн үзүүлэлтүүд нь MODIS NDVI, ERA5, CHIRPS болон 1212.mn-ийн өгөгдлөөр тооцсон KNN загварын үр дүн.</p>
 </section>
 
 <!-- ============ 4. ТУСЛАМЖ ============ -->
@@ -668,6 +674,8 @@
     <a href="/api/dataset.csv">CSV татах</a>
   </div>
 </footer>
+
+<button class="totop" id="toTop" type="button" aria-label="Дээшээ гүйлгэх" hidden>↑</button>
 
 <script src="static/map-data.js"></script>
 <script src="static/i18n.js"></script>

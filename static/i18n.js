@@ -13,7 +13,6 @@ const MN2EN = {
   "Бэлчээрийн талхагдлын эрсдэл тооцох": "Pasture degradation risk score",
   "Малын тоо, NDVI, хур тунадас, температур, ачааллын утгаа оруулахад KNN загвар түүхэн 336 аймаг-жилийн өгөгдөлтэй харьцуулж эрсдэлийн оноог тооцно.": "Enter livestock numbers, NDVI, precipitation, temperature and stocking rate, and the KNN model compares them with 336 historical aimag-years to estimate a risk score.",
   "Бэлчээр ба бэлчээрийн доройтол": "Pasture and pasture degradation",
-  "Товч тайлбар": "In brief",
   "Бэлчээр гэж юу вэ?": "What is pasture?",
   "Бэлчээр гэдэг нь мал бэлчдэг задгай нутаг: хээр тал, уул, говь, голын хөндийн ургамал. Монголд нутаг дэвсгэрийн 70 орчим хувь нь бэлчээр бөгөөд малчны амьдрал, улсын хүнсний гол эх үүсвэр юм.": "Pasture is the open land where livestock graze: steppe, mountains, the Gobi and river valleys. About 70% of Mongolia's territory is pasture, and it is the basis of herders' livelihoods and the country's main food source.",
   "Доройтол гэж юу вэ?": "What is degradation?",
@@ -207,6 +206,11 @@ const MN2EN = {
   "20.6": "20.6",
   "Хамгийн бага оноо, 2025": "Lowest score, 2025",
   "Булган аймаг 2025 онд хамгийн бага буюу 20.6 оноотой гарсан.": "Bulgan had the lowest score in 2025 at 20.6.",
+  "Баримтууд үзэх →": "View the facts →",
+  "Баримтын хэсгүүд": "Fact sections",
+  "Дэлхий": "World",
+  "Монгол": "Mongolia",
+  "Эх сурвалж": "Sources",
   "Эх сурвалж: FAO — Global assessment of soil carbon in grasslands (2023), The State of the World's Land and Water Resources, International Year of Rangelands and Pastoralists (2026); UNCCD — Global Land Outlook (2022), Global Land Degradation Information System; UN Decade on Ecosystem Restoration (2030 зорилт); ELD Initiative — эдийн засгийн үнэлгээ; IPCC — 1.5°C тусгай тайлан; Үндэсний статистикийн хороо — 2025 оны мал, малчин өрхийн тооллого; Байгаль орчин, уур амьсгалын өөрчлөлтийн яам — Монгол орны цөлжилтийн атлас (2026), бэлчээрийн хэт ачааллын үнэлгээ. «Манай загвар» гэсэн үзүүлэлтүүд нь MODIS NDVI, ERA5, CHIRPS болон 1212.mn-ийн өгөгдлөөр тооцсон KNN загварын үр дүн.": "Sources: FAO — Global assessment of soil carbon in grasslands (2023), The State of the World's Land and Water Resources, International Year of Rangelands and Pastoralists (2026); UNCCD — Global Land Outlook (2022), Global Land Degradation Information System; UN Decade on Ecosystem Restoration (2030 target); ELD Initiative — economic valuation; IPCC — 1.5°C special report; National Statistics Office — 2025 livestock and herder household census; Ministry of Environment and Climate Change — Desertification Atlas of Mongolia (2026), pasture overstocking assessment. Figures marked «Our model» are KNN estimates built on MODIS NDVI, ERA5, CHIRPS and 1212.mn data.",
   "Заавар": "Guide",
   "Тусламж ба тайлбар": "Help and explanations",
@@ -263,6 +267,7 @@ const ATTR_EN = {
   "Аймаг хайх…": "Search aimag…",
   "Аймаг хайх": "Search aimag",
   "Монгол улсын 21 аймгийн бэлчээрийн эрсдэлийн газрын зураг": "Pasture risk map of the 21 aimags of Mongolia",
+  "Дээшээ гүйлгэх": "Back to top",
 };
 
 const AIMAG_EN = {
