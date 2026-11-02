@@ -17,7 +17,7 @@
   document.documentElement.dataset.theme = t;
 }());
 </script>
-<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Cpath%20d%3D%27M0%200H49L64%2015V64H0Z%27%20fill%3D%27%2312201A%27%2F%3E%3Cg%20fill%3D%27none%27%20stroke%3D%27%23C8F05E%27%20stroke-width%3D%274.2%27%3E%3Cpath%20d%3D%27M31.50%2017.80%20L48.81%2030.38%20L42.20%2050.72%20L20.80%2050.72%20L14.19%2030.38%20Z%27%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%27%23C8F05E%27%20stroke-width%3D%272.6%27%3E%3Cline%20x1%3D%2731.5%27%20y1%3D%2736.0%27%20x2%3D%2731.50%27%20y2%3D%2717.80%27%2F%3E%3Cline%20x1%3D%2731.5%27%20y1%3D%2736.0%27%20x2%3D%2748.81%27%20y2%3D%2730.38%27%2F%3E%3Cline%20x1%3D%2731.5%27%20y1%3D%2736.0%27%20x2%3D%2742.20%27%20y2%3D%2750.72%27%2F%3E%3Cline%20x1%3D%2731.5%27%20y1%3D%2736.0%27%20x2%3D%2720.80%27%20y2%3D%2750.72%27%2F%3E%3Cline%20x1%3D%2731.5%27%20y1%3D%2736.0%27%20x2%3D%2714.19%27%20y2%3D%2730.38%27%2F%3E%3C%2Fg%3E%3Crect%20x%3D%2726.5%27%20y%3D%2731%27%20width%3D%2710%27%20height%3D%2710%27%20fill%3D%27%23C8F05E%27%2F%3E%3Ccircle%20cx%3D%2731.50%27%20cy%3D%2717.80%27%20r%3D%274.2%27%20fill%3D%27%232F5BEA%27%2F%3E%3Cpath%20d%3D%27M49%200L64%2015H49Z%27%20fill%3D%27%232F5BEA%27%2F%3E%3C%2Fsvg%3E">
+<link rel="icon" href="static/mnai-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -33,10 +33,9 @@
 
 <header class="top">
   <button type="button" class="brand" data-page="predict" aria-label="Бэлчээр AI – нүүр хуудас">
-    <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M0 0H49L64 15V64H0Z" fill="#12201A"/><g fill="none" stroke="#C8F05E" stroke-width="4.2"><path d="M31.5 17.8 L48.81 30.38 L42.2 50.72 L20.8 50.72 L14.19 30.38 Z"/></g><g stroke="#C8F05E" stroke-width="2.6"><line x1="31.5" y1="36" x2="31.5" y2="17.8"/><line x1="31.5" y1="36" x2="48.81" y2="30.38"/><line x1="31.5" y1="36" x2="42.2" y2="50.72"/><line x1="31.5" y1="36" x2="20.8" y2="50.72"/><line x1="31.5" y1="36" x2="14.19" y2="30.38"/></g><rect x="26.5" y="31" width="10" height="10" fill="#C8F05E"/><circle cx="31.5" cy="17.8" r="4.2" fill="#2F5BEA"/><path d="M49 0L64 15H49Z" fill="#2F5BEA"/></svg>
-    <span>Бэлчээр AI</span>
+    <span class="mnai"><img src="static/mnai-logo.png" alt="MNAI" width="410" height="220"></span>
+    <span class="brandname">Бэлчээр AI</span>
   </button>
-  <span class="mnai" title="MNAI"><img src="static/mnai-logo.png" alt="MNAI" width="410" height="220"></span>
   <nav aria-label="Үндсэн цэс">
     <button type="button" data-page="predict" aria-current="page">Эрсдэл тооцох</button>
     <button type="button" data-page="map">Газрын зураг</button>
@@ -730,7 +729,6 @@
     <span>MODIS · ERA5 · CHIRPS · 1212.mn · FAO/WB</span>
     <a href="/api/dataset.csv">CSV татах</a>
   </div>
-  <span class="mnai mnai-foot" title="MNAI"><img src="static/mnai-logo.png" alt="MNAI" width="410" height="220"></span>
 </footer>
 
 <button class="totop" id="toTop" type="button" aria-label="Дээшээ гүйлгэх" hidden>↑</button>
