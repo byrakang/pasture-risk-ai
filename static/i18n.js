@@ -246,6 +246,8 @@ const MN2EN = {
   "Улаанбаатарт бэлчээрийн жилийн үзүүлэлт (NDVI, ачаалал) байхгүй тул зөвхөн 21 аймгийг харуулдаг.": "Ulaanbaatar has no annual pasture indicators (NDVI, stocking), so only 21 aimags are shown.",
   "Өгөгдлийг татаж авах боломжтой юу?": "Can I download the data?",
   "Тийм. «Газрын зураг» хуудасны доорх «CSV татах» товчоор 21 аймаг × 16 жилийн бүх үзүүлэлтийг татна.": "Yes. Use the «Download CSV» button on the «Map» page to get all indicators for 21 aimags × 16 years.",
+  "Дэлгэрэнгүй үзэх": "Open full details",
+  "Өгөгдөл уншиж байна": "Reading the data",
   "— Монголын бэлчээрийн талхагдлын эрсдэлийн судалгааны хэрэгсэл": "— A research tool for pasture degradation risk in Mongolia",
   "Монголын 21 аймгийн бэлчээрийн талхагдлын эрсдэлийг малын тоо, ургамлын индекс (NDVI), хур тунадас, ачаалалаас KNN загвараар тооцож, газрын зураг дээр харьцуулан харуулдаг сайт.": "A site that estimates pasture degradation risk for Mongolia's 21 aimags with a KNN model using livestock numbers, the vegetation index (NDVI), precipitation and stocking rate, and compares the results on a map.",
 };
@@ -268,6 +270,9 @@ const ATTR_EN = {
   "Аймаг хайх": "Search aimag",
   "Монгол улсын 21 аймгийн бэлчээрийн эрсдэлийн газрын зураг": "Pasture risk map of the 21 aimags of Mongolia",
   "Дээшээ гүйлгэх": "Back to top",
+  "Гэрэлтүүлэг/хараат горим солих": "Switch to light or dark mode",
+  "Гэрэлтүүлэг/хараат горим": "Light or dark mode",
+  "Хаах": "Close",
 };
 
 const AIMAG_EN = {

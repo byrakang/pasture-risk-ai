@@ -53,7 +53,53 @@ const state = {
   lastPredict: null,
   view: { k: 1, x: 0, y: 0 },
   mapReady: false,
+  anim: true,
 };
+
+const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** Нэг удаах «сканердэж байна» гэрэлтүүлэг тухайн хэсэг дээр. */
+function scanFx(el, dur = 1100) {
+  if (!el || reduceMotion()) return;
+  el.style.position = getComputedStyle(el).position === 'static' ? 'relative' : el.style.position;
+  el.classList.add('sweeping');
+  el.style.setProperty('--scan-dur', `${dur}ms`);
+  const fx = document.createElement('span');
+  fx.className = 'scanfx';
+  fx.innerHTML = '<i></i>';
+  el.appendChild(fx);
+  setTimeout(() => {
+    fx.remove();
+    el.classList.remove('sweeping');
+  }, dur + 60);
+}
+
+function positionHoloCard() {
+  const card = $('#holoCard');
+  if (!card || card.hidden || !state.selected) return;
+  const a = (window.MN_MAP?.aimags || []).find((x) => x.name === state.selected);
+  const svg = $('#mapSvg');
+  const box = $('#mapBox');
+  if (!a || !svg || !box) return;
+  const r = svg.getBoundingClientRect();
+  const br = box.getBoundingClientRect();
+  const { k, x, y } = state.view;
+  const sx = (a.cx - MN_MAP.w / 2) * k + MN_MAP.w / 2 + x;
+  const sy = (a.cy - MN_MAP.h / 2) * k + MN_MAP.h / 2 + y;
+  const px = (sx / MN_MAP.w) * r.width + (r.left - br.left);
+  const py = (sy / MN_MAP.h) * r.height + (r.top - br.top);
+  const cw = card.offsetWidth;
+  const ch = card.offsetHeight;
+  const pad = 10;
+  const left = clamp(px - cw / 2, pad, Math.max(pad, br.width - cw - pad));
+  const above = py - ch - 22 > pad;
+  const top = above ? py - ch - 20 : Math.min(py + 20, Math.max(pad, br.height - ch - pad));
+  card.classList.toggle('below', !above);
+  card.style.left = `${left}px`;
+  card.style.top = `${top}px`;
+  card.style.setProperty('--caret-x', `${clamp(px - left, 18, cw - 18)}px`);
+}
+
 
 const L = (mn, en) => (state.lang === 'en' ? en : mn);
 const aimagName = (name) => (state.lang === 'en' ? (window.I18N?.aimag(name) ?? name) : name);
@@ -126,6 +172,224 @@ function meanOfYear(year) {
   return rows.reduce((s, r) => s + valueOf(r), 0) / rows.length;
 }
 
+/** Мэдээллийн цэв дээрх товчууд + хөдөлгөөнт байрлал. */
+function initHoloCard() {
+  const close = $('#holoClose');
+  const go = $('#holoGo');
+  close?.addEventListener('click', () => {
+    state.selected = null;
+    renderAll();
+    syncUrl();
+  });
+  go?.addEventListener('click', () => {
+    $('#sidePanel').scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'center' });
+    scanFx($('#sidePanel'), 700);
+  });
+  window.addEventListener('resize', () => positionHoloCard(), { passive: true });
+}
+
+/* ---------------------------------------------------------------- гэрэлтүүлгийн горим */
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const btn = $('#themeBtn');
+  if (btn) {
+    btn.setAttribute('aria-pressed', String(theme === 'dark'));
+    btn.title = theme === 'dark'
+      ? L('Гэрэлтүүлэг горим руу шилжих', 'Switch to light mode')
+      : L('Хараат горим руу шилжих', 'Switch to dark mode');
+  }
+}
+
+function initTheme() {
+  const btn = $('#themeBtn');
+  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+  btn.addEventListener('click', () => {
+    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('belcheer-theme', next); } catch { /* private mode */ }
+    applyTheme(next);
+    scanFx($('.top'), 700);
+  });
+}
+
+/* ---------------------------------------------------------------- кинематик дэвсгэр + гарц */
+function buildBgfx() {
+  if (!window.MN_MAP || $('.bgfx')) return;
+  const layer = document.createElement('div');
+  layer.className = 'bgfx';
+  layer.setAttribute('aria-hidden', 'true');
+  layer.innerHTML = `
+    <svg class="bgmap" viewBox="0 0 ${MN_MAP.w} ${MN_MAP.h}" preserveAspectRatio="xMidYMid meet">
+      <g>${MN_MAP.aimags.map((a) => `<path class="bgreg" d="${a.d}"></path>`).join('')}</g>
+    </svg>
+    <div class="bgbeam"></div>
+    <div class="bgvig"></div>`;
+  document.body.prepend(layer);
+}
+
+const HERO = {
+  far: 'M0,206 C118,168 214,196 318,166 C430,134 520,182 622,156 C730,128 822,176 932,150 C1042,124 1132,166 1200,144 L1200,340 L0,340 Z',
+  near: 'M0,266 C142,232 240,262 358,234 C470,208 566,254 690,230 C802,208 902,250 1012,226 C1112,204 1170,236 1200,222 L1200,340 L0,340 Z',
+  grass: 'M0,308 C160,296 300,312 470,300 C640,288 780,308 940,296 C1080,286 1150,300 1200,294 L1200,340 L0,340 Z',
+};
+
+function heroScene(variant) {
+  const sun = { x: 972, y: 78, r: 40 };
+  const icons = [
+    `<g class="hero-near"><path class="hicon" d="M1044,262 q26,-26 52,0 l-6,0 l0,20 l-40,0 l0,-20 Z"/><path class="hicon" d="M1064,282 l0,-12 l12,0 l0,12"/><circle class="hicon" cx="1112" cy="276" r="6"/><circle class="hicon" cx="1130" cy="278" r="5"/></g>`,
+    `<g class="hero-near"><path class="hicon" d="M1010,250 a34,34 0 0 1 68,0"/><path class="hicon" d="M1044,216 l0,-24 M1044,192 l16,8"/><path class="hicon" d="M980,268 l128,0"/></g>`,
+    `<g class="hero-near"><path class="hicon" d="M1006,272 q10,-20 22,0 q12,-22 24,0 q12,-20 24,0"/><path class="hicon" d="M1000,286 l136,0"/></g>`,
+    `<g class="hero-near"><path class="hicon" d="M1012,268 a32,32 0 1 1 64,0"/><path class="hicon" d="M1044,268 l20,-26 M1044,268 l-22,-16"/></g>`,
+  ];
+  return `
+    <span class="tint"></span>
+    <svg class="hero-sky" viewBox="0 0 1200 340" preserveAspectRatio="none">
+      <circle class="hsun" cx="${sun.x}" cy="${sun.y + (variant % 2) * 26}" r="${sun.r}"></circle>
+      <circle class="hring" cx="${sun.x}" cy="${sun.y + (variant % 2) * 26}" r="${sun.r + 26}"></circle>
+      <circle class="hring" cx="${sun.x}" cy="${sun.y + (variant % 2) * 26}" r="${sun.r + 54}" style="animation-delay:1.4s"></circle>
+    </svg>
+    <svg class="hero-far" viewBox="0 0 1200 340" preserveAspectRatio="none">
+      <path class="hridge" d="${HERO.far}"></path>
+    </svg>
+    <svg class="hero-near" viewBox="0 0 1200 340" preserveAspectRatio="none">
+      <path class="hridge2" d="${HERO.near}"></path>
+      <path class="hfar" d="${HERO.grass}"></path>
+      ${icons[variant % icons.length]}
+    </svg>`;
+}
+
+function buildHeroes() {
+  $$('.pagehead').forEach((head, i) => {
+    if ($('.herofx', head)) return;
+    const fx = document.createElement('div');
+    fx.className = 'herofx';
+    fx.setAttribute('aria-hidden', 'true');
+    fx.innerHTML = heroScene(i);
+    head.prepend(fx);
+    if (reduceMotion()) return;
+    head.addEventListener('pointermove', (e) => {
+      const r = head.getBoundingClientRect();
+      fx.style.setProperty('--px', ((e.clientX - r.left) / r.width - 0.5).toFixed(3));
+      fx.style.setProperty('--py', ((e.clientY - r.top) / r.height - 0.5).toFixed(3));
+    });
+    head.addEventListener('pointerleave', () => {
+      fx.style.setProperty('--px', 0);
+      fx.style.setProperty('--py', 0);
+    });
+  });
+}
+
+function buildBoot() {
+  const g = $('#bootShapes');
+  if (!g || !window.MN_MAP) return;
+  g.innerHTML = MN_MAP.aimags
+    .map((a, i) => `<path d="${a.d}" style="--i:${i}"></path>`)
+    .join('');
+}
+
+const BOOT_START = performance.now();
+
+function bootDone() {
+  const boot = $('#boot');
+  if (!boot || boot.classList.contains('done')) return;
+  const hold = Math.max(260, 1150 - (performance.now() - BOOT_START));
+  setTimeout(() => boot.classList.add('done'), hold);
+}
+
+function initReveal() {
+  const items = $$('.fact,.helpitem,.flowsteps li,.modelbox div');
+  if (!('IntersectionObserver' in window) || reduceMotion()) return;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((en) => {
+      if (!en.isIntersecting) return;
+      en.target.classList.add('in');
+      io.unobserve(en.target);
+    });
+  }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
+  items.forEach((el, i) => {
+    if (el.classList.contains('reveal')) return;
+    el.classList.add('reveal');
+    el.style.transitionDelay = `${Math.min(240, (i % 6) * 45)}ms`;
+    io.observe(el);
+  });
+}
+
+/* ---------------------------------------------------------------- эх сурвалж (хуудас бүрийн төгсгөлд) */
+const A = (href, text) => `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
+const CSV = '<a href="/api/dataset.csv" download>CSV</a>';
+
+const SRC = {
+  'src-predict': [
+    {
+      mn: `<b>Оролт үзүүлэлт:</b> 2010–2025 оны 21 аймгийн жилийн дүн — ${A('https://modis.gsfc.nasa.gov/', 'MODIS NDVI (NASA)')}, ${A('https://era.ecmwf.int/', 'ERA5 (ECMWF)')}, ${A('https://www.chc.ucsb.edu/data/chirps', 'CHIRPS (UCSB)')}, ${A('https://1212.mn/', '1212.mn мал тоололто')}, ${A('https://www.ine.gm/', 'ҮСХ')}.`,
+      en: `<b>Input indicators:</b> yearly values for 21 aimags, 2010–2025 — ${A('https://modis.gsfc.nasa.gov/', 'MODIS NDVI (NASA)')}, ${A('https://era.ecmwf.int/', 'ERA5 (ECMWF)')}, ${A('https://www.chc.ucsb.edu/data/chirps', 'CHIRPS (UCSB)')}, ${A('https://1212.mn/', '1212.mn livestock census')}, ${A('https://www.ine.gm/', 'Mongolian NSO')}.`,
+    },
+    {
+      mn: `<b>Тооцоолол:</b> ${A('https://scikit-learn.org/stable/modules/neighbors.html', 'scikit-learn KNeighborsRegressor')} · k=5 · зайгаар жинлэсэн · 336 ажиглалтын 80%-д сургав, 20%-д шалгав.`,
+      en: `<b>Calculation:</b> ${A('https://scikit-learn.org/stable/modules/neighbors.html', 'scikit-learn KNeighborsRegressor')} · k=5 · distance-weighted · trained on 80% and tested on 20% of 336 observations.`,
+    },
+    {
+      mn: `<b>Загварын үнэлгээ:</b> MAE 5.7 оноо · эрсдэлийн түвшний тааруулалт 88% · «Баримтууд» хуудасны «Манай загвар» үзүүлэлтүүд энэ тооцоогоос гарсан.`,
+      en: `<b>Model evaluation:</b> MAE 5.7 pts · risk-class accuracy 88% · the «Our model» figures on the Facts page come from this calculation.`,
+    },
+  ],
+  'src-map': [
+    {
+      mn: `<b>Газрын зургийн геометр:</b> ${A('https://geoboundaries.org/', 'geoBoundaries — Монгол улс ADM1')} (OpenStreetMap дээрх оролцоо, ${A('https://www.openstreetmap.org/copyright', 'ODbL')} лиценстэй) 21 аймгийн хил; Улаанбаатарт бэлчээрийн үзүүлэлт байхгүй.`,
+      en: `<b>Map geometry:</b> ${A('https://geoboundaries.org/', 'geoBoundaries — Mongolia ADM1')} (built from OpenStreetMap contributions, ${A('https://www.openstreetmap.org/copyright', 'ODbL')} licensed); Ulaanbaatar has no pasture indicators.`,
+    },
+    {
+      mn: `<b>Оноо бүрийн үзүүлэлт:</b> MODIS NDVI, ERA5 температур, CHIRPS хур тунадас, ${A('https://1212.mn/', '1212.mn')} мал тоололто; ачаалал = мал / бэлчээрийн даац.`,
+      en: `<b>Indicators behind each score:</b> MODIS NDVI, ERA5 temperature, CHIRPS precipitation, ${A('https://1212.mn/', '1212.mn')} census; stocking rate = livestock / carrying capacity.`,
+    },
+    {
+      mn: `<b>Бодолто:</b> Зураг дээрх оноо нь тухайн аймаг-жилийг сургалтаас гаргаж (leave-one-out) тооцсон тул маягтын тооцоололтой бага зэрэг ялгаатай байж болно. Бүх мөр: ${CSV} татах.`,
+      en: `<b>Method:</b> map scores use leave-one-out estimation, so they can differ slightly from the form calculation. All rows: ${CSV} download.`,
+    },
+  ],
+  'facts-sources': [
+    {
+      mn: `<b>Дэлхий:</b> ${A('https://www.fao.org/pasture-land/en/', 'FAO')} — Global assessment of soil carbon in grasslands (2023), The State of the World's Land and Water Resources, International Year of Rangelands and Pastoralists (2026); ${A('https://www.unccd.int/resources/global-land-outlook/2', 'UNCCD')} — Global Land Outlook (2022); НҮБ-ын Экосистемийн нөхөн сэргээлтийн арван жил (2030 зорилт); ${A('https://www.ipcc.ch/sr15/', 'IPCC')} 1.5°C тусгай тайлан; ELD Initiative — газар доройтын эдийн засгийн үнэлгээ.`,
+      en: `<b>World:</b> ${A('https://www.fao.org/pasture-land/en/', 'FAO')} — Global assessment of soil carbon in grasslands (2023), The State of the World's Land and Water Resources, International Year of Rangelands and Pastoralists (2026); ${A('https://www.unccd.int/resources/global-land-outlook/2', 'UNCCD')} — Global Land Outlook (2022); UN Decade on Ecosystem Restoration (2030 target); ${A('https://www.ipcc.ch/sr15/', 'IPCC')} 1.5°C special report; ELD Initiative — economic valuation of land degradation.`,
+    },
+    {
+      mn: `<b>Монгол:</b> ${A('https://www.ine.gm/', 'Үндэсний статистикийн хороо')} — 2025 оны мал, малчин өрхийн тооллого; Байгаль орчин, уур амьсгалын өөрчлөлтийн яам — Монгол орны цөлжилтийн атлас (2026), бэлчээрийн хэт ачааллын үнэлгээ.`,
+      en: `<b>Mongolia:</b> ${A('https://www.ine.gm/', 'National Statistics Office')} — 2025 livestock and herder household census; Ministry of Environment and Climate Change — Desertification Atlas of Mongolia (2026), pasture overstocking assessment.`,
+    },
+    {
+      mn: `<b>«Манай загвар»:</b> MODIS NDVI, ERA5, CHIRPS, 1212.mn өгөгдлөөр тооцсон KNN загварын үр дүн (MAE 5.7 оноо, түвшний тааруулалт 88%).`,
+      en: `<b>«Our model»:</b> KNN results computed from MODIS NDVI, ERA5, CHIRPS and 1212.mn data (MAE 5.7 pts, class accuracy 88%).`,
+    },
+  ],
+  'src-help': [
+    {
+      mn: `<b>Алгоритм:</b> ${A('https://scikit-learn.org/stable/modules/neighbors.html', 'scikit-learn — Nearest Neighbors')} (KNeighborsRegressor, weights=distance), ${A('https://scikit-learn.org/stable/modules/preprocessing.html', 'StandardScaler')} хэмжээс шилжүүлэг.`,
+      en: `<b>Algorithm:</b> ${A('https://scikit-learn.org/stable/modules/neighbors.html', 'scikit-learn — Nearest Neighbors')} (KNeighborsRegressor, weights=distance) with ${A('https://scikit-learn.org/stable/modules/preprocessing.html', 'StandardScaler')} feature scaling.`,
+    },
+    {
+      mn: `<b>Өгөгдлийн санд:</b> 336 аймаг-жил (21 аймаг × 2010–2025), 5 шинж чанар; MODIS NDVI, ERA5, CHIRPS, 1212.mn, ҮСХ. Түүхий файл: ${CSV} татах.`,
+      en: `<b>Dataset:</b> 336 aimag-years (21 aimags × 2010–2025), 5 features; MODIS NDVI, ERA5, CHIRPS, 1212.mn, NSO. Raw file: ${CSV} download.`,
+    },
+    {
+      mn: `<b>Газрын зураг:</b> ${A('https://geoboundaries.org/', 'geoBoundaries')} ADM1 хил (ODbL). Улаанбаатарт бэлчээрийн жилийн үзүүлэлт байхгүй тул зөвхөн 21 аймгийг харуулна.`,
+      en: `<b>Map:</b> ${A('https://geoboundaries.org/', 'geoBoundaries')} ADM1 borders (ODbL). Only 21 aimags are shown because Ulaanbaatar has no yearly pasture indicators.`,
+    },
+    {
+      mn: `<b>Хязгаарлалт:</b> KNN нь шалтгаан биш, түүхэн ижил төстэй байдлыг хэмждэг; оноог 0–100 хүрээний тайлбар болгон ашиглах хэрэгтэй.`,
+      en: `<b>Limits:</b> KNN measures historical similarity, not causation; read the score as a 0–100 indicator, not a guarantee.`,
+    },
+  ],
+};
+
+function renderSources() {
+  Object.entries(SRC).forEach(([id, items]) => {
+    const ul = $(`#${id} .srclist`);
+    if (!ul) return;
+    ul.innerHTML = items
+      .map((it, i) => `<li style="--i:${i}">${state.lang === 'en' ? it.en : it.mn}</li>`)
+      .join('');
+  });
+}
+
 /* ---------------------------------------------------------------- цэс */
 const PAGES = ['predict', 'map', 'facts', 'help'];
 
@@ -149,6 +413,10 @@ function goTo(page, scroll = true) {
   });
   if (scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
   document.body.dataset.page = page;
+  if (page === 'map') {
+    scanFx($('#mapBox'), 950);
+    renderHolo();
+  }
   const active = $('nav button[aria-current="page"]');
   if (active && window.matchMedia('(max-width: 700px)').matches) {
     active.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -346,6 +614,8 @@ async function runPrediction(scroll = true) {
   btn.disabled = true;
   btn.classList.add('is-loading');
   btn.textContent = L('Тооцож байна…', 'Calculating…');
+  scanFx($('#results'), 1250);
+  scanFx($('#predictForm'), 900);
 
   try {
     const prevScore = state.lastPredict?.risk_score ?? null;
@@ -671,6 +941,13 @@ function buildMap() {
     labels.appendChild(t);
   });
 
+  const ping = document.createElementNS(NS, 'circle');
+  ping.setAttribute('r', 7);
+  ping.setAttribute('class', 'regping');
+  ping.setAttribute('cx', -50);
+  ping.setAttribute('cy', -50);
+  labels.appendChild(ping);
+
   initMapControls(box);
   state.mapReady = true;
   return true;
@@ -688,6 +965,7 @@ function initMapControls(box) {
       `translate(${x} ${y}) translate(${w / 2} ${h / 2}) scale(${k}) translate(${-w / 2} ${-h / 2})`,
     );
     $('#mapZoom').classList.toggle('zoomed', k > 1.45);
+    positionHoloCard();
   };
   const setZoom = (k) => {
     state.view.k = clamp(k, 1, 4);
@@ -790,14 +1068,17 @@ function showTip(e, name) {
   } else {
     const v = valueOf(row);
     const l = levelMeta(v);
-    tip.innerHTML = `<b>${shown}</b><div class="tiprow"><strong>${fmt1.format(v)}</strong><span class="tiplvl">${L('оноо', 'pts')} · ${l[state.lang]}</span></div>`;
+    tip.innerHTML = `
+      <b>${shown}</b>
+      <div class="tiprow"><strong>${fmt1.format(v)}</strong><span class="tiplvl">${L('оноо', 'pts')} · ${l[state.lang]}</span></div>
+      <div class="tipmeta">${L('NDVI', 'NDVI')} ${fmt2.format(row.NDVI)} · ${L('Ачаалал', 'Stocking')} ${fmt2.format(row.Stocking_Rate)} · ${fmt0.format(row.Precipitation_mm)} ${L('мм', 'mm')}</div>`;
   }
-  tip.style.display = 'block';
+  tip.classList.add('on');
   moveTip(e);
 }
 function moveTip(e) {
   const tip = $('#mapTip');
-  if (tip.style.display !== 'block') return;
+  if (!tip.classList.contains('on')) return;
   const box = $('#mapBox').getBoundingClientRect();
   const w = tip.offsetWidth;
   let left = e.clientX - box.left + 14;
@@ -806,11 +1087,12 @@ function moveTip(e) {
   tip.style.top = `${Math.max(8, e.clientY - box.top - tip.offsetHeight - 10)}px`;
 }
 function hideTip() {
-  $('#mapTip').style.display = 'none';
+  $('#mapTip').classList.remove('on');
 }
 
 function selectAimag(name, scroll = true) {
   state.selected = name;
+  scanFx($('#mapBox'), 780);
   renderAll();
   syncUrl();
   if (scroll && window.matchMedia('(max-width: 1180px)').matches) {
@@ -821,7 +1103,10 @@ function selectAimag(name, scroll = true) {
 function setYear(year) {
   if (!state.years.includes(year)) return;
   state.year = year;
+  state.anim = true;
   $('#mapYear').value = String(year);
+  scanFx($('#mapBox'), 900);
+  scanFx($('#mapKpis'), 900);
   renderAll();
   syncUrl();
 }
@@ -834,6 +1119,8 @@ function renderAll() {
   renderTable();
   renderSide();
   renderMapLabels();
+  renderHolo();
+  state.anim = false;
 }
 
 function renderMapLabels() {
@@ -873,6 +1160,72 @@ function renderMap() {
   $$('#mapLabels .reglabel').forEach((t) => {
     t.classList.toggle('sel', t.dataset.name === state.selected);
   });
+  const ping = $('#mapLabels .regping');
+  if (ping) {
+    const hit = state.selected && (window.MN_MAP?.aimags || []).find((a) => a.name === state.selected);
+    if (hit) {
+      ping.setAttribute('cx', hit.cx);
+      ping.setAttribute('cy', hit.cy);
+      ping.classList.add('on');
+    } else {
+      ping.classList.remove('on');
+    }
+  }
+}
+
+/** Сонгосон аймгийн мэдээллийн «hologram» цэв — зураг дээрх тухайн цэгт холбогдоно. */
+function renderHolo() {
+  const card = $('#holoCard');
+  if (!card) return;
+  const name = state.selected;
+  const row = name ? rowOf(name, state.year) : null;
+  if (!name || document.body.dataset.page !== 'map') {
+    card.classList.remove('show');
+    card.hidden = true;
+    return;
+  }
+
+  $('#holoName').textContent = aimagName(name);
+  $('#holoYear').textContent = String(state.year);
+
+  if (!row) {
+    $('#holoScore').textContent = '—';
+    $('#holoScore').style.color = '';
+    $('#holoLevel').textContent = L('Өгөгдөлгүй', 'No data');
+    $('#holoLevel').style.color = 'var(--muted)';
+    $('#holoRows').innerHTML = `<p class="nodatahint">${L('Энэ нутаг дэвсгэрт бэлчээрийн үзүүлэлт байхгүй.', 'No pasture indicators for this area.')}</p>`;
+    $('#holoGo').hidden = true;
+  } else {
+    const v = valueOf(row);
+    const l = levelMeta(v);
+    $('#holoLevel').textContent = l[state.lang];
+    $('#holoLevel').style.color = l.color;
+    animateNumber($('#holoScore'), v, 1);
+    $('#holoScore').style.color = l.color;
+
+    const rows = rowsForYear(state.year).sort((a, b) => valueOf(b) - valueOf(a));
+    const rank = rows.findIndex((r) => r.aimag === name) + 1;
+    const prev = rowOf(name, state.year - 1);
+    const d = prev ? v - prev.score : null;
+    const specs = [
+      ['NDVI', fmt2.format(row.NDVI), row.NDVI],
+      [L('Ачаалал', 'Stocking'), fmt2.format(row.Stocking_Rate), row.Stocking_Rate / 3.2],
+      [L('Тунадас', 'Rain'), `${fmt0.format(row.Precipitation_mm)} ${L('мм', 'mm')}`, row.Precipitation_mm / 470],
+    ];
+    $('#holoRows').innerHTML = specs.map(([k, txt, ratio], i) => `
+      <div class="holoro"><span>${k}</span><b>${txt}</b><i><s style="--i:${i};width:${clamp(ratio * 100, 4, 100)}%"></s></i></div>`).join('')
+      + `<div class="holoro"><span>${L('Байр', 'Rank')}</span><b>${rank} / ${rows.length}</b><i><s style="--i:3;width:${clamp((rows.length - rank + 1) / rows.length * 100, 4, 100)}%"></s></i></div>`
+      + (d === null ? '' : `<div class="holoro"><span>${L('Өмнөх жил', 'Previous year')}</span><b>${d > 0 ? '+' : ''}${fmt1.format(d)}</b><i><s style="--i:4;width:${clamp(Math.abs(d) * 6, 4, 100)}%"></s></i></div>`);
+    $('#holoGo').hidden = false;
+    $('#holoGo').textContent = L('Дэлгэрэнгүй үзэх', 'Open full details');
+  }
+
+  card.hidden = false;
+  card.classList.remove('show');
+  requestAnimationFrame(() => {
+    positionHoloCard();
+    card.classList.add('show');
+  });
 }
 
 function renderKpis() {
@@ -899,10 +1252,15 @@ function renderKpis() {
     `<span class="kpidelta ${cls(dHigh)}">${L(`${dHigh > 0 ? '+' : ''}${dHigh} аймаг өмнөх жилээс`, `${dHigh > 0 ? '+' : ''}${dHigh} aimags vs previous year`)}</span>`;
 
   $('#mapKpis').innerHTML = `
-    <div class="kpi"><small>${L('Улсын дундаж', 'National average')}</small><b class="${l.cls}">${fmt1.format(mean)}</b><span>${L(`${l.mn} эрсдэл · ${state.year} он`, `${l.en} risk · ${state.year}`)}</span>${meanDelta}</div>
-    <div class="kpi"><small>${L('Өндөр эрсдэлтэй', 'High risk')}</small><b>${highCount}<span style="font-size:16px;color:var(--muted)"> / ${rows.length}</span></b><span>${L('65-аас дээш оноо', 'scores above 65')}</span>${highDelta}</div>
-    <div class="kpi"><small>${L('Хамгийн өндөр', 'Highest')}</small><b class="high" style="font-size:22px">${esc(aimagName(top.aimag))}</b><span>${L(`${fmt1.format(valueOf(top))} оноо`, `${fmt1.format(valueOf(top))} pts`)}</span></div>
-    <div class="kpi"><small>${L('Хамгийн бага', 'Lowest')}</small><b class="low" style="font-size:22px">${esc(aimagName(low.aimag))}</b><span>${L(`${fmt1.format(valueOf(low))} оноо`, `${fmt1.format(valueOf(low))} pts`)}</span></div>`;
+    <div class="kpi" style="--i:0"><small>${L('Улсын дундаж', 'National average')}</small><b class="${l.cls}" data-to="${mean}" data-dec="1">${fmt1.format(mean)}</b><span>${L(`${l.mn} эрсдэл · ${state.year} он`, `${l.en} risk · ${state.year}`)}</span>${meanDelta}</div>
+    <div class="kpi" style="--i:1"><small>${L('Өндөр эрсдэлтэй', 'High risk')}</small><b data-to="${highCount}" data-dec="0">${highCount}<span style="font-size:16px;color:var(--muted)"> / ${rows.length}</span></b><span>${L('65-аас дээш оноо', 'scores above 65')}</span>${highDelta}</div>
+    <div class="kpi" style="--i:2"><small>${L('Хамгийн өндөр', 'Highest')}</small><b class="high" style="font-size:22px">${esc(aimagName(top.aimag))}</b><span>${L(`${fmt1.format(valueOf(top))} оноо`, `${fmt1.format(valueOf(top))} pts`)}</span></div>
+    <div class="kpi" style="--i:3"><small>${L('Хамгийн бага', 'Lowest')}</small><b class="low" style="font-size:22px">${esc(aimagName(low.aimag))}</b><span>${L(`${fmt1.format(valueOf(low))} оноо`, `${fmt1.format(valueOf(low))} pts`)}</span></div>`;
+
+  if (state.anim && !reduceMotion()) {
+    const first = $('#mapKpis .kpi b[data-to]');
+    if (first) animateNumber(first, Number(first.dataset.to), Number(first.dataset.dec));
+  }
 }
 
 function renderTrend() {
@@ -912,10 +1270,10 @@ function renderTrend() {
   const lo = Math.min(...vals.map((v) => v[1]));
   const hi = Math.max(...vals.map((v) => v[1]));
   const span = Math.max(1, hi - lo);
-  box.innerHTML = vals.map(([y, v]) => {
+  box.innerHTML = vals.map(([y, v], i) => {
     const h = 14 + ((v - lo) / span) * 58;
     const on = y === state.year;
-    return `<button type="button" class="tbar${on ? ' sel' : ''}" data-year="${y}" title="${L(`${y} он: улсын дундаж ${fmt1.format(v)} оноо`, `${y}: national average ${fmt1.format(v)} pts`)}"
+    return `<button type="button" class="tbar${on ? ' sel' : ''}${state.anim || reduceMotion() ? '' : ' noanim'}" style="--i:${i}" data-year="${y}" title="${L(`${y} он: улсын дундаж ${fmt1.format(v)} оноо`, `${y}: national average ${fmt1.format(v)} pts`)}"
       aria-label="${L(`${y} он, улсын дундаж ${fmt1.format(v)} оноо`, `${y}, national average ${fmt1.format(v)} pts`)}" aria-pressed="${on}">
       <i style="height:${h}%;background:${riskColor(v)}"></i><span>${String(y).slice(2)}</span></button>`;
   }).join('');
@@ -930,7 +1288,7 @@ function renderRank() {
   const rows = rowsForYear(state.year).sort((a, b) => valueOf(b) - valueOf(a));
   const shown = rows.slice(0, 8);
   $('#rankList').innerHTML = shown.map((r, i) => `
-    <button type="button" class="rankrow ${state.selected === r.aimag ? 'sel' : ''}" data-name="${esc(r.aimag)}">
+    <button type="button" class="rankrow ${state.selected === r.aimag ? 'sel' : ''} ${reduceMotion() ? 'noanim' : ''}" style="--i:${i}" data-name="${esc(r.aimag)}">
       <span class="rk">${i + 1}</span>
       <span class="nm">${esc(aimagName(r.aimag))}</span>
       <span class="sc">${fmt1.format(valueOf(r))}</span>
@@ -1003,6 +1361,10 @@ function historyChart(name) {
   }).join('');
   const now = selIdx >= 0 && rows[selIdx]
     ? `<line class="chartnow" x1="${x(selIdx)}" y1="${pt}" x2="${x(selIdx)}" y2="${H - pb}"></line>` : '';
+  const len = actual.reduce((s, p, i) => (i ? s + Math.hypot(p[0] - actual[i - 1][0], p[1] - actual[i - 1][1]) : 0), 0);
+  const base = H - pb;
+  const area = actual.length > 1
+    ? `${line(actual)}L${actual[actual.length - 1][0].toFixed(1)},${base}L${actual[0][0].toFixed(1)},${base}Z` : '';
 
   return `
     <div class="chartbox">
@@ -1012,7 +1374,8 @@ function historyChart(name) {
       </div>
       <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${L(`${esc(name)} аймгийн эрсдэлийн түүх`, `Risk history of ${esc(aimagName(name))}`)}">
         ${grid}${now}${axis}${ticks}
-        <path class="chartline" d="${line(actual)}"></path>
+        ${area ? `<path class="chartarea" d="${area}"></path>` : ''}
+        <path class="chartline" style="--len:${Math.round(len) || 1200}" d="${line(actual)}"></path>
         ${dots}
       </svg>
     </div>`;
@@ -1087,6 +1450,7 @@ function renderSide() {
     <button type="button" class="btn primary block" id="useAimag">${L('Энэ аймгийн утгаар тооцох', "Score this aimag's values")}</button>`;
 
   $('#clearSel').addEventListener('click', () => { state.selected = null; renderAll(); });
+  animateNumber($('.sidescore b', panel), row.score, 1);
   $('#useAimag').addEventListener('click', () => {
     applyPreset(name, state.year);
     goTo('predict');
@@ -1189,6 +1553,7 @@ async function setLanguage(lang) {
   fillSelects();
   renderIntro();
   renderAll();
+  renderSources();
   renderPresetHint();
   $('#predictBtn').textContent = predictLabel();
   if (!$('#predictResult').hidden) {
@@ -1207,6 +1572,11 @@ async function init() {
   initNav();
   initForm();
   initToTop();
+  initTheme();
+  initHoloCard();
+  buildBgfx();
+  buildBoot();
+  buildHeroes();
   buildMap();
 
   $('#modelChip').classList.add('busy');
@@ -1230,11 +1600,15 @@ async function init() {
     applyPreset(defaultAimag, state.latestYear);
     renderIntro();
     renderAll();
+    renderSources();
     $('#mapEmpty').hidden = true;
     applyUrlState();
+    initReveal();
+    bootDone();
 
     // анхны зураг дээр хамгийн өндөр эрсдэлтэй аймгийг сонгохгүй, гэхдээ KPI-г харуулна
   } catch (err) {
+    bootDone();
     const box = $('#apiError');
     box.hidden = false;
     box.innerHTML = L(
@@ -1251,4 +1625,7 @@ async function init() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+  setTimeout(bootDone, 5200);
+});

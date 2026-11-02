@@ -5,7 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Бэлчээр AI – Монголын бэлчээрийн талхагдлын эрсдэл</title>
 <meta name="description" content="Монголын 21 аймгийн бэлчээрийн талхагдлын эрсдэлийг малын тоо, ургамлын индекс (NDVI), хур тунадас, ачаалалаас KNN загвараар тооцож, газрын зураг дээр харьцуулан харуулдаг сайт.">
-<meta name="theme-color" content="#EDF1E4">
+<meta name="theme-color" content="#EAF0F8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#050B1C" media="(prefers-color-scheme: dark)">
+<script>
+(function () {
+  var t;
+  try {
+    t = localStorage.getItem('belcheer-theme');
+    if (t !== 'dark' && t !== 'light') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  } catch (e) { t = 'light'; }
+  document.documentElement.dataset.theme = t;
+}());
+</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Cpath%20d%3D%27M0%200H49L64%2015V64H0Z%27%20fill%3D%27%2312201A%27%2F%3E%3Cg%20fill%3D%27none%27%20stroke%3D%27%23C8F05E%27%20stroke-width%3D%274.2%27%3E%3Cpath%20d%3D%27M31.50%2017.80%20L48.81%2030.38%20L42.20%2050.72%20L20.80%2050.72%20L14.19%2030.38%20Z%27%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%27%23C8F05E%27%20stroke-width%3D%272.6%27%3E%3Cline%20x1%3D%2731.5%27%20y1%3D%2736.0%27%20x2%3D%2731.50%27%20y2%3D%2717.80%27%2F%3E%3Cline%20x1%3D%2731.5%27%20y1%3D%2736.0%27%20x2%3D%2748.81%27%20y2%3D%2730.38%27%2F%3E%3Cline%20x1%3D%2731.5%27%20y1%3D%2736.0%27%20x2%3D%2742.20%27%20y2%3D%2750.72%27%2F%3E%3Cline%20x1%3D%2731.5%27%20y1%3D%2736.0%27%20x2%3D%2720.80%27%20y2%3D%2750.72%27%2F%3E%3Cline%20x1%3D%2731.5%27%20y1%3D%2736.0%27%20x2%3D%2714.19%27%20y2%3D%2730.38%27%2F%3E%3C%2Fg%3E%3Crect%20x%3D%2726.5%27%20y%3D%2731%27%20width%3D%2710%27%20height%3D%2710%27%20fill%3D%27%23C8F05E%27%2F%3E%3Ccircle%20cx%3D%2731.50%27%20cy%3D%2717.80%27%20r%3D%274.2%27%20fill%3D%27%232F5BEA%27%2F%3E%3Cpath%20d%3D%27M49%200L64%2015H49Z%27%20fill%3D%27%232F5BEA%27%2F%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,6 +24,12 @@
 <link rel="stylesheet" href="static/styles.css">
 </head>
 <body>
+
+<div class="boot" id="boot" role="status" aria-live="polite">
+  <svg class="bootmap" viewBox="0 0 1000 560" aria-hidden="true"><g id="bootShapes"></g></svg>
+  <div class="bootscan"><i></i></div>
+  <p class="bootlabel"><span id="bootText">Өгөгдөл уншиж байна</span><i></i><i></i><i></i></p>
+</div>
 
 <header class="top">
   <button type="button" class="brand" data-page="predict" aria-label="Бэлчээр AI – нүүр хуудас">
@@ -25,6 +42,10 @@
     <button type="button" data-page="facts">Баримтууд</button>
     <button type="button" data-page="help">Тусламж</button>
   </nav>
+  <button type="button" class="themebtn" id="themeBtn" aria-label="Гэрэлтүүлэг/хараат горим солих" title="Гэрэлтүүлэг/хараат горим">
+    <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4.4"/><path d="M12 2v2.6M12 19.4V22M2 12h2.6M19.4 12H22M4.9 4.9l1.9 1.9M17.2 17.2l1.9 1.9M19.1 4.9l-1.9 1.9M6.8 17.2l-1.9 1.9"/></svg>
+    <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 14.4A8.6 8.6 0 1 1 9.6 4a7 7 0 0 0 10.4 10.4Z"/></svg>
+  </button>
   <div class="langswitch" role="group" aria-label="Хэл сонгох">
     <button type="button" data-lang="mn" aria-pressed="true">MN</button>
     <button type="button" data-lang="en" aria-pressed="false">EN</button>
@@ -250,6 +271,11 @@
       </div>
     </div>
   </div>
+
+  <footer class="pagesrc" id="src-predict">
+    <h2>Эх сурвалж</h2>
+    <ul class="srclist"></ul>
+  </footer>
 </section>
 
 <!-- ============ 2. ГАЗРЫН ЗУРАГ ============ -->
@@ -299,6 +325,20 @@
         <svg id="mapSvg" viewBox="0 0 1000 560" role="img" aria-label="Монгол улсын 21 аймгийн бэлчээрийн эрсдэлийн газрын зураг"></svg>
         <div class="mapempty" id="mapEmpty">Газрын зургийг ачаалж байна…</div>
         <div class="tip" id="mapTip" role="status"></div>
+        <div class="holocard" id="holoCard" aria-live="polite">
+          <div class="hologrid" aria-hidden="true"></div>
+          <div class="holohead">
+            <b id="holoName">—</b>
+            <span id="holoYear">—</span>
+            <button type="button" class="holoclose" id="holoClose" aria-label="Хаах">×</button>
+          </div>
+          <div class="holomain">
+            <strong id="holoScore">—</strong>
+            <span class="hololvl" id="holoLevel">—</span>
+          </div>
+          <div class="holorows" id="holoRows"></div>
+          <button type="button" class="btn tiny holoact" id="holoGo">Дэлгэрэнгүй үзэх</button>
+        </div>
         <div class="maphint">Чирж зөөх · + / − томруулах</div>
       </div>
 
@@ -356,6 +396,11 @@
       </table>
     </div>
   </section>
+
+  <footer class="pagesrc" id="src-map">
+    <h2>Эх сурвалж</h2>
+    <ul class="srclist"></ul>
+  </footer>
 </section>
 
 <!-- ============ 3. БАРИМТУУД ============ -->
@@ -584,7 +629,10 @@
     </div>
   </section>
 
-  <p class="factsrc" id="facts-sources">Эх сурвалж: FAO — Global assessment of soil carbon in grasslands (2023), The State of the World's Land and Water Resources, International Year of Rangelands and Pastoralists (2026); UNCCD — Global Land Outlook (2022), Global Land Degradation Information System; UN Decade on Ecosystem Restoration (2030 зорилт); ELD Initiative — эдийн засгийн үнэлгээ; IPCC — 1.5°C тусгай тайлан; Үндэсний статистикийн хороо — 2025 оны мал, малчин өрхийн тооллого; Байгаль орчин, уур амьсгалын өөрчлөлтийн яам — Монгол орны цөлжилтийн атлас (2026), бэлчээрийн хэт ачааллын үнэлгээ. «Манай загвар» гэсэн үзүүлэлтүүд нь MODIS NDVI, ERA5, CHIRPS болон 1212.mn-ийн өгөгдлөөр тооцсон KNN загварын үр дүн.</p>
+  <footer class="pagesrc" id="facts-sources">
+    <h2>Эх сурвалж</h2>
+    <ul class="srclist"></ul>
+  </footer>
 </section>
 
 <!-- ============ 4. ТУСЛАМЖ ============ -->
@@ -662,6 +710,11 @@
       </details>
     </div>
   </section>
+
+  <footer class="pagesrc" id="src-help">
+    <h2>Эх сурвалж</h2>
+    <ul class="srclist"></ul>
+  </footer>
 
 </section>
 

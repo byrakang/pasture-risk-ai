@@ -1,29 +1,76 @@
 :root{
-  --bg:#EDF1E4;
-  --surface:#FBFCF6;
-  --surface-2:#F2F5EB;
-  --line:#D3DBC7;
-  --ink:#12201A;
-  --muted:#56665B;
+  color-scheme:light;
+  --bg:#E8EEF8;
+  --surface:rgba(255,255,255,.62);
+  --surface-solid:#fff;
+  --surface-2:rgba(255,255,255,.44);
+  --line:rgba(14,28,50,.14);
+  --ink:#0E1C32;
+  --muted:#4A5F7C;
   --primary:#2F5BEA;
   --accent:#C8F05E;
-  --low:#2E9B6E; --low-bg:#D6EEDF; --low-ink:#145A3D;
-  --mid:#D49A1C; --mid-bg:#F6E8BF; --mid-ink:#6E4A00;
-  --high:#C8372B; --high-bg:#F8DAD4; --high-ink:#8F2119;
-  --bw:2px;
-  --shadow:5px 5px 0 var(--ink);
-  --shadow-sm:2px 2px 0 var(--ink);
-  --r:0px; --r-sm:0px;
+  --on-accent:#0B1830;
+  --edge:rgba(14,28,50,.16);
+  --edge-strong:rgba(14,28,50,.55);
+  --fold:rgba(47,91,234,.5);
+  --chip-bg:#0E1C32; --chip-ink:#C8F05E;
+  --tip-bg:#0E1C32; --tip-ink:#F2F7FF;
+  --dot:rgba(14,28,50,.075);
+  --grid:rgba(14,28,50,.05);
+  --low:#2E9B6E; --low-bg:rgba(46,155,110,.16); --low-ink:#145A3D;
+  --mid:#C08A12; --mid-bg:rgba(212,154,28,.18); --mid-ink:#6E4A00;
+  --high:#C8372B; --high-bg:rgba(200,55,43,.15); --high-ink:#8F2119;
+  --holo:#2F5BEA;
+  --holo-soft:rgba(47,91,234,.14);
+  --scan:#2F5BEA;
+  --stage:#DCE7F7;
+  --stage-2:#CBDCEE;
+  --reg-stroke:rgba(14,26,48,.5);
+  --bw:1px;
+  --shadow:0 20px 44px -24px rgba(14,28,50,.42);
+  --shadow-sm:0 12px 26px -18px rgba(14,28,50,.4);
+  --blur:blur(18px) saturate(150%);
+  --r:16px; --r-sm:11px;
   --sans:"Inter",system-ui,"Segoe UI",Arial,sans-serif;
   --display:"Unbounded","Inter",system-ui,sans-serif;
   --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
 }
+[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#050B1C;
+  --surface:rgba(24,42,80,.46);
+  --surface-solid:#0E1C38;
+  --surface-2:rgba(18,34,66,.5);
+  --line:rgba(150,190,255,.16);
+  --ink:#E7F0FF;
+  --muted:#9DB3D6;
+  --primary:#5B93FF;
+  --edge:rgba(150,195,255,.24);
+  --edge-strong:rgba(160,205,255,.5);
+  --fold:rgba(120,180,255,.45);
+  --chip-bg:#DEEAFF; --chip-ink:#08152F;
+  --tip-bg:rgba(8,20,44,.92); --tip-ink:#EAF3FF;
+  --dot:rgba(150,195,255,.1);
+  --grid:rgba(150,195,255,.09);
+  --low:#4FD3A0; --low-bg:rgba(79,211,160,.16); --low-ink:#8FF0CE;
+  --mid:#FFC24A; --mid-bg:rgba(255,194,74,.16); --mid-ink:#FFD98A;
+  --high:#FF6B5A; --high-bg:rgba(255,107,90,.16); --high-ink:#FFB2A6;
+  --holo:#5AA9FF;
+  --holo-soft:rgba(90,169,255,.2);
+  --scan:#5AA9FF;
+  --stage:#081430;
+  --stage-2:#040A1C;
+  --reg-stroke:rgba(205,228,255,.42);
+  --shadow:0 30px 60px -28px rgba(0,0,0,.85);
+  --shadow-sm:0 16px 34px -22px rgba(0,0,0,.8);
+}
+
 *{box-sizing:border-box}
 html{scroll-padding-top:96px;scroll-behavior:smooth}
 body{
   margin:0;background:var(--bg);color:var(--ink);
   font:400 15px/1.6 var(--sans);-webkit-font-smoothing:antialiased;
-  background-image:radial-gradient(rgba(18,32,26,.075) 1px,transparent 1px);
+  background-image:radial-gradient(var(--dot) 1px,transparent 1px);
   background-size:22px 22px;
 }
 h1,h2,h3{margin:0;letter-spacing:-.015em;text-wrap:balance}
@@ -665,4 +712,356 @@ tbody tr:last-child td{border-bottom:0}
 @media (prefers-reduced-motion:reduce){
   .banner,.causelist li,.advicelist li,.scen,.pintroitem,.cbar i,.mbar .track i{animation:none !important}
   .causelist li,.advicelist li,.scen,.pintroitem{opacity:1;transform:none}
+}
+
+/* ==================================================================
+   ШИНЭЧЛЭЛ · GLASS + DARK/LIGHT + HOLOGRAM + SCAN
+   ================================================================== */
+:root{
+  --glass-top:rgba(255,255,255,.6);
+  --label-halo:rgba(255,255,255,.88);
+  --stage-line:rgba(47,91,234,.08);
+  --scan-soft:rgba(47,91,234,.13);
+  --scan-line:rgba(47,91,234,.55);
+  --holo-glass:rgba(255,255,255,.72);
+  --holo-edge:rgba(47,91,234,.34);
+  --art-sky:rgba(47,91,234,.10);
+  --art-ridge:rgba(47,91,234,.16);
+  --art-ridge-2:rgba(47,91,234,.26);
+  --art-sun:rgba(200,240,94,.55);
+  --art-far:rgba(14,28,50,.12);
+}
+[data-theme="dark"]{
+  --glass-top:rgba(9,18,40,.62);
+  --label-halo:rgba(6,14,32,.82);
+  --stage-line:rgba(120,180,255,.12);
+  --scan-soft:rgba(90,169,255,.16);
+  --scan-line:rgba(150,205,255,.75);
+  --holo-glass:rgba(14,30,62,.68);
+  --holo-edge:rgba(140,195,255,.42);
+  --art-sky:rgba(60,110,220,.22);
+  --art-ridge:rgba(70,125,235,.26);
+  --art-ridge-2:rgba(120,180,255,.2);
+  --art-sun:rgba(120,190,255,.5);
+  --art-far:rgba(150,200,255,.22);
+}
+
+/* ---------- GLASS SURFACE ---------- */
+.card,.pintro,.note,.globalerr,.inwrap,.select,select,.btn,.introicon,.banner,.resgrid,.mini,
+.lvl,.insight,.cmetric,.anum,.kpi,.trendcard,.tbar i,.zoom button,.mapsearch,.ramp,.iconbtn,
+.rankrow,.rankmore,.fact,.factjump,.helpitem,.flowsteps li,.faq details,.gband,.totop,.modelbox div,
+thead th,.tstrip,.top,.brand svg,.chip,.langswitch,.sitefoot,.pagesrc,.tip,.holocard,.mapbox,
+.pagehead,.sidehead,.guidebands{border-color:var(--edge)}
+.pintro::after,.banner::after,.resgrid::after,.mini::after,.insight::after,.gband::after{
+  border-top-color:var(--fold);border-left-color:transparent;
+}
+.card,.pintro,.note,.globalerr,.kpi,.trendcard,.sidecard,.rankcard,.tablecard,.scenariocard,
+.guidecard,.neighbors,.pagesrc,.mapsearch,.holocard{backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
+.card,.pintro,.trendcard,.mapcard,.faq details,.helpitem,.flowsteps li,.fact,.kpi,.modelbox div,
+.inwrap,select,.btn,.zoom button,.iconbtn,.rankrow,.rankmore,.factjump,.totop,.gband,.guidebands>*,
+.mapbox,.pagesrc,.lvl,.anum,.besttag{box-shadow:var(--shadow-sm)}
+.card,.resgrid,.banner,.insight{box-shadow:var(--shadow)}
+.btn,.factjump,.totop{transition:transform .16s cubic-bezier(.2,.8,.2,1),box-shadow .16s,background .16s,color .16s,border-color .16s}
+.btn:hover,.factjump:hover,.totop:hover,.rankrow:hover,.helpitem:hover,.fact:hover,.gband:hover{
+  box-shadow:0 14px 30px -16px var(--shadow-c);
+}
+.btn:active{box-shadow:0 3px 10px -6px var(--shadow-c);transform:translateY(1px)}
+.introicon,.banner .badge,.anum,.stepnum{clip-path:none;border-radius:13px}
+.top{background:var(--glass-top);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
+.top nav button[aria-current="page"]{background:var(--chip-bg);color:var(--chip-ink);border-color:transparent}
+.langswitch{background:var(--surface)}
+.langswitch button[aria-pressed="true"]{background:var(--chip-bg);color:var(--chip-ink)}
+.pintronum{background:var(--chip-bg);color:var(--chip-ink)}
+.btn.primary{color:var(--on-accent)}
+.rankrow.sel{background:var(--accent);color:var(--on-accent)}
+.rankrow.sel .rk,.rankrow.sel .sc{color:var(--on-accent)}
+.advicelist li:first-child .anum{color:var(--on-accent)}
+.aimagtable tbody tr.sel{background:var(--accent);color:var(--on-accent)}
+.aimagtable tbody tr.sel .delta{color:var(--on-accent)}
+.lvl{border-radius:999px}
+.tbar span{letter-spacing:.02em}
+.chartdot,.chartdot.sel{stroke:var(--surface-solid)}
+.chartline{stroke:var(--holo)}
+.tip{background:var(--tip-bg);color:var(--tip-ink);border-radius:12px;box-shadow:0 16px 34px -18px rgba(0,0,0,.6)}
+.tip strong{color:var(--accent)}
+input[type=range]::-webkit-slider-runnable-track{border-color:var(--edge-strong);border-radius:6px}
+input[type=range]::-moz-range-track{border-color:var(--edge-strong);border-radius:6px}
+input[type=range]::-webkit-slider-thumb{border-color:var(--ink);box-shadow:0 3px 10px -3px var(--shadow-c)}
+.cbar{background:var(--surface-2)}
+.gband span{color:var(--muted)}
+.reglabel{stroke:var(--label-halo)}
+.ramp{border-radius:6px}
+.mapempty{background:var(--surface-2);border-radius:12px;margin:14px}
+@media (max-width:520px){.card{box-shadow:var(--shadow-sm)}}
+
+/* ---------- ТОСЛЫН ЦЭВ ─── header util ---------- */
+.themebtn{
+  display:inline-flex;align-items:center;justify-content:center;gap:0;width:36px;height:34px;flex:none;
+  background:var(--surface);border:1px solid var(--edge);border-radius:11px;cursor:pointer;color:var(--ink);
+  box-shadow:var(--shadow-sm);transition:transform .16s,background .16s,color .16s;
+}
+.themebtn:hover{transform:translateY(-1px);background:var(--surface-2)}
+.themebtn svg{width:17px;height:17px}
+.themebtn .ic-moon{display:none}
+:root[data-theme="dark"] .themebtn .ic-sun{display:none}
+:root[data-theme="dark"] .themebtn .ic-moon{display:block}
+.langswitch{margin-left:10px}
+
+/* ---------- КИНЕМАТИК АРДАД ХҮРЭЭ ---------- */
+.bgfx{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.bgfx svg.bgmap{position:absolute;left:50%;top:52%;width:min(1500px,120vw);height:auto;
+  transform:translate(-50%,-50%) scale(1.02);opacity:.5;
+  animation:breathe 26s ease-in-out infinite}
+.bgmap .bgreg{fill:none;stroke:var(--holo);stroke-width:.7;opacity:.34}
+.bgmap .bgglow{fill:var(--holo);opacity:.045}
+.bgfx .bgbeam{position:absolute;inset:-20% -10%;
+  background:linear-gradient(115deg,transparent 38%,var(--holo-soft) 50%,transparent 62%);
+  animation:beam 17s linear infinite}
+.bgfx .bgvig{position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 10%,transparent 40%,var(--bg) 100%)}
+@keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(1.02)}50%{transform:translate(-50%,-51%) scale(1.055)}}
+@keyframes beam{0%{transform:translateX(-30%)}100%{transform:translateX(30%)}}
+
+/* ---------- ХУУДС ТУС БҮРИЙН ТОМ ГАРЦ ---------- */
+.pagehead{
+  position:relative;overflow:hidden;margin:0 0 30px;max-width:none;
+  padding:clamp(22px,3.2vw,40px) clamp(20px,3vw,40px);
+  border:1px solid var(--edge);border-radius:22px;background:var(--surface);
+  box-shadow:var(--shadow);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+}
+.pagehead > *{position:relative;z-index:2}
+.pagehead h1{max-width:24ch}
+.pagehead p{max-width:66ch}
+.herofx{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;border-radius:inherit;
+  -webkit-mask-image:linear-gradient(95deg,transparent 0,#000 42%);mask-image:linear-gradient(95deg,transparent 0,#000 42%)}
+.herofx svg{position:absolute;inset:0;width:100%;height:100%}
+.herofx .tint{position:absolute;inset:0;background:radial-gradient(90% 130% at 82% -10%,var(--art-sky),transparent 70%)}
+.hero-sky{transform:translate3d(calc(var(--px,0) * -10px),calc(var(--py,0) * -6px),0)}
+.hero-far{transform:translate3d(calc(var(--px,0) * -22px),calc(var(--py,0) * -10px),0)}
+.hero-near{transform:translate3d(calc(var(--px,0) * -40px),calc(var(--py,0) * -16px),0)}
+.hero-sky,.hero-far,.hero-near{transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.hfar{fill:var(--art-far)}
+.hridge{fill:var(--art-ridge)}
+.hridge2{fill:var(--art-ridge-2)}
+.hsun{fill:var(--art-sun);animation:sunrise 12s ease-in-out infinite alternate}
+.hring{fill:none;stroke:var(--art-sun);opacity:.4;transform-origin:center;animation:ring 9s ease-in-out infinite}
+.hdrift{animation:drift 40s linear infinite}
+@keyframes sunrise{from{opacity:.55}to{opacity:.95}}
+@keyframes ring{0%,100%{transform:scale(.92);opacity:.18}50%{transform:scale(1.06);opacity:.45}}
+@keyframes drift{from{transform:translateX(0)}to{transform:translateX(-60px)}}
+.hicon{fill:none;stroke:var(--art-ridge-2);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+@supports not (background:color-mix(in srgb,red 50%,transparent)){.pagehead,.card{background:var(--surface-solid)}}
+
+/* ---------- ДАШБОРД АЧААЛАХ · SCAN ---------- */
+.boot{position:fixed;inset:0;z-index:90;display:grid;place-content:center;gap:18px;justify-items:center;
+  background:radial-gradient(120% 100% at 50% 0%,#0E2A57,#050B1C 68%);color:#DCE9FF;
+  transition:opacity .55s ease,visibility .55s}
+.boot.done{opacity:0;visibility:hidden;pointer-events:none}
+.bootmap{position:relative;width:min(560px,74vw);height:auto;filter:drop-shadow(0 0 26px rgba(90,169,255,.35))}
+.bootmap path{fill:rgba(90,169,255,.06);stroke:rgba(150,205,255,.75);stroke-width:1.1;
+  animation:bpath .6s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 26ms)}
+@keyframes bpath{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.bootscan{position:relative;width:min(560px,74vw);height:2px;overflow:visible}
+.bootscan i{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--scan-line),transparent);
+  box-shadow:0 0 18px 2px var(--scan-line);animation:bsweep 1.5s cubic-bezier(.4,0,.6,1) infinite}
+@keyframes bsweep{0%{top:-6px;opacity:0}20%{opacity:1}100%{top:100%;opacity:0}}
+.bootlabel{font:600 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#9FC4FF;display:flex;align-items:center;gap:4px}
+.bootlabel i{width:4px;height:4px;border-radius:50%;background:#9FC4FF;animation:bdot 1.1s ease-in-out infinite}
+.bootlabel i:nth-of-type(2){animation-delay:.16s}
+.bootlabel i:nth-of-type(3){animation-delay:.32s}
+@keyframes bdot{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+@media (scripting:none){.boot{display:none}}
+
+.scanfx{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:9;border-radius:inherit}
+.scanfx i{position:absolute;left:-6%;right:-6%;height:130px;top:-150px;
+  background:linear-gradient(180deg,transparent,var(--scan-soft) 52%,var(--scan-line) 76%,transparent);
+  animation:scanpass var(--scan-dur,1.1s) cubic-bezier(.3,.05,.55,.95) both}
+@keyframes scanpass{from{top:-150px}to{top:105%}}
+.sweeping{position:relative}
+.sweeping::before{content:"";position:absolute;inset:0;z-index:8;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(180deg,var(--scan-soft),transparent 42%);animation:fadeinout var(--scan-dur,1.1s) ease both}
+@keyframes fadeinout{0%,100%{opacity:0}25%{opacity:1}}
+
+/* ---------- HOLOGRAM ГАЗРЫН ЗУРАГ ---------- */
+.mapbox{
+  position:relative;
+  background:
+    radial-gradient(105% 78% at 50% 4%,var(--holo-soft),transparent 62%),
+    radial-gradient(60% 46% at 50% 106%,var(--holo-soft),transparent 70%),
+    linear-gradient(180deg,var(--stage),var(--stage-2));
+}
+.mapbox::before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(var(--stage-line) 1px,transparent 1px),
+    linear-gradient(90deg,var(--stage-line) 1px,transparent 1px);
+  background-size:48px 48px;
+  -webkit-mask-image:radial-gradient(75% 75% at 50% 45%,#000,transparent 100%);
+  mask-image:radial-gradient(75% 75% at 50% 45%,#000,transparent 100%);
+}
+.mapbox::after{
+  content:"";position:absolute;left:8%;right:8%;bottom:6px;height:26px;z-index:0;pointer-events:none;
+  background:radial-gradient(50% 100% at 50% 100%,var(--holo-soft),transparent 72%);
+  filter:blur(2px);opacity:.9;
+}
+.mapbox svg#mapSvg{position:relative;z-index:1;animation:floaty 13s ease-in-out infinite}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.reg{stroke:var(--reg-stroke);stroke-width:1;opacity:.94}
+.reg:hover{opacity:1;stroke:var(--scan);filter:drop-shadow(0 0 8px var(--holo-soft))}
+.reg.sel{
+  opacity:1;stroke:var(--scan);stroke-width:2.4;
+  filter:drop-shadow(0 0 10px var(--scan-line)) drop-shadow(0 0 26px var(--holo-soft));
+}
+#nodataHatch rect{fill:#D6DEEA}
+#nodataHatch line{stroke:#9FADC4}
+[data-theme="dark"] #nodataHatch rect{fill:#16233E}
+[data-theme="dark"] #nodataHatch line{stroke:#3B537A}
+.regping{fill:none;stroke:var(--scan);stroke-width:1.4;opacity:0;pointer-events:none;transform-box:fill-box;transform-origin:center}
+.regping.on{opacity:1;animation:ping 2.6s cubic-bezier(.2,.8,.2,1) infinite}
+@keyframes ping{0%{transform:scale(.4);opacity:.9}70%{transform:scale(3.1);opacity:0}100%{transform:scale(3.1);opacity:0}}
+[data-theme="dark"] .reglabel{fill:var(--ink);stroke:var(--label-halo)}
+.mapsearch{background:var(--holo-glass);border-radius:12px;box-shadow:0 14px 30px -18px rgba(0,0,0,.5)}
+.maphint{background:var(--holo-glass);color:var(--muted);border-radius:8px;padding:3px 8px}
+.legend{background:transparent}
+.mapfoot{color:var(--muted)}
+
+.holocard{
+  position:absolute;left:0;top:0;z-index:7;width:236px;padding:12px 14px 13px;
+  background:var(--holo-glass);border:1px solid var(--holo-edge);border-radius:15px;
+  box-shadow:0 26px 50px -24px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.28);
+  backdrop-filter:blur(20px) saturate(165%);-webkit-backdrop-filter:blur(20px) saturate(165%);
+  opacity:0;transform:translateY(14px) scale(.95);filter:blur(2px);
+  transition:opacity .32s ease,transform .42s cubic-bezier(.2,.8,.2,1),filter .32s ease;
+  pointer-events:none;overflow:hidden;
+}
+.holocard.show{opacity:1;transform:none;filter:none;pointer-events:auto}
+.holocard{background:rgba(255,255,255,.9)}
+[data-theme="dark"] .holocard{background:rgba(9,22,46,.88)}
+.holocard::after{content:"";position:absolute;bottom:-6px;left:var(--caret-x,50%);width:12px;height:12px;
+  margin-left:-6px;transform:rotate(45deg);background:var(--holo-glass);
+  border-right:1px solid var(--holo-edge);border-bottom:1px solid var(--holo-edge)}
+.holocard.below::after{bottom:auto;top:-6px;border:0;border-left:1px solid var(--holo-edge);border-top:1px solid var(--holo-edge)}
+.hologrid{position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(0deg,var(--stage-line) 0 1px,transparent 1px 7px)}
+.holohead{display:flex;align-items:baseline;gap:8px;position:relative;z-index:1;padding-right:20px}
+.holohead b{font:700 14px/1.25 var(--sans);letter-spacing:-.01em;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.holohead span{font:600 10.5px var(--mono);color:var(--muted)}
+.holoclose{position:absolute;right:2px;top:0;width:22px;height:22px;border:0;background:none;
+  color:var(--muted);font-size:16px;line-height:1;cursor:pointer;border-radius:7px}
+.holoclose:hover{background:var(--surface-2);color:var(--ink)}
+.holomain{display:flex;align-items:baseline;gap:9px;margin:9px 0 2px;position:relative;z-index:1}
+.holomain strong{font:700 34px/1 var(--display);letter-spacing:-.04em;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 22px var(--holo-soft)}
+.hololvl{font:600 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid currentColor}
+.holorows{display:grid;gap:6px;margin-top:9px;position:relative;z-index:1}
+.holoro{display:grid;grid-template-columns:1fr auto;gap:4px 8px;font-size:11px;color:var(--muted)}
+.holoro b{font:600 11px var(--mono);color:var(--ink);grid-column:2}
+.holoro i{grid-column:1/3;height:3px;border-radius:2px;background:var(--surface-2);overflow:hidden;display:block}
+.holoro i s{display:block;height:100%;text-decoration:none;background:var(--holo);transform-origin:left;
+  animation:growx .6s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 60ms)}
+.holoact{margin-top:11px;width:100%;position:relative;z-index:1}
+.holocard .cardhint{font-size:10.5px}
+.nodatahint{font-size:11.5px;color:var(--muted);margin-top:6px}
+
+/* ---------- АНИМАЦИ ТЕГЖИТ ГРАФИК ---------- */
+.tbar i{transform-origin:bottom;animation:growy .52s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 20ms)}
+@keyframes growy{from{transform:scaleY(.02)}to{transform:scaleY(1)}}
+.tbar.sel i{filter:saturate(1.2) brightness(1.04);box-shadow:0 -3px 14px -4px var(--holo)}
+.chartline{stroke-dasharray:var(--len,1200);stroke-dashoffset:var(--len,1200);animation:drawline 1.05s .05s cubic-bezier(.4,0,.2,1) both}
+@keyframes drawline{to{stroke-dashoffset:0}}
+.chartarea{fill:var(--holo);opacity:.12;animation:fadein .8s .25s ease both}
+@keyframes fadein{from{opacity:0}to{opacity:.12}}
+.rankrow .track i{transform-origin:left;animation:growx .55s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 45ms)}
+.kpi{animation:kpiup .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 70ms)}
+@keyframes kpiup{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.ring svg circle:last-child{filter:drop-shadow(0 0 10px var(--holo-soft))}
+.reveal{opacity:0;transform:translateY(16px)}
+.reveal.in{opacity:1;transform:none;transition:opacity .55s ease,transform .6s cubic-bezier(.2,.8,.2,1)}
+.fact:hover{transform:translate(-3px,-4px)}
+
+/* ---------- ХУУДС ТӨГСГӨЛД ЭХ СУРВАЛЖ ---------- */
+.pagesrc{margin-top:42px;padding:18px 20px}
+.pagesrc h2{font:600 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.pagesrc ul{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.pagesrc li{position:relative;padding-left:18px;font-size:12.5px;line-height:1.62;color:var(--muted)}
+.pagesrc li::before{content:"";position:absolute;left:0;top:8px;width:8px;height:8px;border-radius:3px;
+  background:var(--holo);opacity:.65}
+.pagesrc li b{color:var(--ink);font-weight:600}
+.pagesrc a{color:var(--ink);text-decoration-color:var(--holo)}
+.srclist li{animation:rowin .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 90ms)}
+
+/* ---------- АДАПТИВ НЭМЭЛТ ---------- */
+@media (max-width:700px){
+  .top{grid-template-columns:1fr auto auto auto}
+  .brand{grid-area:1/1}
+  .themebtn{grid-area:1/2;justify-self:end}
+  .langswitch{grid-area:1/3;justify-self:end;margin-left:0}
+  .chip{grid-area:1/4;justify-self:end;margin-left:0}
+  .top nav{grid-area:2/1/3/5}
+  .pagehead{border-radius:18px}
+  .holocard{display:none}
+  .bgfx svg.bgmap{opacity:.34}
+}
+@media (max-width:560px){
+  .herofx{mask-image:none;-webkit-mask-image:none;opacity:.5}
+}
+@media (prefers-reduced-motion:reduce){
+  .bgfx svg.bgmap,.bgfx .bgbeam,.mapbox svg#mapSvg,.regping.on,.hsun,.hring,.hdrift,.bootscan i,.bootlabel i,
+  .tbar i,.chartline,.chartarea,.rankrow .track i,.kpi,.scanfx i,.sweeping::before,.pintro::after{animation:none !important}
+  .chartline{stroke-dashoffset:0}
+  .tbar i,.kpi,.fact,.reveal{transform:none;opacity:1}
+  .holocard{transition:opacity .001ms;filter:none;transform:none}
+  .reveal{opacity:1;transform:none}
+  .boot{display:none}
+}
+
+/* ---------- ЗААСАН ЖИЖИГ ЗҮЙЛ ---------- */
+.bgmap .bgreg{fill:var(--holo);fill-opacity:.045;stroke:var(--holo);stroke-width:.7;opacity:.4}
+.tip{display:block;opacity:0;visibility:hidden;transition:opacity .18s ease,visibility .18s}
+.tip.on{opacity:1;visibility:visible}
+.tipmeta{margin-top:4px;font:500 10.5px var(--mono);color:var(--muted);white-space:nowrap}
+.tip{color:var(--tip-ink)}
+.tip .tipmeta{color:color-mix(in srgb,var(--tip-ink) 62%,transparent)}
+.tbar.noanim i,.rankrow.noanim .track i{animation:none}
+.bootmap path{transform-box:fill-box;transform-origin:center}
+#sidePanel .sidehead,#sidePanel .sidescore,#sidePanel .metricbars,#sidePanel .chartbox,#sidePanel .btn.block,#sidePanel .sideintro,#sidePanel .note{
+  animation:rise .44s cubic-bezier(.2,.8,.2,1) both}
+#sidePanel .sidescore{animation-delay:.06s}
+#sidePanel .metricbars{animation-delay:.12s}
+#sidePanel .chartbox{animation-delay:.18s}
+#sidePanel .btn.block{animation-delay:.24s}
+.sidecard{transition:box-shadow .3s,border-color .3s}
+.sidescore b{text-shadow:0 0 26px var(--holo-soft)}
+.metricbars .track,.rankrow .track,.mbar .track,.cbar{border-radius:999px}
+.mbar .track i,.rankrow .track i,.cbar i,.ramp{border-radius:999px}
+.rankrow{border-radius:12px}
+.rankrow.sel{box-shadow:0 0 0 1px var(--holo-soft),0 16px 30px -18px var(--shadow-c)}
+.fact .fbig{color:var(--holo)}
+.fact.bad .fbig{color:var(--high)}
+.modelbox div{border-radius:12px}
+.helpitem,.flowsteps li{border-radius:14px}
+.faq details,.faq summary{border-radius:12px}
+.gband,.guidebands{border-radius:12px}
+.tablecard,.mapcard,.sidecard,.rankcard{border-radius:20px}
+.mapcard{overflow:hidden}
+.btn{border-radius:12px}
+.zoom button{border-radius:11px}
+.zoom button:first-child{border-top-left-radius:11px}
+.kpi,.trendcard,.pintro,.card,.inwrap,select,.note,.globalerr,.pagesrc{border-radius:var(--r)}
+.inwrap input{border-radius:0}
+.kpi,.mini,.lvl,.cmetric,.besttag,.dchip,.aimp{border-radius:12px}
+.mini{border-radius:14px}
+.lvl{padding:3px 10px}
+.banner,.resgrid,.insight{border-radius:18px}
+
+/* ---------- ХАРААТ ГОРИМ · ҮР ДҮНГИЙН ХЭСГҮҮД ---------- */
+[data-theme="dark"] .insight.causes{background:color-mix(in srgb,var(--high) 15%,#0B1730)}
+[data-theme="dark"] .insight.causes.level-mid{background:color-mix(in srgb,var(--mid) 15%,#0B1730)}
+[data-theme="dark"] .insight.causes.level-low{background:color-mix(in srgb,var(--low) 15%,#0B1730)}
+[data-theme="dark"] .insight.advice{background:color-mix(in srgb,var(--low) 17%,#0B1730)}
+[data-theme="dark"] .bannerchip{background:rgba(231,240,255,.1)}
+[data-theme="dark"] .insightlead,[data-theme="dark"] .scenarionote,[data-theme="dark"] .insightfoot{color:#A9C2E6}
+.chip,.iconbtn,.mapsearch{border-radius:12px}
+.rankmore{border-radius:10px;border-style:dashed}
+.anum,.stepnum,.introicon,.banner .badge{border-radius:12px}
+@media (prefers-reduced-motion:reduce){
+  #sidePanel .sidehead,#sidePanel .sidescore,#sidePanel .metricbars,#sidePanel .chartbox,#sidePanel .btn.block,#sidePanel .sideintro,#sidePanel .note{animation:none !important}
 }
