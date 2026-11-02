@@ -10,6 +10,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.preprocessing import StandardScaler
 
+from advice import advice_total, build_advice
+from advice.singles import SINGLES
+
 BASE = Path(__file__).parent
 SHEET = "ML Model Dataset (Risk Score)"
 DATA_FILES = ("database.xlsx", "database 2.xlsx", "database_clean_formatted.xlsx")
@@ -290,6 +293,25 @@ def _share(feature, value):
     return float((col > value).mean() * 100)
 
 
+FACTOR_KEYS = {
+    "Stocking_Rate": "stocking",
+    "Total_Livestock": "livestock",
+    "NDVI": "ndvi",
+    "Precipitation_mm": "precipitation",
+    "Temperature_C": "temperature",
+}
+
+
+def adverse_factors(values, limit=3):
+    """Зөвлөмжийн сан сонгохын тулд муу талтай үзүүлэлтүүдийг хүчтэйгээс нь дараалуулна."""
+    ranked = sorted(((_share(f, float(values[f])), FACTOR_KEYS[f]) for f in FEATURES),
+                    key=lambda t: (-t[0], t[1]))
+    bad = [k for share, k in ranked if share >= 58]
+    if not bad:
+        bad = [k for _, k in ranked[:2]]
+    return bad[:limit]
+
+
 def causes_of(values, score, lang="mn"):
     """Оруулсан утгаас эрсдэлийг өсгөж буй шалтгааныг энгийн хэлээр, хүчтэйгээр нь эрэмбэлж буцаана."""
     en = lang == "en"
@@ -428,6 +450,25 @@ def causes_of(values, score, lang="mn"):
     return found[:3]
 
 
+def fill_advice(actions, causes, score, lang="mn", want=4):
+    """Загварын алхам 4-өөс дутуу болговол сангаас нэг удаагийн зөвлөмж нэмнэ."""
+    en = lang == "en"
+    used = {a["tag"] for a in actions}
+    pool = [(t) for c in causes for t in SINGLES.get(c["key"], [])]
+    if not pool:
+        return
+    off = int(round(score)) % len(pool)
+    for t in pool[off:] + pool[:off]:
+        if len(actions) >= want:
+            return
+        tag = t[1] if en else t[0]
+        if tag in used:
+            continue
+        used.add(tag)
+        actions.append({"tag": tag, "level": "mid", "impact": None,
+                        "text": t[3] if en else t[2]})
+
+
 def recommendations(values, score, causes, scenarios, lang="mn"):
     """Шалтгаан бүрд тохирох, малчинд ойлгомжтой арга хэмжээ буцаана."""
     en = lang == "en"
@@ -502,8 +543,10 @@ def recommendations(values, score, causes, scenarios, lang="mn"):
                     "Малаа өглөө эрт, орой бэлчээрлүүлж, өдрийн халуунд сүүдэртэй газарт "
                     "амраа. Усны эх, сүүдэртэй бэлчээрийг тэргүүл."),
             })
-        if len(actions) == 3:
+        if len(actions) == 4:
             break
+
+    fill_advice(actions, causes, score, lang)
 
     if not actions and score >= LOW_MAX:
         actions.append({
@@ -550,7 +593,7 @@ def recommendations(values, score, causes, scenarios, lang="mn"):
     mon["tag"] = "Monitoring" if en else "Хяналт"
     mon["impact"] = None
     actions.append(mon)
-    return actions[:4]
+    return actions[:5]
 
 
 def improvement_scenarios(values, base_score, lang="mn"):
@@ -655,6 +698,7 @@ def predict():
     factors = factor_effects(values, score, lang)
     causes = causes_of(values, score, lang)
     scenarios = improvement_scenarios(values, score, lang)
+    advice_groups = build_advice(adverse_factors(values), lang, seed=int(round(score)))
 
     return jsonify(
         risk_score=round(score, 1),
@@ -669,6 +713,8 @@ def predict():
         factors=factors,
         causes=causes,
         recommendations=recommendations(values, score, causes, scenarios, lang),
+        advice_groups=advice_groups,
+        advice_total=advice_total(advice_groups),
         scenarios=scenarios,
         input=values,
     )

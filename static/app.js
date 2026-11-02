@@ -258,23 +258,26 @@ function heroScene(variant) {
 }
 
 function buildHeroes() {
-  $$('.pagehead').forEach((head, i) => {
-    if ($('.herofx', head)) return;
-    const fx = document.createElement('div');
-    fx.className = 'herofx';
-    fx.setAttribute('aria-hidden', 'true');
-    fx.innerHTML = heroScene(i);
-    head.prepend(fx);
-    if (reduceMotion()) return;
-    head.addEventListener('pointermove', (e) => {
-      const r = head.getBoundingClientRect();
-      fx.style.setProperty('--px', ((e.clientX - r.left) / r.width - 0.5).toFixed(3));
-      fx.style.setProperty('--py', ((e.clientY - r.top) / r.height - 0.5).toFixed(3));
-    });
-    head.addEventListener('pointerleave', () => {
-      fx.style.setProperty('--px', 0);
-      fx.style.setProperty('--py', 0);
-    });
+  $$('.pagehead').forEach((head) => {
+    const fx = $('.herofx', head);
+    if (fx && !head.closest('#page-predict')) fx.remove();
+  });
+  const head = $('#page-predict .pagehead');
+  if (!head || $('.herofx', head)) return;
+  const fx = document.createElement('div');
+  fx.className = 'herofx';
+  fx.setAttribute('aria-hidden', 'true');
+  fx.innerHTML = heroScene(0);
+  head.prepend(fx);
+  if (reduceMotion()) return;
+  head.addEventListener('pointermove', (e) => {
+    const r = head.getBoundingClientRect();
+    fx.style.setProperty('--px', ((e.clientX - r.left) / r.width - 0.5).toFixed(3));
+    fx.style.setProperty('--py', ((e.clientY - r.top) / r.height - 0.5).toFixed(3));
+  });
+  head.addEventListener('pointerleave', () => {
+    fx.style.setProperty('--px', 0);
+    fx.style.setProperty('--py', 0);
   });
 }
 
@@ -797,6 +800,8 @@ function renderPrediction(res, prevScore = null) {
     </li>`;
   }).join('');
 
+  renderAllAdvice(res.advice_groups || [], res.advice_total || 0);
+
   const scenWrap = $('#scenarioCard');
   if (res.scenarios?.length) {
     scenWrap.hidden = false;
@@ -842,6 +847,59 @@ function renderPrediction(res, prevScore = null) {
       `${aimagName(res.preset.aimag)} · ${res.preset.year} on the map`,
     );
   }
+}
+
+const ADVICE = { groups: [], total: 0 };
+
+function adviceBtnLabel(open) {
+  return open
+    ? L('Гол таван зөвлөмжид буцаах', 'Back to the top five')
+    : L(`Бүх зөвлөмж үзэх (${ADVICE.total})`, `Show all advice (${ADVICE.total})`);
+}
+
+function adviceGroupHtml(g, i) {
+  return `
+  <section class="agroup ${esc(g.kind)}" style="--i:${i}">
+    <div class="aghead">
+      <span class="akind">${esc(g.kind_label)}</span>
+      <b class="aglabel">${esc(g.label)}</b>
+      <span class="acnt">${g.count}</span>
+    </div>
+    <ol class="alist">${g.items.map((it) => `<li><b>${esc(it.tag)}</b><p>${esc(it.text)}</p></li>`).join('')}</ol>
+  </section>`;
+}
+
+function renderAllAdvice(groups, total) {
+  const btn = $('#allAdviceBtn');
+  const wrap = $('#adviceAll');
+  if (!btn || !wrap) return;
+  ADVICE.groups = groups;
+  ADVICE.total = total;
+  wrap.innerHTML = '';
+  wrap.hidden = true;
+  btn.hidden = !total;
+  btn.setAttribute('aria-expanded', 'false');
+  if (total) btn.textContent = adviceBtnLabel(false);
+}
+
+function toggleAllAdvice() {
+  const btn = $('#allAdviceBtn');
+  const wrap = $('#adviceAll');
+  if (!btn || !wrap) return;
+  const open = btn.getAttribute('aria-expanded') === 'true';
+  if (open) {
+    wrap.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+    btn.textContent = adviceBtnLabel(false);
+    return;
+  }
+  if (!wrap.innerHTML) {
+    wrap.innerHTML = ADVICE.groups.map(adviceGroupHtml).join('');
+    if (!reduceMotion()) scanFx(wrap, 420);
+  }
+  wrap.hidden = false;
+  btn.setAttribute('aria-expanded', 'true');
+  btn.textContent = adviceBtnLabel(true);
 }
 
 function applyScenario(res, key) {
@@ -1571,6 +1629,7 @@ async function init() {
 
   initNav();
   initForm();
+  $('#allAdviceBtn').addEventListener('click', toggleAllAdvice);
   initToTop();
   initTheme();
   initHoloCard();
