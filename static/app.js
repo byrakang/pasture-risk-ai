@@ -992,7 +992,11 @@ function historyChart(name) {
     `<text class="chartaxis" x="${pl - 4}" y="${y(v) + 3}" text-anchor="end">${v}</text>`
   )).join('');
   const ticks = [...new Set([0, Math.floor((years.length - 1) / 2), years.length - 1])]
-    .map((i) => `<text class="chartaxis" x="${x(i)}" y="${H - 6}" text-anchor="middle">${years[i]}</text>`).join('');
+    .map((i) => {
+      const last = i === years.length - 1;
+      const tx = last ? W - 1 : x(i);
+      return `<text class="chartaxis" x="${tx}" y="${H - 6}" text-anchor="${last ? 'end' : 'middle'}">${years[i]}</text>`;
+    }).join('');
   const dots = rows.map((r, i) => {
     if (!r) return '';
     return `<circle class="chartdot ${i === selIdx ? 'sel' : ''}" cx="${x(i)}" cy="${y(r.score)}" r="${i === selIdx ? 3.4 : 1.8}"><title>${years[i]}: ${fmt1.format(r.score)} ${L('оноо', 'pts')}</title></circle>`;
