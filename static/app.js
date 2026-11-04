@@ -429,14 +429,7 @@ function goTo(page, scroll = true) {
 
 function initNav() {
   $$('[data-page]').forEach((el) => {
-    el.addEventListener('click', () => {
-      if (el.id === 'modelChip') return; // chip has its own behavior below
-      goTo(el.dataset.page);
-    });
-  });
-  $('#modelChip').addEventListener('click', () => {
-    goTo('help');
-    setTimeout(() => $('#modelBox')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+    el.addEventListener('click', () => goTo(el.dataset.page));
   });
 
   $$('.langswitch button').forEach((b) => {
@@ -1523,9 +1516,6 @@ function renderSide() {
 function renderIntro() {
   const m = state.meta.metrics.unseen_aimag_cv;
   const labels = state.meta.feature_labels;
-  $('#modelChip').textContent = `KNN · MAE ${fmt1.format(m.MAE)}`;
-  $('#modelChip').classList.remove('busy');
-  $('#modelChip').setAttribute('title', L('Загварын дэлгэрэнгүйг харах', 'View model details'));
   $('#modelBox').innerHTML = `
     <div><small>${L('Алгоритм', 'Algorithm')}</small><b>${L('KNN регрессор', 'KNN regressor')}</b></div>
     <div><small>k</small><b>${state.meta.best_params.n_neighbors}</b></div>
@@ -1638,7 +1628,6 @@ async function init() {
   buildHeroes();
   buildMap();
 
-  $('#modelChip').classList.add('busy');
   try {
     const [meta, data] = await Promise.all([api('/api/model-info'), api('/api/dataset')]);
     state.meta = meta;
@@ -1674,10 +1663,6 @@ async function init() {
       `<b>Өгөгдөл ачаалагдсангүй.</b> ${esc(err.message)}. Терминалд <code>python app.py</code> ажиллуулаад <code>http://127.0.0.1:5000</code> хаягаар нээнэ үү.`,
       `<b>Data could not be loaded.</b> ${esc(err.message)}. Run <code>python app.py</code> in the terminal and open <code>http://127.0.0.1:5000</code>.`,
     );
-    const chip = $('#modelChip');
-    chip.textContent = L('Загвар ачаалагдсангүй', 'Model not loaded');
-    chip.classList.remove('busy');
-    chip.classList.add('bad');
     $('#predictBtn').disabled = true;
     $('#mapEmpty').textContent = L('Газрын зургийн өгөгдөл ачаалагдсангүй.', 'Map data could not be loaded.');
     $('#mapEmpty').hidden = false;
