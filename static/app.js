@@ -327,8 +327,8 @@ const SRC = {
       en: `<b>Input indicators:</b> yearly values for 21 aimags, 2010–2025 — ${A('https://modis.gsfc.nasa.gov/', 'MODIS NDVI (NASA)')}, ${A('https://era.ecmwf.int/', 'ERA5 (ECMWF)')}, ${A('https://www.chc.ucsb.edu/data/chirps', 'CHIRPS (UCSB)')}, ${A('https://1212.mn/', '1212.mn livestock census')}, ${A('https://www.ine.gm/', 'Mongolian NSO')}.`,
     },
     {
-      mn: `<b>Тооцоолол:</b> ${A('https://scikit-learn.org/stable/modules/neighbors.html', 'scikit-learn KNeighborsRegressor')} · k=5 · зайгаар жинлэсэн · 336 ажиглалтын 80%-д сургав, 20%-д шалгав.`,
-      en: `<b>Calculation:</b> ${A('https://scikit-learn.org/stable/modules/neighbors.html', 'scikit-learn KNeighborsRegressor')} · k=5 · distance-weighted · trained on 80% and tested on 20% of 336 observations.`,
+      mn: `<b>Тооцоолол:</b> ${A('https://scikit-learn.org/stable/modules/neighbors.html', 'scikit-learn KNeighborsRegressor')} · k=5 · зайгаар жинлэсэн · 21 аймгийн 16 жилийн өгөгдлийн 80%-д сургав, 20%-д шалгав.`,
+      en: `<b>Calculation:</b> ${A('https://scikit-learn.org/stable/modules/neighbors.html', 'scikit-learn KNeighborsRegressor')} · k=5 · distance-weighted · trained on 80% and tested on 20% of the 21-aimag, 16-year dataset.`,
     },
     {
       mn: `<b>Загварын үнэлгээ:</b> MAE 5.7 оноо · эрсдэлийн түвшний тааруулалт 88% · «Баримтууд» хуудасны «Манай загвар» үзүүлэлтүүд энэ тооцоогоос гарсан.`,
@@ -345,7 +345,7 @@ const SRC = {
       en: `<b>Indicators behind each score:</b> MODIS NDVI, ERA5 temperature, CHIRPS precipitation, ${A('https://1212.mn/', '1212.mn')} census; stocking rate = livestock / carrying capacity.`,
     },
     {
-      mn: `<b>Бодолто:</b> Зураг дээрх оноо нь тухайн аймаг-жилийг сургалтаас гаргаж (leave-one-out) тооцсон тул маягтын тооцоололтой бага зэрэг ялгаатай байж болно. Бүх мөр: ${CSV} татах.`,
+      mn: `<b>Бодолто:</b> Зураг дээрх оноо нь тухайн аймаг, жилийг сургалтаас гаргаж (leave-one-out) тооцсон тул маягтын тооцоололтой бага зэрэг ялгаатай байж болно. Бүх мөр: ${CSV} татах.`,
       en: `<b>Method:</b> map scores use leave-one-out estimation, so they can differ slightly from the form calculation. All rows: ${CSV} download.`,
     },
   ],
@@ -369,8 +369,8 @@ const SRC = {
       en: `<b>Algorithm:</b> ${A('https://scikit-learn.org/stable/modules/neighbors.html', 'scikit-learn — Nearest Neighbors')} (KNeighborsRegressor, weights=distance) with ${A('https://scikit-learn.org/stable/modules/preprocessing.html', 'StandardScaler')} feature scaling.`,
     },
     {
-      mn: `<b>Өгөгдлийн санд:</b> 336 аймаг-жил (21 аймаг × 2010–2025), 5 шинж чанар; MODIS NDVI, ERA5, CHIRPS, 1212.mn, ҮСХ. Түүхий файл: ${CSV} татах.`,
-      en: `<b>Dataset:</b> 336 aimag-years (21 aimags × 2010–2025), 5 features; MODIS NDVI, ERA5, CHIRPS, 1212.mn, NSO. Raw file: ${CSV} download.`,
+      mn: `<b>Өгөгдлийн санд:</b> 21 аймгийн 16 жилийн (2010–2025) өгөгдөл, 5 шинж чанар; MODIS NDVI, ERA5, CHIRPS, 1212.mn, ҮСХ. Түүхий файл: ${CSV} татах.`,
+      en: `<b>Dataset:</b> 21 aimags over 16 years (2010–2025), 5 features; MODIS NDVI, ERA5, CHIRPS, 1212.mn, NSO. Raw file: ${CSV} download.`,
     },
     {
       mn: `<b>Газрын зураг:</b> ${A('https://geoboundaries.org/', 'geoBoundaries')} ADM1 хил (ODbL). Улаанбаатарт бэлчээрийн жилийн үзүүлэлт байхгүй тул зөвхөн 21 аймгийг харуулна.`,
@@ -676,7 +676,9 @@ function renderPrediction(res, prevScore = null) {
   arc.style.strokeDasharray = `${(score / 100) * 364.4} 364.4`;
   $('#ringNum').style.color = level.color;
 
-  $('#rangeVal').textContent = `${fmt1.format(res.range[0])}–${fmt1.format(res.range[1])}`;
+  $('#rangeVal').textContent = res.range[0] === res.range[1]
+    ? fmt1.format(res.range[0])
+    : `${fmt1.format(res.range[0])}–${fmt1.format(res.range[1])}`;
   $('#natMeanVal').textContent = fmt1.format(res.national_mean);
   $('#percentileVal').textContent = `${res.percentile}%`;
   const notes = [];
@@ -695,6 +697,12 @@ function renderPrediction(res, prevScore = null) {
         `The actual ${esc(aimagName(state.preset.aimag))} ${state.preset.year} score was ${fmt1.format(origin.score)}; your calculation is <b class="${cls}">${fmt1.format(Math.abs(d))} pts ${d > 0 ? 'higher' : 'lower'}</b>.`,
       ));
     }
+  }
+  if (score >= 99.95) {
+    notes.push(L(
+      `Хамгийн ойр ${res.k} түүхэн жил бүгд 100 оноотой байсан тул тооцоолол хэмжүүлгийн дээд талд хүрлээ; энэ нь алдаа биш, өгөгдөл дэх хамгийн муу түвшин юм.`,
+      `All ${res.k} nearest historical years scored 100, so the estimate reached the top of the scale; that is not an error but the worst level present in the data.`,
+    ));
   }
   notes.push(L(
     `Боломжит хүрээ нь хамгийн ойр ${res.k} түүхэн тохиолдлын тархалтаас тооцогдов.`,
@@ -827,8 +835,8 @@ function renderPrediction(res, prevScore = null) {
   if (meta) {
     const m = meta.metrics.unseen_aimag_cv;
     $('#modelFoot').textContent = L(
-      `Загвар: KNN · k=${res.k} · 20% тестийн MAE ${fmt1.format(m.MAE)} · ангиллын нарийвчлал ${Math.round(m.class_accuracy * 100)}% · ${meta.n_samples} ажиглалт`,
-      `Model: KNN · k=${res.k} · 20% test MAE ${fmt1.format(m.MAE)} · class accuracy ${Math.round(m.class_accuracy * 100)}% · ${meta.n_samples} observations`,
+      `Загвар: KNN · k=${res.k} · 20% тестийн MAE ${fmt1.format(m.MAE)} · ангиллын нарийвчлал ${Math.round(m.class_accuracy * 100)}% · 21 аймгийн 16 жилийн өгөгдөл`,
+      `Model: KNN · k=${res.k} · 20% test MAE ${fmt1.format(m.MAE)} · class accuracy ${Math.round(m.class_accuracy * 100)}% · 21 aimags over 16 years`,
     );
   }
 
@@ -1284,9 +1292,14 @@ function renderKpis() {
   if (!rows.length) { $('#mapKpis').innerHTML = ''; return; }
   const vals = rows.map(valueOf);
   const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
-  const sorted = [...rows].sort((a, b) => valueOf(b) - valueOf(a));
+  const sorted = [...rows]
+    .sort((a, b) => valueOf(b) - valueOf(a) || (b.Stocking_Rate ?? 0) - (a.Stocking_Rate ?? 0));
   const top = sorted[0];
   const low = sorted[sorted.length - 1];
+  const tiedTop = sorted.filter((r) => Math.abs(valueOf(r) - valueOf(top)) < 0.05).length;
+  const topNote = tiedTop > 1
+    ? L(`${tiedTop} аймаг ${fmt1.format(valueOf(top))} оноотой тэнцүү`, `${tiedTop} aimags tied at ${fmt1.format(valueOf(top))} pts`)
+    : L(`${fmt1.format(valueOf(top))} оноо`, `${fmt1.format(valueOf(top))} pts`);
   const highCount = vals.filter((v) => v >= 65).length;
   const l = levelMeta(mean);
 
@@ -1305,7 +1318,7 @@ function renderKpis() {
   $('#mapKpis').innerHTML = `
     <div class="kpi" style="--i:0"><small>${L('Улсын дундаж', 'National average')}</small><b class="${l.cls}" data-to="${mean}" data-dec="1">${fmt1.format(mean)}</b><span>${L(`${l.mn} эрсдэл · ${state.year} он`, `${l.en} risk · ${state.year}`)}</span>${meanDelta}</div>
     <div class="kpi" style="--i:1"><small>${L('Өндөр эрсдэлтэй', 'High risk')}</small><b data-to="${highCount}" data-dec="0">${highCount}<span style="font-size:16px;color:var(--muted)"> / ${rows.length}</span></b><span>${L('65-аас дээш оноо', 'scores above 65')}</span>${highDelta}</div>
-    <div class="kpi" style="--i:2"><small>${L('Хамгийн өндөр', 'Highest')}</small><b class="high" style="font-size:22px">${esc(aimagName(top.aimag))}</b><span>${L(`${fmt1.format(valueOf(top))} оноо`, `${fmt1.format(valueOf(top))} pts`)}</span></div>
+    <div class="kpi" style="--i:2"><small>${L('Хамгийн өндөр', 'Highest')}</small><b class="high" style="font-size:22px">${esc(aimagName(top.aimag))}</b><span>${topNote}</span></div>
     <div class="kpi" style="--i:3"><small>${L('Хамгийн бага', 'Lowest')}</small><b class="low" style="font-size:22px">${esc(aimagName(low.aimag))}</b><span>${L(`${fmt1.format(valueOf(low))} оноо`, `${fmt1.format(valueOf(low))} pts`)}</span></div>`;
 
   if (state.anim && !reduceMotion()) {
@@ -1336,8 +1349,17 @@ function renderTrend() {
 }
 
 function renderRank() {
-  const rows = rowsForYear(state.year).sort((a, b) => valueOf(b) - valueOf(a));
+  const rows = rowsForYear(state.year)
+    .sort((a, b) => valueOf(b) - valueOf(a) || (b.Stocking_Rate ?? 0) - (a.Stocking_Rate ?? 0));
   const shown = rows.slice(0, 8);
+  const top = valueOf(rows[0]);
+  const tied = rows.filter((r) => Math.abs(valueOf(r) - top) < 0.05).length;
+  const hint = tied > 1 && top >= 99.95
+    ? `<p class="ranknote">${L(
+      `${tied} аймаг хамгийн муу 100 оноор тэмдэглэгдсэн — ижил оноог малын ачааллаар эрэмбэлэв.`,
+      `${tied} aimags share the worst score, 100 — ties are ordered by stocking rate.`,
+    )}</p>`
+    : '';
   $('#rankList').innerHTML = shown.map((r, i) => `
     <button type="button" class="rankrow ${state.selected === r.aimag ? 'sel' : ''} ${reduceMotion() ? 'noanim' : ''}" style="--i:${i}" data-name="${esc(r.aimag)}">
       <span class="rk">${i + 1}</span>
@@ -1346,7 +1368,7 @@ function renderRank() {
       <span class="track"><i style="width:${clamp(valueOf(r), 2, 100)}%;background:${riskColor(valueOf(r))}"></i></span>
     </button>`).join('') + (rows.length > shown.length
       ? `<button type="button" class="rankmore" id="rankMore">${L(`Бүх ${rows.length} аймгийг хүснэгтээс харах ↓`, `See all ${rows.length} aimags in the table ↓`)}</button>`
-      : '');
+      : '') + hint;
   $$('#rankList .rankrow').forEach((b) => {
     b.addEventListener('click', () => selectAimag(b.dataset.name));
   });
@@ -1448,7 +1470,7 @@ function renderSide() {
         <p class="muted">${L('Зураг дээрх аймаг дээр дарж эсвэл баруун жагсаалтаас сонгож, жилийн үзүүлэлт, түүхийг харна уу.', 'Click an aimag on the map or pick one from the list on the right to see yearly indicators and history.')}</p>
         <div class="introstats">
           <div><span>${L(`${state.year} оны дундаж`, `${state.year} average`)}</span><b style="color:${l.color}">${fmt1.format(mean)}</b></div>
-          <div><span>${L('Ажиглалт', 'Observations')}</span><b>${state.data?.rows.length ?? 0}</b></div>
+          <div><span>${L('Аймаг', 'Aimags')}</span><b>${new Set((state.data?.rows ?? []).map((r) => r.aimag)).size}</b></div>
           <div><span>${L('Хамрах жил', 'Years covered')}</span><b>${state.years.length}</b></div>
         </div>
       </div>`;
@@ -1521,7 +1543,7 @@ function renderIntro() {
     <div><small>k</small><b>${state.meta.best_params.n_neighbors}</b></div>
     <div><small>MAE</small><b>${fmt1.format(m.MAE)}</b></div>
     <div><small>${L('Нарийвчлал', 'Accuracy')}</small><b>${Math.round(m.class_accuracy * 100)}%</b></div>
-    <div><small>${L('Ажиглалт', 'Observations')}</small><b>${state.meta.n_samples}</b></div>
+    <div><small>${L('Хамрах хүрээ', 'Coverage')}</small><b>${L('21 аймаг · 16 жил', '21 aimags · 16 years')}</b></div>
     <div><small>${L('Жил', 'Years')}</small><b>${state.meta.years[0]}–${state.meta.years[1]}</b></div>
     <div style="grid-column:1/-1"><small>${L('Шинж чанарууд', 'Features')}</small><b>${Object.values(labels).map(esc).join(' · ')}</b></div>`;
   $('#modelNote').textContent = L(

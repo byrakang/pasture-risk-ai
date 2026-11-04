@@ -324,10 +324,10 @@ def causes_of(values, score, lang="mn"):
 
     def add(key, title, text, metric, share, high_bad=True):
         if high_bad:
-            compare = (f"Higher than {share:.0f}% of aimag-years" if en
+            compare = (f"Higher than {share:.0f}% of the 16-year records from 21 aimags" if en
                        else f"Аймгуудын {share:.0f}%-иас өндөр")
         else:
-            compare = (f"Lower than {share:.0f}% of aimag-years" if en
+            compare = (f"Lower than {share:.0f}% of the 16-year records from 21 aimags" if en
                        else f"Аймгуудын {share:.0f}%-иас бага")
         found.append({
             "key": key,
@@ -363,7 +363,7 @@ def causes_of(values, score, lang="mn"):
             (f"Нийт {herd:,.0f} хонин толгой. Судалгааны аймгуудын {n:.0f}% нь үүнээс "
              "цөөн малтай. Олон мал нэг газрын өвсийг идэх тул бэлчээр хурдан элэгддэг.")
             if not en else (
-                f"{herd:,.0f} sheep units in total. {n:.0f}% of the studied aimag-years "
+                f"{herd:,.0f} sheep units in total. {n:.0f}% of the 16-year records from 21 aimags "
                 "have fewer animals. Many mouths on the same grass wear the pasture out "
                 "quickly."),
             f"{herd:,.0f}",
@@ -378,8 +378,8 @@ def causes_of(values, score, lang="mn"):
             (f"Ургамлын индекс {ndvi:.2f}. Аймгуудын {n:.0f}% нь ургамал илүү сайн "
              "(ногоон) газартай. Ургамал багатай үед хөрс салхинд хийсэж, нөхөн "
              "сэргэхэд олон жил ордог.") if not en else (
-                f"The vegetation index is {ndvi:.2f}. In {n:.0f}% of aimag-years the "
-                "plants are greener. Bare soil dries out, blows away in the wind and "
+                f"The vegetation index is {ndvi:.2f}. Plants are greener than this in "
+                f"{n:.0f}% of the 16-year records from 21 aimags. Bare soil dries out, blows away in the wind and "
                 "takes years to recover."),
             f"{ndvi:.2f}",
             n,
@@ -394,7 +394,7 @@ def causes_of(values, score, lang="mn"):
             (f"Жилд ердөө {rain:.0f} мм хур тунадас. Аймгуудын {n:.0f}% нь илүү их хур "
              "тунадас авдаг. Чийг багатай тул өвс намхан ургаж, мал идэх өвс цөөнө.")
             if not en else (
-                f"Only {rain:.0f} mm of rain a year. {n:.0f}% of aimag-years get more "
+                f"Only {rain:.0f} mm of rain a year. {n:.0f}% of the 16-year records from 21 aimags get more "
                 "rain. With little moisture the grass grows short, so animals find less "
                 "to eat."),
             f"{rain:.0f} мм" if not en else f"{rain:.0f} mm",
@@ -410,8 +410,8 @@ def causes_of(values, score, lang="mn"):
             (f"Жилийн дундаж температур {temp:.1f}°C. Аймгуудын {n:.0f}%-иас дулаан. "
              "Халуунд чийг хурдан хатдаг тул өвс хурдан хатаж, ургамал цөөнө.")
             if not en else (
-                f"The mean temperature is {temp:.1f}°C, warmer than in {n:.0f}% of "
-                "aimag-years. Heat dries the soil quickly, so grass withers and there is "
+                f"The mean temperature is {temp:.1f}°C, warmer than in {n:.0f}% of the "
+                "16-year records from 21 aimags. Heat dries the soil quickly, so grass withers and there is "
                 "less to graze."),
             f"{temp:.1f}°C",
             n,

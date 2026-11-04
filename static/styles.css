@@ -658,6 +658,7 @@ tbody tr:last-child td{border-bottom:0}
   background:transparent;cursor:pointer;font:600 12px var(--sans);color:var(--muted);
 }
 .rankmore:hover{background:var(--surface-2);color:var(--ink)}
+.ranknote{margin:8px 0 0;font:500 11.5px/1.45 var(--mono);color:var(--muted)}
 .sw.nodata{background:repeating-linear-gradient(45deg,#DAE1D0 0 2px,#A6B398 2px 4px)}
 .reglabel.sel{font-weight:700;font-size:11px}
 .guidecard{margin-top:20px}
